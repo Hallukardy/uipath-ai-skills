@@ -240,10 +240,11 @@ Selector generation connects your agent to live applications. Without it, the sk
 <details>
 <summary><strong>Desktop selectors (inspect-ui-tree.ps1)</strong></summary>
 
-1. Copy `uipath-core/scripts/inspect-ui-tree.ps1` to your Windows machine
-2. Open the target desktop app
-3. The agent runs the script directly via PowerShell to capture the UIA element tree
-4. Works with WPF, Win32, WinForms, DirectUI, UWP. Inspection is **read-only**
+1. The agent opens the target desktop app (or asks permission to open it)
+2. The agent runs the script directly via PowerShell to capture the UIA element tree
+3. Works with WPF, Win32, WinForms, DirectUI, UWP. Inspection is **read-only**
+
+No setup needed — `inspect-ui-tree.ps1` ships with the skill.
 </details>
 
 ---
