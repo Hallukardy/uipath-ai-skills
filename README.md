@@ -457,6 +457,16 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines. Contributions welcome -
 
 ---
 
+## Contributors
+
+Thanks to all contributors:
+
+<a href="https://github.com/marcelocruzrpa/uipath-ai-skills/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=marcelocruzrpa/uipath-ai-skills" />
+</a>
+
+---
+
 ## Author
 
 Built by [Marcelo Cruz](https://www.linkedin.com/in/marcelo-cruz-rpa/) - UiPath MVP.
