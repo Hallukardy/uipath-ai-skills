@@ -1,0 +1,21 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="TestSelectNull"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Sequence DisplayName="Main" sap:VirtualizedContainerService.HintSize="400,300" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <uix:NSelectItem DisplayName="Select Status" HealingAgentBehavior="SameAsCard" Item="{x:Null}" sap:VirtualizedContainerService.HintSize="334,163" sap2010:WorkflowViewState.IdRef="NSelectItem_1" ScopeIdentifier="scope1" Version="V1">
+      <uix:NSelectItem.Items>
+        <scg:List x:TypeArguments="x:String" Capacity="4">
+          <x:String>Completed</x:String>
+        </scg:List>
+      </uix:NSelectItem.Items>
+      <uix:NSelectItem.Target>
+        <uix:TargetAnchorable ElementVisibilityArgument="Interactive" FullSelectorArgument="&lt;webctrl id='status' tag='SELECT' /&gt;" Guid="12345678-1234-1234-1234-123456789012" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Interactive" />
+      </uix:NSelectItem.Target>
+    </uix:NSelectItem>
+  </Sequence>
+</Activity>

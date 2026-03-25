@@ -1,0 +1,13 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="BadDelayActivity"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Sequence DisplayName="BadDelayActivity" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <ui:LogMessage DisplayName="Log" sap:VirtualizedContainerService.HintSize="200,50" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;before delay&quot;]" />
+    <Delay Duration="00:00:03" DisplayName="Wait 3 seconds" sap2010:WorkflowViewState.IdRef="Delay_1" />
+    <ui:LogMessage DisplayName="Log" sap:VirtualizedContainerService.HintSize="200,50" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;after delay&quot;]" />
+  </Sequence>
+</Activity>

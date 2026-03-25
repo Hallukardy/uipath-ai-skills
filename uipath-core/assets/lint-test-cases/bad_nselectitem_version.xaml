@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="Bad_NSelectItemVersion"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <sap2010:WorkflowViewState.IdRef>Bad_NSelectItemVersion_1</sap2010:WorkflowViewState.IdRef>
+  <sap:VirtualizedContainerService.HintSize>100,100</sap:VirtualizedContainerService.HintSize>
+  <Sequence DisplayName="Test" sap2010:WorkflowViewState.IdRef="Sequence_1" sap:VirtualizedContainerService.HintSize="100,100">
+    <uix:NSelectItem DisplayName="Select Status" sap2010:WorkflowViewState.IdRef="NSelectItem_1" sap:VirtualizedContainerService.HintSize="100,100" Item="[strStatus]" Version="V5">
+      <uix:NSelectItem.Items>
+        <scg:List x:TypeArguments="x:String" Capacity="2">
+          <x:String>Open</x:String>
+          <x:String>Closed</x:String>
+        </scg:List>
+      </uix:NSelectItem.Items>
+    </uix:NSelectItem>
+  </Sequence>
+</Activity>

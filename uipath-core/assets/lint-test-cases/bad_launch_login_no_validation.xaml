@@ -1,0 +1,33 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="WebApp_Launch"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:uix="http://schemas.uipath.com/workflow/activities/ui-next"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_strUrl" Type="InArgument(x:String)" />
+    <x:Property Name="in_strCredentialAssetName" Type="InArgument(x:String)" />
+    <x:Property Name="out_uiWebApp" Type="OutArgument(ui:UiElement)" />
+  </x:Members>
+  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="strUsername" />
+    </Sequence.Variables>
+    <ui:LogMessage DisplayName="Log Start" Level="Info" Message="[&quot;[START] WebApp_Launch&quot;]" sap2010:WorkflowViewState.IdRef="LogMessage_1" />
+    <uix:NApplicationCard DisplayName="WebApp Browser" OpenMode="[UiPath.UIAutomationNext.Enums.NAppOpenMode.Always]" OutUiElement="[out_uiWebApp]" sap2010:WorkflowViewState.IdRef="NApplicationCard_1">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <ui:GetRobotCredential AssetName="[in_strCredentialAssetName]" Username="[strUsername]" DisplayName="Get Credential" sap2010:WorkflowViewState.IdRef="GetRobotCredential_1" />
+            <uix:NTypeInto Text="[strUsername]" DisplayName="Type Username" sap2010:WorkflowViewState.IdRef="NTypeInto_1" />
+            <uix:NClick DisplayName="Click Login" sap2010:WorkflowViewState.IdRef="NClick_1" />
+            <ui:LogMessage DisplayName="Log Success" Level="Info" Message="[&quot;Login completed&quot;]" sap2010:WorkflowViewState.IdRef="LogMessage_2" />
+          </Sequence>
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+    </uix:NApplicationCard>
+    <ui:LogMessage DisplayName="Log End" Level="Info" Message="[&quot;[END] WebApp_Launch&quot;]" sap2010:WorkflowViewState.IdRef="LogMessage_3" />
+  </Sequence>
+</Activity>

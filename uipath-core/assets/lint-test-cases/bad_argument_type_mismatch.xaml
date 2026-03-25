@@ -1,0 +1,20 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="InitAllApplications" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
+    <x:Property Name="out_uiWebApp" Type="OutArgument(x:Object)" />
+    <x:Property Name="out_dt_Report" Type="OutArgument(x:Object)" />
+    <x:Property Name="out_strResult" Type="OutArgument(x:Object)" />
+    <x:Property Name="out_intCount" Type="OutArgument(x:Object)" />
+  </x:Members>
+  <sap2010:WorkflowViewState.IdRef>InitAllApplications_1</sap2010:WorkflowViewState.IdRef>
+  <Sequence DisplayName="Init" sap:VirtualizedContainerService.HintSize="600,200" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <ui:InvokeWorkflowFile DisplayName="Invoke WebApp Launch" WorkflowFileName="Workflows\WebApp\WebApp_Launch.xaml" sap:VirtualizedContainerService.HintSize="600,175" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1">
+      <ui:InvokeWorkflowFile.Arguments>
+        <OutArgument x:TypeArguments="x:Object" x:Key="out_uiWebApp">[out_uiWebApp]</OutArgument>
+        <OutArgument x:TypeArguments="x:Object" x:Key="out_dt_Report">[out_dt_Report]</OutArgument>
+        <OutArgument x:TypeArguments="x:Object" x:Key="out_strResult">[out_strResult]</OutArgument>
+        <OutArgument x:TypeArguments="x:Object" x:Key="out_intCount">[out_intCount]</OutArgument>
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
+  </Sequence>
+</Activity>

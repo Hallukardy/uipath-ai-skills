@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="Good_BrowserWorkflow"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation">
+  <x:Members>
+    <x:Property Name="in_strUrl" Type="InArgument(x:String)" />
+    <x:Property Name="io_uiBrowser" Type="InOutArgument(ui:UiElement)" />
+  </x:Members>
+  <Sequence DisplayName="WebApp_NavigateTo" sap:VirtualizedContainerService.HintSize="416,600" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="strTargetUrl" />
+    </Sequence.Variables>
+    <ui:LogMessage DisplayName="Log [START] WebApp_NavigateTo" Level="Info"
+      Message="[&quot;[START] WebApp_NavigateTo: &quot; + in_strUrl]"
+      sap:VirtualizedContainerService.HintSize="284,86"
+      sap2010:WorkflowViewState.IdRef="LogMessage_1" />
+    <uix:NApplicationCard AttachMode="SingleWindow" CloseMode="Never"
+      DisplayName="Use Browser Edge" InteractionMode="DebuggerApi"
+      IsIncognito="True" OpenMode="Never"
+      InUiElement="[io_uiBrowser]" OutUiElement="[io_uiBrowser]"
+      sap:VirtualizedContainerService.HintSize="524,400"
+      sap2010:WorkflowViewState.IdRef="NApplicationCard_1"
+      ScopeGuid="619ff342-c548-49b5-b9b1-4140269130ee" Version="V2">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Do" sap:VirtualizedContainerService.HintSize="416,230" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <uix:NGoToUrl DisplayName="Navigate to URL" Url="[in_strUrl]"
+              sap:VirtualizedContainerService.HintSize="200,22"
+              sap2010:WorkflowViewState.IdRef="NGoToUrl_1" />
+          </Sequence>
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+      <uix:NApplicationCard.TargetApp>
+        <uix:TargetApp Area="0, 0, 0, 0" BrowserType="Edge"
+          Selector="&lt;html app='msedge.exe' /&gt;"
+          Url="[in_strUrl]" />
+      </uix:NApplicationCard.TargetApp>
+    </uix:NApplicationCard>
+    <ui:LogMessage DisplayName="Log [END] WebApp_NavigateTo" Level="Info"
+      Message="[&quot;[END] WebApp_NavigateTo&quot;]"
+      sap:VirtualizedContainerService.HintSize="284,86"
+      sap2010:WorkflowViewState.IdRef="LogMessage_2" />
+  </Sequence>
+</Activity>

@@ -1,0 +1,34 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="InitAllApplications"
+  sap2010:WorkflowViewState.IdRef="ActivityBuilder_1"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
+  </x:Members>
+  <Sequence DisplayName="Initialize All Applications" sap:VirtualizedContainerService.HintSize="400,300" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="ui:UiElement" Name="uiWebApp" />
+    </Sequence.Variables>
+    <ui:InvokeWorkflowFile DisplayName="Invoke WebApp_Launch" sap:VirtualizedContainerService.HintSize="300,100" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" WorkflowFileName="Workflows\\WebApp\\WebApp_Launch.xaml">
+      <ui:InvokeWorkflowFile.Arguments>
+        <scg:Dictionary x:TypeArguments="x:String, Argument">
+          <InArgument x:TypeArguments="x:String" x:Key="in_strUrl">[in_Config("WebApp_Url").ToString]</InArgument>
+          <OutArgument x:TypeArguments="ui:UiElement" x:Key="out_uiWebApp">[uiWebApp]</OutArgument>
+        </scg:Dictionary>
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
+    <Assign DisplayName="Store WebApp UiElement in Config" sap:VirtualizedContainerService.HintSize="300,100" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Object">[in_Config("app_WebApp")]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Object">[uiWebApp]</InArgument>
+      </Assign.Value>
+    </Assign>
+  </Sequence>
+</Activity>

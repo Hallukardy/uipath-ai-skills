@@ -1,0 +1,11 @@
+{
+  "name": "BadProjectCrossfile",
+  "projectVersion": "1.0.0",
+  "description": "Test project for cross-file lint rules",
+  "main": "Main.xaml",
+  "dependencies": {},
+  "schemaVersion": "4.0",
+  "studioVersion": "23.10.0",
+  "projectType": "Workflow",
+  "expressionLanguage": "CSharp"
+}

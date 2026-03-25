@@ -1,0 +1,6 @@
+# Requires Python >= 3.8 (pathlib, f-strings, importlib.util)
+# Core dependencies — all scripts use stdlib only (no install required)
+# xml.etree, json, re, pathlib, uuid, argparse, subprocess
+
+# Optional — required only for config_xlsx_manager.py
+openpyxl>=3.1.0

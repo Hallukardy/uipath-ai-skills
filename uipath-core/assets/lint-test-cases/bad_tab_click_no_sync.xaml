@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="Bad_TabClickNoSync"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation">
+  <Sequence DisplayName="Main" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <ui:LogMessage DisplayName="Log Start" Level="Info" Message="[&quot;Start&quot;]" sap2010:WorkflowViewState.IdRef="LogMessage_1" />
+    <uix:NApplicationCard AttachMode="SingleWindow" CloseMode="Never" DisplayName="App" OpenMode="Never" sap2010:WorkflowViewState.IdRef="NApplicationCard_1" Version="V2">
+      <uix:NClick DisplayName="Click 'Company' Tab" FullSelectorArgument="&lt;wnd aaname='Company' cls='WindowsForms10.SysTabControl32.*' /&gt;" sap2010:WorkflowViewState.IdRef="NClick_1" />
+      <uix:NTypeInto DisplayName="Type Into 'CompanyName'" sap2010:WorkflowViewState.IdRef="NTypeInto_1" />
+    </uix:NApplicationCard>
+    <ui:LogMessage DisplayName="Log End" Level="Info" Message="[&quot;End&quot;]" sap2010:WorkflowViewState.IdRef="LogMessage_2" />
+  </Sequence>
+</Activity>

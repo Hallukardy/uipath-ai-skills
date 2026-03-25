@@ -1,0 +1,15 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="UiPath.Process"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- BAD: [[String.Format(...)]] — double brackets, invalid VB.NET -->
+  <Sequence DisplayName="Process" sap:VirtualizedContainerService.HintSize="400,300" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <ui:LogMessage DisplayName="Log Message" sap:VirtualizedContainerService.HintSize="452,176"
+      sap2010:WorkflowViewState.IdRef="LogMessage_1"
+      Level="Info"
+      Message="[[String.Format(&quot;[PROCESS] Adding WIID {0} to queue&quot;, strWIID)]]" />
+  </Sequence>
+</Activity>

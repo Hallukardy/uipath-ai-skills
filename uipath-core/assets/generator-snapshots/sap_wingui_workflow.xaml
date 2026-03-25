@@ -1,0 +1,85 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Test_SAPWinGUI"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
+  xmlns:sd="clr-namespace:System.Drawing;assembly=System.Drawing.Common"
+  xmlns:sd1="clr-namespace:System.Drawing;assembly=System.Drawing.Primitives"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
+  xmlns:ucas="clr-namespace:UiPath.Core.Activities.SAP;assembly=UiPath.UiAutomation.Activities"
+  xmlns:upaf="clr-namespace:UiPath.Persistence.Activities.FormTask;assembly=UiPath.Persistence.Activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_strSapConnection" Type="InArgument(x:String)" />
+  </x:Members>
+  <VisualBasic.Settings>
+    <x:Null />
+  </VisualBasic.Settings>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Test_SAPWinGUI" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+        <Sequence.Variables>
+          <Variable x:TypeArguments="x:String" Name="strStatusMessage" />
+          <Variable x:TypeArguments="x:String" Name="strStatusType" />
+        </Sequence.Variables>
+            <ui:LogMessage DisplayName="Log Message Start Test_SAPWinGUI" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[START] Test_SAPWinGUI&quot;]" />
+<uix:NSAPLogon AttachMode="ByInstance" CloseMode="Never" DelayBetweenRetries="0.5" DisplayName="SAP Logon" HealingAgentBehavior="Job" sap:VirtualizedContainerService.HintSize="488,989" sap2010:WorkflowViewState.IdRef="NSAPLogon_1" InteractionMode="Simulate" OpenMode="[UiPath.UIAutomationNext.Enums.NAppOpenMode.Always]" Retries="5" ScopeGuid="UUID_001" Version="V2" WindowResize="Maximize">
+  <uix:NSAPLogon.Body>
+    <ActivityAction x:TypeArguments="x:Object">
+      <ActivityAction.Argument>
+        <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+      </ActivityAction.Argument>
+      <Sequence DisplayName="Do" sap:VirtualizedContainerService.HintSize="486,815">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+
+      </Sequence>
+    </ActivityAction>
+  </uix:NSAPLogon.Body>
+  <uix:NSAPLogon.OCREngine>
+    <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))">
+      <ActivityFunc.Argument>
+        <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+      </ActivityFunc.Argument>
+    </ActivityFunc>
+  </uix:NSAPLogon.OCREngine>
+  <uix:NSAPLogon.TargetApp>
+    <uix:TargetApp Area="0, 0, 0, 0" Arguments="[in_strSapConnection]" FilePath="C:\Program Files (x86)\SAP\FrontEnd\SAPgui\saplogon.exe" Selector="&lt;wnd app=&#x27;saplogon.exe&#x27; cls=&#x27;SAP_FRONTEND_SESSION&#x27; /&gt;" Version="V2" />
+  </uix:NSAPLogon.TargetApp>
+</uix:NSAPLogon>
+<uix:NSAPReadStatusbar MessageId="{x:Null}" MessageNumber="{x:Null}" DisplayName="Read Status Bar" sap:VirtualizedContainerService.HintSize="452,227" sap2010:WorkflowViewState.IdRef="NSAPReadStatusbar_1" MessageData="[arrStatusBarMsgData]" MessageText="[strStatusMessage]" MessageType="[strStatusType]" ScopeIdentifier="UUID_002" Version="V5" />
+            <ui:LogMessage DisplayName="Log Message End Test_SAPWinGUI" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[END] Test_SAPWinGUI&quot;]" />
+  </Sequence>
+</Activity>

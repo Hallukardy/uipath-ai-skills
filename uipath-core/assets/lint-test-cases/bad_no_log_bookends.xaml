@@ -1,0 +1,21 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="TestNoLogBookends" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_strUrl" Type="InArgument(x:String)" />
+  </x:Members>
+  <VisualBasic.Settings>
+    <x:Null />
+  </VisualBasic.Settings>
+  <sap:VirtualizedContainerService.HintSize>800,600</sap:VirtualizedContainerService.HintSize>
+  <sap2010:WorkflowViewState.IdRef>TestNoLogBookends_1</sap2010:WorkflowViewState.IdRef>
+  <Sequence DisplayName="Test No Log Bookends" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <ui:InvokeWorkflowFile DisplayName="Invoke Something" WorkflowFileName="SomeWorkflow.xaml" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" />
+    <Assign DisplayName="Assign Result" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[strResult]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[in_strUrl]</InArgument>
+      </Assign.Value>
+    </Assign>
+  </Sequence>
+</Activity>

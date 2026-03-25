@@ -1,0 +1,25 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Process"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_TransactionItem" Type="InArgument(sd:DataRow)" />
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
+  </x:Members>
+  <!-- BAD: in_TransactionNumber is NOT passed to Process.xaml — it lives in Main.xaml scope -->
+  <Sequence DisplayName="Process" sap:VirtualizedContainerService.HintSize="400,300" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="strWIID" />
+    </Sequence.Variables>
+    <ui:LogMessage DisplayName="Log Message Start" sap:VirtualizedContainerService.HintSize="1058,179"
+      sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info"
+      Message="[&quot;[START] Process - Transaction #&quot; &amp; in_TransactionNumber.ToString]" />
+    <Throw DisplayName="Throw" Exception="[New BusinessRuleException(&quot;WIID is empty for transaction #&quot; &amp; in_TransactionNumber.ToString)]"
+      sap:VirtualizedContainerService.HintSize="416,118" sap2010:WorkflowViewState.IdRef="Throw_1" />
+  </Sequence>
+</Activity>

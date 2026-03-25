@@ -1,0 +1,26 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Test_BadEmptyFieldMode"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:uix="http://schemas.uipath.com/workflow/activities/ui-next"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_strValue" Type="InArgument(x:String)" />
+  </x:Members>
+  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="strInput" />
+    </Sequence.Variables>
+    <uix:NTypeInto ActivateBefore="True" ClickBeforeMode="Single" DisplayName="Type Into Field" EmptyFieldMode="Clear" sap2010:WorkflowViewState.IdRef="NTypeInto_1" Text="[strInput]" Version="V5">
+      <uix:NTypeInto.Target>
+        <uix:TargetAnchorable>
+          <uix:TargetAnchorable.Selector>
+            <uix:Selector Xml="&lt;webctrl tag='input' /&gt;" />
+          </uix:TargetAnchorable.Selector>
+        </uix:TargetAnchorable>
+      </uix:NTypeInto.Target>
+    </uix:NTypeInto>
+  </Sequence>
+</Activity>

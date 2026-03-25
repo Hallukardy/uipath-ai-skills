@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="Bad_AddQueueDictExpr"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <sap2010:WorkflowViewState.IdRef>Bad_AddQueueDictExpr_1</sap2010:WorkflowViewState.IdRef>
+  <sap:VirtualizedContainerService.HintSize>100,100</sap:VirtualizedContainerService.HintSize>
+  <Sequence DisplayName="Test" sap2010:WorkflowViewState.IdRef="Sequence_1" sap:VirtualizedContainerService.HintSize="100,100">
+    <ui:AddQueueItem DisplayName="Add Queue Item" sap2010:WorkflowViewState.IdRef="AddQueueItem_1" sap:VirtualizedContainerService.HintSize="100,100" QueueType="[strQueue]">
+      <ui:AddQueueItem.ItemInformation>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)">[New Dictionary(Of String, Object) From {{"WIID", strWIID}, {"Name", strName}}]</InArgument>
+      </ui:AddQueueItem.ItemInformation>
+    </ui:AddQueueItem>
+  </Sequence>
+</Activity>

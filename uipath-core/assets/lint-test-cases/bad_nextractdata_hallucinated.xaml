@@ -1,0 +1,14 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Bad_ExtractData" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:uix="http://schemas.uipath.com/workflow/activities/ui-next" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <sap2010:WorkflowViewState.IdRef>Bad_ExtractData_1</sap2010:WorkflowViewState.IdRef>
+  <Sequence DisplayName="Bad Extract" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <uix:NExtractData DisplayName="Extract Table" ExtractedData="[dt_Data]" sap2010:WorkflowViewState.IdRef="NExtractData_1" Version="V5">
+      <uix:NExtractData.ExtractMetadata>
+        <uix:NExtractMetadata Columns="Col1,Col2" MaxResults="0">
+          <uix:NExtractMetadata.Columns>
+            <uix:NExtractColumn ColumnName="Col1" ColumnSelector="&lt;webctrl tag='TD' idx='1' /&gt;" />
+          </uix:NExtractMetadata.Columns>
+        </uix:NExtractMetadata>
+      </uix:NExtractData.ExtractMetadata>
+    </uix:NExtractData>
+  </Sequence>
+</Activity>

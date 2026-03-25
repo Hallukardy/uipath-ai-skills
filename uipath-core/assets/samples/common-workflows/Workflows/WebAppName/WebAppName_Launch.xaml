@@ -1,0 +1,297 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Drawing;assembly=System.Drawing.Common" xmlns:sd1="clr-namespace:System.Drawing;assembly=System.Drawing.Primitives" xmlns:ss="clr-namespace:System.Security;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uix="http://schemas.uipath.com/workflow/activities/uix" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_strAppUrl" Type="InArgument(x:String)" />
+    <x:Property Name="in_strOrchCredentialName" Type="InArgument(x:String)" />
+    <x:Property Name="out_uiWebAppName" Type="OutArgument(ui:UiElement)" />
+  </x:Members>
+  <VisualBasic.Settings>
+    <x:Null />
+  </VisualBasic.Settings>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>System.Runtime.Serialization</x:String>
+      <x:String>UiPath.UIAutomationNext.Enums</x:String>
+      <x:String>UiPath.UIAutomationCore.Contracts</x:String>
+      <x:String>UiPath.UIAutomation.Models</x:String>
+      <x:String>UiPath.UIAutomation.Activities</x:String>
+      <x:String>UiPath.Shared.Activities</x:String>
+      <x:String>UiPath.Platform.ObjectLibrary</x:String>
+      <x:String>UiPath.Platform.SyncObjects</x:String>
+      <x:String>System.Security</x:String>
+      <x:String>System.ComponentModel</x:String>
+      <x:String>UiPath.UIAutomation.Contracts</x:String>
+      <x:String>UiPath.UIAutomation.Models.CV</x:String>
+      <x:String>System.Reflection</x:String>
+      <x:String>System.Linq.Expressions</x:String>
+      <x:String>UiPath.UIAutomation.Activities.Models</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>PresentationCore</AssemblyReference>
+      <AssemblyReference>PresentationFramework</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Drawing.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing.Primitives</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Net.Mail</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>WindowsBase</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Constants</AssemblyReference>
+      <AssemblyReference>System.Private.ServiceModel</AssemblyReference>
+      <AssemblyReference>System.Private.DataContractSerialization</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Formatters</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Primitives</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomation</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationCore</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.OCR.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Testing.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Platform</AssemblyReference>
+      <AssemblyReference>System.Security.Permissions</AssemblyReference>
+      <AssemblyReference>System.Runtime.InteropServices</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.EventBasedAsync</AssemblyReference>
+      <AssemblyReference>System.ComponentModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.Primitives</AssemblyReference>
+      <AssemblyReference>System.Reflection.DispatchProxy</AssemblyReference>
+      <AssemblyReference>System.Reflection.TypeExtensions</AssemblyReference>
+      <AssemblyReference>System.Reflection.Metadata</AssemblyReference>
+      <AssemblyReference>System.Memory.Data</AssemblyReference>
+      <AssemblyReference>UiPath.Excel.Activities.Design</AssemblyReference>
+      <AssemblyReference>System.Console</AssemblyReference>
+      <AssemblyReference>System.Configuration.ConfigurationManager</AssemblyReference>
+      <AssemblyReference>System.Memory</AssemblyReference>
+      <AssemblyReference>System.Private.Uri</AssemblyReference>
+      <AssemblyReference>NPOI.Core</AssemblyReference>
+      <AssemblyReference>System.Linq.Async</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.Collections.NonGeneric</AssemblyReference>
+      <AssemblyReference>System.Linq.Expressions</AssemblyReference>
+      <AssemblyReference>UiPath.Workflow</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities.Design</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap:VirtualizedContainerService.HintSize="1267,3166" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:LogMessage DisplayName="Log Message AppName Launch Start" sap:VirtualizedContainerService.HintSize="1094,175" sap2010:WorkflowViewState.IdRef="LogMessage_4" Message="[&quot;[START] Launch AppName&quot;]" />
+    <uix:NApplicationCard AttachMode="ByInstance" CloseMode="[UiPath.UIAutomationNext.Enums.NAppCloseMode.Never]" DisplayName="Edge The Internet" HealingAgentBehavior="Job" sap:VirtualizedContainerService.HintSize="1094,2802" sap2010:WorkflowViewState.IdRef="NApplicationCard_1" InteractionMode="Simulate" IsIncognito="True" OpenMode="[UiPath.UIAutomationNext.Enums.NAppOpenMode.Always]" OutUiElement="[out_uiWebAppName]" ScopeGuid="1c8b8f65-fb90-47a5-b7e8-a919422bd4db" Version="V2">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Do" sap:VirtualizedContainerService.HintSize="1092,2599" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <Sequence.Variables>
+              <Variable x:TypeArguments="x:String" Name="strUsername" />
+              <Variable x:TypeArguments="ss:SecureString" Name="secstrPassword" />
+            </Sequence.Variables>
+            <sap:WorkflowViewStateService.ViewState>
+              <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+              </scg:Dictionary>
+            </sap:WorkflowViewStateService.ViewState>
+            <ui:LogMessage DisplayName="Log Message Fetch App Credentials" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_1" Message="[&quot;Fetching app credentials...&quot;]" />
+            <ui:RetryScope LogRetriedExceptions="{x:Null}" RetriedExceptionsLogLevel="{x:Null}" DisplayName="Retry Scope (Get App Credentials)" sap:VirtualizedContainerService.HintSize="1058,61" sap2010:WorkflowViewState.IdRef="RetryScope_1">
+              <ui:RetryScope.ActivityBody>
+                <ActivityAction>
+                  <Sequence DisplayName="Action" sap:VirtualizedContainerService.HintSize="450,235" sap2010:WorkflowViewState.IdRef="Sequence_3">
+                    <sap:WorkflowViewStateService.ViewState>
+                      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                      </scg:Dictionary>
+                    </sap:WorkflowViewStateService.ViewState>
+                    <ui:GetRobotCredential TimeoutMS="{x:Null}" AssetName="[in_strOrchCredentialName]" CacheStrategy="None" DisplayName="Get Credential" sap:VirtualizedContainerService.HintSize="416,171" sap2010:WorkflowViewState.IdRef="GetRobotCredential_1" Password="[secstrPassword]" Username="[strUsername]" />
+                  </Sequence>
+                </ActivityAction>
+              </ui:RetryScope.ActivityBody>
+              <ui:RetryScope.Condition>
+                <ActivityFunc x:TypeArguments="x:Boolean" />
+              </ui:RetryScope.Condition>
+              <sap:WorkflowViewStateService.ViewState>
+                <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                  <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+                  <x:Boolean x:Key="IsPinned">False</x:Boolean>
+                </scg:Dictionary>
+              </sap:WorkflowViewStateService.ViewState>
+            </ui:RetryScope>
+            <ui:LogMessage DisplayName="Log Message Input Login Credentials" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_2" Message="[&quot;Input login credentials...&quot;]" />
+            <uix:NTypeInto ActivateBefore="True" ClickBeforeMode="[UiPath.UIAutomationNext.Enums.NClickMode.None]" ClipboardMode="Never" DisplayName="Type Into 'Username'" EmptyFieldMode="SingleLine" HealingAgentBehavior="SameAsCard" sap:VirtualizedContainerService.HintSize="1058,250" sap2010:WorkflowViewState.IdRef="NTypeInto_1" InteractionMode="SameAsCard" ScopeIdentifier="1c8b8f65-fb90-47a5-b7e8-a919422bd4db" Text="[strUsername]" Version="V5">
+              <uix:NTypeInto.Target>
+                <uix:TargetAnchorable BrowserURL="the-internet.herokuapp.com/login" CVScreenId="bbfad6c9-8014-45c0-b3f8-d0607e58f73e" ContentHash="o7Sf_venhkeVZFm2f4ll8g" DesignTimeRectangle="382, 457, 470, 33" ElementType="InputBoxPassword" ElementVisibilityArgument="Interactive" FuzzySelectorArgument="&lt;webctrl id='password' tag='INPUT' type='password' class='' aaname='Password' matching:id='fuzzy' fuzzylevel:id='0.0' matching:class='fuzzy' fuzzylevel:class='0.0' matching:aaname='fuzzy' fuzzylevel:aaname='0.0' /&gt;" Guid="860a7f26-8cac-4a2c-9739-0480ffc79dbd" InformativeScreenshot="9f294a71569d6315f6666767eedd4d1e.png" Reference="hLVpHE3cr0Snasegrdbqow/lxUgv5grG026lVNdrlhuuQ" ScopeSelectorArgument="&lt;html app='msedge.exe' title='The Internet' /&gt;" SearchSteps="FuzzySelector" Version="V6" WaitForReadyArgument="Interactive" />
+              </uix:NTypeInto.Target>
+              <uix:NTypeInto.VerifyOptions>
+                <uix:VerifyExecutionTypeIntoOptions DisplayName="{x:Null}" Mode="Appears">
+                  <uix:VerifyExecutionTypeIntoOptions.Retry>
+                    <InArgument x:TypeArguments="x:Boolean" />
+                  </uix:VerifyExecutionTypeIntoOptions.Retry>
+                  <uix:VerifyExecutionTypeIntoOptions.Timeout>
+                    <InArgument x:TypeArguments="x:Double" />
+                  </uix:VerifyExecutionTypeIntoOptions.Timeout>
+                </uix:VerifyExecutionTypeIntoOptions>
+              </uix:NTypeInto.VerifyOptions>
+            </uix:NTypeInto>
+            <uix:NTypeInto ActivateBefore="True" ClickBeforeMode="[UiPath.UIAutomationNext.Enums.NClickMode.None]" ClipboardMode="Never" DisplayName="Type Into 'Password'" EmptyFieldMode="SingleLine" HealingAgentBehavior="SameAsCard" sap:VirtualizedContainerService.HintSize="1058,250" sap2010:WorkflowViewState.IdRef="NTypeInto_2" InteractionMode="SameAsCard" ScopeIdentifier="1c8b8f65-fb90-47a5-b7e8-a919422bd4db" SecureText="[secstrPassword]" Version="V5">
+              <uix:NTypeInto.Target>
+                <uix:TargetAnchorable BrowserURL="the-internet.herokuapp.com/login" CVScreenId="bbfad6c9-8014-45c0-b3f8-d0607e58f73e" ContentHash="o7Sf_venhkeVZFm2f4ll8g" DesignTimeRectangle="382, 457, 470, 33" ElementType="InputBoxPassword" ElementVisibilityArgument="Interactive" FuzzySelectorArgument="&lt;webctrl id='password' tag='INPUT' type='password' class='' aaname='Password' matching:id='fuzzy' fuzzylevel:id='0.0' matching:class='fuzzy' fuzzylevel:class='0.0' matching:aaname='fuzzy' fuzzylevel:aaname='0.0' /&gt;" Guid="860a7f26-8cac-4a2c-9739-0480ffc79dbd" InformativeScreenshot="9f294a71569d6315f6666767eedd4d1e.png" Reference="hLVpHE3cr0Snasegrdbqow/lxUgv5grG026lVNdrlhuuQ" ScopeSelectorArgument="&lt;html app='msedge.exe' title='The Internet' /&gt;" SearchSteps="FuzzySelector" Version="V6" WaitForReadyArgument="Interactive" />
+              </uix:NTypeInto.Target>
+              <uix:NTypeInto.VerifyOptions>
+                <uix:VerifyExecutionTypeIntoOptions DisplayName="{x:Null}" Mode="Appears">
+                  <uix:VerifyExecutionTypeIntoOptions.Retry>
+                    <InArgument x:TypeArguments="x:Boolean" />
+                  </uix:VerifyExecutionTypeIntoOptions.Retry>
+                  <uix:VerifyExecutionTypeIntoOptions.Timeout>
+                    <InArgument x:TypeArguments="x:Double" />
+                  </uix:VerifyExecutionTypeIntoOptions.Timeout>
+                </uix:VerifyExecutionTypeIntoOptions>
+              </uix:NTypeInto.VerifyOptions>
+            </uix:NTypeInto>
+            <ui:LogMessage DisplayName="Log Message Click To Login" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_3" Message="[&quot;Click to login&quot;]" />
+            <uix:NClick ActivateBefore="True" ClickType="Single" DisplayName="Click 'Login'" HealingAgentBehavior="SameAsCard" sap:VirtualizedContainerService.HintSize="1058,198" sap2010:WorkflowViewState.IdRef="NClick_1" InteractionMode="SameAsCard" KeyModifiers="None" MouseButton="Left" ScopeIdentifier="1c8b8f65-fb90-47a5-b7e8-a919422bd4db" Version="V5">
+              <uix:NClick.Target>
+                <uix:TargetAnchorable BrowserURL="the-internet.herokuapp.com/login" CVScreenId="bbfad6c9-8014-45c0-b3f8-d0607e58f73e" ContentHash="9FetSf54vkyGL-qTMVAhAA" CvElementArea="380, 503, 166, 62" CvTextArea="439, 520, 81, 34" CvTextArgument="Login" CvType="Button" DesignTimeRectangle="382, 504, 162, 59" ElementType="Button" ElementVisibilityArgument="Interactive" FullSelectorArgument="&lt;webctrl tag='BUTTON' /&gt;" Guid="dbd205cb-3b25-4890-b6b5-2b4edc61241c" InformativeScreenshot="6af2ae59f1a18645b8f4c6bb0eddd277.png" Reference="hLVpHE3cr0Snasegrdbqow/lN-tRh3xNUWRssVmN0Apvg" ScopeSelectorArgument="&lt;html app='msedge.exe' title='The Internet' /&gt;" SearchSteps="Selector, CV" Version="V6" WaitForReadyArgument="Interactive" />
+              </uix:NClick.Target>
+            </uix:NClick>
+            <ui:LogMessage DisplayName="Log Message Validating App Login State" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_6" Message="[&quot;Validating login state...&quot;]" />
+            <Pick DisplayName="Pick (Validate login state)" sap:VirtualizedContainerService.HintSize="1058,1060" sap2010:WorkflowViewState.IdRef="Pick_1">
+              <PickBranch DisplayName="PickBranch (Login Success)" sap:VirtualizedContainerService.HintSize="424,986" sap2010:WorkflowViewState.IdRef="PickBranch_1">
+                <PickBranch.Trigger>
+                  <uix:NCheckState DisplayName="Check App State (Login Success Element)" EnableIfExists="False" EnableIfNotExists="False" HealingAgentBehavior="Disabled" sap:VirtualizedContainerService.HintSize="334,297" sap2010:WorkflowViewState.IdRef="NCheckState_1" ScopeIdentifier="1c8b8f65-fb90-47a5-b7e8-a919422bd4db" Version="V5">
+                    <uix:NCheckState.IfExists>
+                      <Sequence DisplayName="Target appears" sap:VirtualizedContainerService.HintSize="450,94" sap2010:WorkflowViewState.IdRef="Sequence_4">
+                        <sap:WorkflowViewStateService.ViewState>
+                          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                          </scg:Dictionary>
+                        </sap:WorkflowViewStateService.ViewState>
+                      </Sequence>
+                    </uix:NCheckState.IfExists>
+                    <uix:NCheckState.IfNotExists>
+                      <Sequence DisplayName="Target does not appear" sap:VirtualizedContainerService.HintSize="450,94" sap2010:WorkflowViewState.IdRef="Sequence_5">
+                        <sap:WorkflowViewStateService.ViewState>
+                          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                          </scg:Dictionary>
+                        </sap:WorkflowViewStateService.ViewState>
+                      </Sequence>
+                    </uix:NCheckState.IfNotExists>
+                    <uix:NCheckState.Target>
+                      <uix:TargetAnchorable BrowserURL="the-internet.herokuapp.com/secure" ContentHash="_1a97TdAx0uPINqH8t803g" DesignTimeRectangle="273, 193, 970, 36" ElementVisibilityArgument="Interactive" FullSelectorArgument="&lt;webctrl id='flash' class='flash success' /&gt;" Guid="788b92d6-2068-44c9-8344-7de7494c6279" InformativeScreenshot="24c864babb855de1585054e41b74657f.png" Reference="hLVpHE3cr0Snasegrdbqow/lzTrj6D4XUeclJFLKvidtQ" ScopeSelectorArgument="&lt;html app='msedge.exe' title='The Internet' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Interactive" />
+                    </uix:NCheckState.Target>
+                  </uix:NCheckState>
+                </PickBranch.Trigger>
+                <ui:LogMessage DisplayName="Log Message Login Success" sap:VirtualizedContainerService.HintSize="334,143" sap2010:WorkflowViewState.IdRef="LogMessage_7" Message="[&quot;Login was successful.&quot;]" />
+              </PickBranch>
+              <PickBranch DisplayName="PickBranch (Login Failed)" sap:VirtualizedContainerService.HintSize="540,986" sap2010:WorkflowViewState.IdRef="PickBranch_2">
+                <PickBranch.Variables>
+                  <Variable x:TypeArguments="ui:UiElement" Name="uiElLoginErrorMsg" />
+                </PickBranch.Variables>
+                <PickBranch.Trigger>
+                  <uix:NCheckState DisplayName="Check App State (Login Error Msg)" EnableIfExists="False" EnableIfNotExists="False" HealingAgentBehavior="Disabled" sap:VirtualizedContainerService.HintSize="450,297" sap2010:WorkflowViewState.IdRef="NCheckState_2" OutUiElement="[uiElLoginErrorMsg]" ScopeIdentifier="1c8b8f65-fb90-47a5-b7e8-a919422bd4db" Version="V5">
+                    <uix:NCheckState.IfExists>
+                      <Sequence DisplayName="Target appears" sap:VirtualizedContainerService.HintSize="450,94" sap2010:WorkflowViewState.IdRef="Sequence_6">
+                        <sap:WorkflowViewStateService.ViewState>
+                          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                          </scg:Dictionary>
+                        </sap:WorkflowViewStateService.ViewState>
+                      </Sequence>
+                    </uix:NCheckState.IfExists>
+                    <uix:NCheckState.IfNotExists>
+                      <Sequence DisplayName="Target does not appear" sap:VirtualizedContainerService.HintSize="450,94" sap2010:WorkflowViewState.IdRef="Sequence_7">
+                        <sap:WorkflowViewStateService.ViewState>
+                          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                          </scg:Dictionary>
+                        </sap:WorkflowViewStateService.ViewState>
+                      </Sequence>
+                    </uix:NCheckState.IfNotExists>
+                    <uix:NCheckState.Target>
+                      <uix:TargetAnchorable BrowserURL="the-internet.herokuapp.com/login" ContentHash="XEdFt2n5w0K3ekIv3xJaCg" DesignTimeRectangle="273, 193, 970, 36" ElementVisibilityArgument="Interactive" FullSelectorArgument="&lt;webctrl id='flash' class='flash error' /&gt;" Guid="880df6e9-1e2b-4544-9620-c260740f0f32" InformativeScreenshot="c708e2d6b0c6f0ca8e2ca471af1e1275.png" Reference="hLVpHE3cr0Snasegrdbqow/cBm838DzPk-o8c26eSiPGA" ScopeSelectorArgument="&lt;html app='msedge.exe' title='The Internet' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Interactive" />
+                    </uix:NCheckState.Target>
+                  </uix:NCheckState>
+                </PickBranch.Trigger>
+                <Sequence sap:VirtualizedContainerService.HintSize="450,488" sap2010:WorkflowViewState.IdRef="Sequence_8">
+                  <Sequence.Variables>
+                    <Variable x:TypeArguments="x:String" Name="strLoginErrorMsg" />
+                  </Sequence.Variables>
+                  <sap:WorkflowViewStateService.ViewState>
+                    <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                      <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                    </scg:Dictionary>
+                  </sap:WorkflowViewStateService.ViewState>
+                  <ui:LogMessage DisplayName="Log Message Get Login Error Message" sap:VirtualizedContainerService.HintSize="416,179" sap2010:WorkflowViewState.IdRef="LogMessage_8" Message="[&quot;Getting login error message...&quot;]" />
+                  <uix:NGetText DisplayName="Get Text (Fetch error message text)" HealingAgentBehavior="SameAsCard" sap:VirtualizedContainerService.HintSize="416,127" sap2010:WorkflowViewState.IdRef="NGetText_1" InUiElement="[uiElLoginErrorMsg]" ScopeIdentifier="1c8b8f65-fb90-47a5-b7e8-a919422bd4db" TextString="[strLoginErrorMsg]" Version="V5" />
+                  <Throw DisplayName="Throw SE (Login failed)" Exception="[new Exception(String.Format(&quot;Login failed. Reason: {0}&quot;, strLoginErrorMsg))]" sap:VirtualizedContainerService.HintSize="416,118" sap2010:WorkflowViewState.IdRef="Throw_1" />
+                </Sequence>
+              </PickBranch>
+            </Pick>
+          </Sequence>
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+      <uix:NApplicationCard.OCREngine>
+        <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))">
+          <ActivityFunc.Argument>
+            <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+          </ActivityFunc.Argument>
+        </ActivityFunc>
+      </uix:NApplicationCard.OCREngine>
+      <uix:NApplicationCard.TargetApp>
+        <uix:TargetApp Area="1713, 0, 1734, 1399" BrowserType="Edge" ContentHash="fAu2EElySki0Z7lyTtW9fA" IconBase64="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" InformativeScreenshot="995c0097e30281fabc0ff06818f6b27c.jpg" Reference="hLVpHE3cr0Snasegrdbqow/Z-XsSEDHUEuE5pLp3jzBCQ" Selector="&lt;html app='msedge.exe' title='The Internet' /&gt;" Url="[in_strAppUrl]" Version="V2">
+          <uix:TargetApp.Arguments>
+            <InArgument x:TypeArguments="x:String" />
+          </uix:TargetApp.Arguments>
+          <uix:TargetApp.WorkingDirectory>
+            <InArgument x:TypeArguments="x:String" />
+          </uix:TargetApp.WorkingDirectory>
+        </uix:TargetApp>
+      </uix:NApplicationCard.TargetApp>
+    </uix:NApplicationCard>
+    <ui:LogMessage DisplayName="Log Message AppName Launch End" sap:VirtualizedContainerService.HintSize="1094,166" sap2010:WorkflowViewState.IdRef="LogMessage_5" Message="[&quot;[END] Launch AppName&quot;]" />
+  </Sequence>
+</Activity>

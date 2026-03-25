@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="Bad_InlineResult"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  >
+  <Sequence DisplayName="Main" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    
+    <uix:NApplicationCard DisplayName="Use Browser" ScopeGuid="aaaaaaaa-0000-0000-0000-000000000001"
+      OpenMode="Never" InUiElement="[uiBrowser]" sap2010:WorkflowViewState.IdRef="NApplicationCard_1">
+      <uix:NApplicationCard.Body>
+        <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Seq_Body_1">
+          <uix:NExtractDataGeneric DisplayName="Extract" DataTable="[dt_Out]"
+            ScopeIdentifier="aaaaaaaa-0000-0000-0000-000000000001"
+            sap2010:WorkflowViewState.IdRef="NExtractDataGeneric_1" />
+        </Sequence>
+      </uix:NApplicationCard.Body>
+    </uix:NApplicationCard>
+  </Sequence>
+</Activity>
