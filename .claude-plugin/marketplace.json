@@ -1,0 +1,17 @@
+{
+  "name": "uipath-ai-skills",
+  "owner": { "name": "marcelocruzrpa" },
+  "metadata": {
+    "description": "AI skills for generating production-quality UiPath Studio projects from natural language — 94 deterministic Python generators, 71 lint rules, and real Studio-exported templates.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "uipath-core",
+      "description": "Generates UiPath Studio XAML workflows, project scaffolds (sequence/dispatcher/performer), and expressions. Covers REFramework, Orchestrator, UI automation, Excel, email, PDF, HTTP, and more.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./uipath-core"]
+    }
+  ]
+}

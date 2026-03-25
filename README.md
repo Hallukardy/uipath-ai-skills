@@ -191,6 +191,15 @@ No other dependencies required - all core scripts use Python stdlib.
 <details>
 <summary><strong>Claude Code</strong></summary>
 
+**Via plugin marketplace (recommended):**
+
+```
+/plugin marketplace add marcelocruzrpa/uipath-ai-skills
+/plugin install uipath-core@uipath-ai-skills
+```
+
+**Manual (run from the repo directory):**
+
 ```bash
 cd uipath-ai-skills
 claude
