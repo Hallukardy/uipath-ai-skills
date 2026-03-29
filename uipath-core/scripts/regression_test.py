@@ -1118,6 +1118,51 @@ def test_add_variables_type_normalization() -> TestResult:
     return t
 
 
+def test_validate_snippet_rejects_non_xaml() -> TestResult:
+    """validate_snippet rejects file paths, empty strings, and non-XML input."""
+    t = TestResult("validate_snippet rejects non-XAML input")
+
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    try:
+        from _mf_snippet_checks import validate_snippet
+    except ImportError as e:
+        t.fail(f"Import error: {e}")
+        return t
+
+    # Should be REJECTED
+    reject_cases = [
+        ("Windows file path", "C:/Users/marce/Desktop/specs/snippet.json"),
+        ("Windows backslash path", "C:\\Users\\marce\\snippet.xaml"),
+        ("Unix file path", "/home/user/snippet.json"),
+        ("Relative file path", "./specs/dispatcher_init.json"),
+        ("Empty string", ""),
+        ("Whitespace only", "   "),
+        ("Plain text", "hello world"),
+        ("JSON object", '{"key": "value"}'),
+    ]
+    for label, inp in reject_cases:
+        result = validate_snippet(inp)
+        if result:
+            t.ok(f"Rejected: {label}")
+        else:
+            t.fail(f"Should reject '{label}' but accepted it")
+
+    # Should be ACCEPTED
+    accept_cases = [
+        ("Self-closing XAML", '<ui:LogMessage DisplayName="Log" />'),
+        ("InvokeWorkflowFile", '<ui:InvokeWorkflowFile WorkflowFileName="Test.xaml" />'),
+        ("XAML with path in attr", '<ui:InvokeWorkflowFile WorkflowFileName="C:/project/Test.xaml" />'),
+    ]
+    for label, inp in accept_cases:
+        result = validate_snippet(inp)
+        if not result:
+            t.ok(f"Accepted: {label}")
+        else:
+            t.fail(f"Should accept '{label}' but rejected: {result[0][:60]}")
+
+    return t
+
+
 def main():
     parser = argparse.ArgumentParser(description="UiPath skill regression test")
     parser.add_argument("--verbose", "-v", action="store_true", help="Show detailed output")
@@ -1155,6 +1200,7 @@ def main():
             test_scaffold_variant(tmpdir, "performer", "TestPerformer"),
             test_dispatcher_test_file_transformation(tmpdir),
             test_add_variables_type_normalization(),
+            test_validate_snippet_rejects_non_xaml(),
         ]
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)

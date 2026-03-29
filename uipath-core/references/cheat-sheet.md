@@ -277,6 +277,8 @@ For all 94 core generators + plugin extensions → `generation.md` § Activity G
 
 ⛔ **Rule G-3** — all XAML snippets passed to insert-invoke/replace-marker MUST come from generator output. Never hand-write, especially for FilterDataTable, AddQueueItem, BuildDataTable, NExtractData, or TryCatch.
 
+⛔ **Snippet argument = XAML content, never a file path.** `modify_framework.py` validates that the snippet is actual XML and rejects file paths, JSON, or other non-XAML text.
+
 **CLI commands** (use these — don't import Python functions directly):
 ```bash
 # Wire UiElement chain (adds arguments across Init→Main→Process→Close)

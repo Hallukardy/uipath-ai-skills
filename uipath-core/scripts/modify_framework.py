@@ -152,8 +152,9 @@ def cmd_insert_invoke(filepath: str, xaml_snippet: str) -> bool:
         print("ERROR: XAML snippet contains hallucinated patterns:", file=sys.stderr)
         for e in snippet_errors:
             print(f"  {e}", file=sys.stderr)
-        print("\n⛔ The snippet passed to insert-invoke MUST come from generator output "
-              "(gen_*() or generate_workflow.py). Do NOT hand-write XAML.", file=sys.stderr)
+        print("\n⛔ The snippet passed to insert-invoke MUST be actual XAML content from "
+              "generator output (gen_*() or generate_workflow.py). If you have a file "
+              "path, read the file first and pass its content.", file=sys.stderr)
         return False
 
     try:
@@ -202,8 +203,9 @@ def cmd_replace_marker(filepath: str, marker_name: str, xaml_snippet: str) -> bo
         print("ERROR: XAML snippet contains hallucinated patterns:", file=sys.stderr)
         for e in snippet_errors:
             print(f"  {e}", file=sys.stderr)
-        print("\n⛔ The snippet passed to replace-marker MUST come from generator output "
-              "(gen_*() or generate_workflow.py). Do NOT hand-write XAML.", file=sys.stderr)
+        print("\n⛔ The snippet passed to replace-marker MUST be actual XAML content from "
+              "generator output (gen_*() or generate_workflow.py). If you have a file "
+              "path, read the file first and pass its content.", file=sys.stderr)
         return False
 
     try:

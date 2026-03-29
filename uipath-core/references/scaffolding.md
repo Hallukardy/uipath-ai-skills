@@ -291,6 +291,7 @@ If Phase 2 is empty or missing, you are violating the skill rules.
         ⛔ **Framework namespace rule:** Framework files already declare `xmlns:sd="...System.Data.Common"`. When inserting DataTable references into framework files (GetTransactionData, Process), use `sd:DataTable` — NEVER add `xmlns:sd2`. All DataTable references across the entire project use `sd:DataTable`. The `sd2` prefix does not exist in generate_workflow.py output.
 - [ ] Phase 3c (Dispatcher only): **Wire GetTransactionData.xaml body** — replace SCAFFOLD.DISPATCHER_GET_ITEM marker.
         ⛔ Rule G-3 — generate snippet first, then wire. `modify_framework.py` rejects hallucinated patterns.
+        ⛔ The `<xaml_snippet>` argument must be **actual XAML content**, not a file path. Passing a path like `C:/path/to/snippet.json` inserts it as text → Studio crash: *"Collection does not support text content"*.
         1. Create JSON spec → `generate_workflow.py spec.json /tmp/gtd_body.xaml`
         2. Extract inner activities → pass to `modify_framework.py replace-marker <GTD_path> DISPATCHER_GET_ITEM '<generator_output>'`
 - [ ] Phase 4: Wire Main.xaml — orchestration only, InvokeWorkflowFile calls, log bookends **(A-7)**. Then validate Main.xaml immediately.

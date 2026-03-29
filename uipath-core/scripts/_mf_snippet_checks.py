@@ -13,6 +13,15 @@ Exports:
 import re
 import sys
 
+_PATH_RE = re.compile(
+    r'^(?:'
+    r'[A-Za-z]:[/\\]'           # Windows drive: C:/ or C:\
+    r'|[/\\]{1,2}[A-Za-z]'      # Unix absolute or UNC: /home, \\server
+    r'|\.{0,2}[/\\]'            # Relative: ./ ../ \
+    r').*\.(?:json|xaml|txt|xml|csv|xlsx?)$',
+    re.IGNORECASE
+)
+
 _SNIPPET_CHECKS: list[tuple[str, str, str]] = [
     # (regex_pattern, human_label, fix_hint)
 
@@ -71,6 +80,25 @@ def validate_snippet(xaml_snippet: str) -> list[str]:
 
     Returns a list of error strings (empty = OK).
     """
+    # ── Structural pre-checks (reject non-XAML input early) ──
+    stripped = xaml_snippet.strip()
+    if not stripped:
+        return ["REJECTED: Empty snippet. The XAML snippet argument must "
+                "contain actual XAML content, not an empty string."]
+
+    if '\n' not in stripped and '<' not in stripped:
+        if _PATH_RE.match(stripped):
+            return [f"REJECTED: File path detected instead of XAML content: "
+                    f"'{stripped}'. Read the file first, then pass its CONTENT "
+                    f"as the snippet argument. Do NOT pass the file path string."]
+
+    if not stripped.startswith('<'):
+        return [f"REJECTED: Snippet does not start with '<' — not valid XAML. "
+                f"Got: '{stripped[:80]}{'...' if len(stripped) > 80 else ''}'. "
+                f"The snippet must be actual XAML content "
+                f"(e.g., '<ui:InvokeWorkflowFile ...>')."]
+
+    # ── Hallucination pattern checks ──
     errors = []
     for pattern, label, fix in _SNIPPET_CHECKS:
         if re.search(pattern, xaml_snippet):
