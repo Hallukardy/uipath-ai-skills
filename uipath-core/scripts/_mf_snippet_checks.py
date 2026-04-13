@@ -75,6 +75,34 @@ _SNIPPET_CHECKS: list[tuple[str, str, str]] = [
 ]
 
 
+_TAG_RE = re.compile(r'<(/?)([A-Za-z_][\w.\-:]*)\b[^>]*?(/?)>', re.DOTALL)
+
+
+def _has_top_level_viewstate(snippet: str) -> bool:
+    """Return True if the snippet has <sap:WorkflowViewStateService.ViewState>
+    as a direct top-level child (depth 0).
+
+    Depth-aware: ViewState nested inside an inner <Sequence> that the snippet
+    itself carries is legal — it belongs to that inner Sequence, not to the
+    destination. Only a top-level ViewState would collide with the destination
+    Sequence's own ViewState property.
+    """
+    target = 'sap:WorkflowViewStateService.ViewState'
+    depth = 0
+    for m in _TAG_RE.finditer(snippet):
+        is_close = m.group(1) == '/'
+        tag_name = m.group(2)
+        is_self_closing = m.group(3) == '/'
+        if is_close:
+            depth -= 1
+            continue
+        if depth == 0 and tag_name == target:
+            return True
+        if not is_self_closing:
+            depth += 1
+    return False
+
+
 def validate_snippet(xaml_snippet: str) -> list[str]:
     """Validate an XAML snippet against known hallucination patterns.
 
@@ -97,6 +125,18 @@ def validate_snippet(xaml_snippet: str) -> list[str]:
                 f"Got: '{stripped[:80]}{'...' if len(stripped) > 80 else ''}'. "
                 f"The snippet must be actual XAML content "
                 f"(e.g., '<ui:InvokeWorkflowFile ...>')."]
+
+    if _has_top_level_viewstate(stripped):
+        return [
+            "REJECTED: snippet has a top-level "
+            "<sap:WorkflowViewStateService.ViewState> block. The destination "
+            "Sequence already owns its ViewState — causes "
+            "XamlDuplicateMemberException: 'ViewState' property has already "
+            "been set on 'Sequence'. Pass only the activity children, not a "
+            "Sequence body wholesale. Strip the leading ViewState dictionary "
+            "from the generator output before feeding it to insert-invoke / "
+            "replace-marker."
+        ]
 
     # ── Hallucination pattern checks ──
     errors = []
