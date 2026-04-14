@@ -6,6 +6,52 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.1.0] - 2026-04-14
+
+### Added
+
+**uipath-tasks plugin** (PR #11)
+- New plugin covering Form Tasks, External Tasks, and Task Management — for human-in-the-loop, system-in-the-loop, and recovery patterns
+- Form Task generators: `CreateFormTask`, `WaitForFormTaskAndResume`, `GetFormTasks`
+- External Task generators: `CreateExternalTask`, `WaitForExternalTaskAndResume`
+- Task Management generators: `CompleteTask`, `AssignTasks`
+- Form.io schema design — textfield, textarea, number, select, checkbox, datagrid (DataTable binding), htmlelement (Mustache templates), columns, button
+- FormData direction bindings — In (read-only), Out (user-entered), InOut (editable pre-populated, DataTable ↔ datagrid)
+- Shadow Task pattern for non-blocking multi-task orchestration
+- Lint rules — AC-10 (Form Create/Wait mismatch), AC-11 (FormData key mismatch), AC-12 (External Create/Wait mismatch), AC-26 (persistence activities must stay in Main.xaml)
+- Scaffold hook auto-enables `supportsPersistence: true` when `UiPath.Persistence.Activities` is in project dependencies
+- Battle test scenarios in `uipath-tasks/evals/tasks-battle-tests.md` with `ac` grader suite
+- Registered in `.claude-plugin/marketplace.json` for Claude Code marketplace install
+
+**Plugin loader extensions** (commits fe1454e, e598c5d)
+- New registration types in `plugin_loader.py`: `register_known_activities`, `register_key_activities`, `register_hallucination_pattern`, `register_common_packages`, `register_type_mapping`, `register_variable_prefix`, `register_battle_test_grader`, `register_test_spec`, `register_lint_test_fixture`
+- Plugin-registered namespaces and known activities are merged into `validate_xaml`'s `PREFIX_TO_XMLNS` and `NEEDS_IDREF` tables at load time
+- xmlns validation and namespace detection extended to recognize plugin-registered prefixes
+
+**Documentation**
+- Contributors section in README with auto-generated avatar grid (commit 500ed80)
+- README rewritten — qualitative descriptions instead of hardcoded counts; fixed CLI paths (`uipath-core/scripts/...`); new Plugin Architecture and Plugin Development sections; complete walkthrough video; "Using the skill" guide
+
+### Changed
+
+- Action Center-specific code moved out of `uipath-core` into the `uipath-tasks` plugin (commit 0dca38c)
+- `uipath-action-center` renamed to `uipath-tasks` with scope expanded to include external tasks (commit 41ebaf0)
+
+### Fixed
+
+- `validate_snippet()` now rejects file paths and non-XAML input that previously could slip through (PR #4)
+- `modify_framework` now rejects snippets containing top-level `ViewState` that produced broken framework wiring (PR #6)
+- Generator output prevents Studio BC36915 compile error on `AddDataRow` with mixed-type rows (PR #10, commit 4bc31fd)
+- Battle-test cleanup — xmlns pruning, plugin variable prefixes, HintSize emission on plugin generators, Assign type inference (PR #10, commit 37c6296)
+- HITL battle test findings in `uipath-tasks` (commit 26d6e7c, issue #7)
+- Critical issues found in version-band review (PR #2)
+
+### Internal
+
+- Local OMC state directory added to `.gitignore` (commit 730c11c)
+
+---
+
 ## [1.0.0] - 2026-03-25
 
 Initial release of **uipath-core** — the foundational skill for generating production-quality UiPath Studio projects from natural language.
@@ -13,31 +59,31 @@ Initial release of **uipath-core** — the foundational skill for generating pro
 ### Added
 
 **XAML Generation**
-- 94 deterministic Python generators across 13 categories (UI automation, control flow, data operations, error handling, integrations, orchestrator, file system, HTTP/JSON, invoke, logging, dialogs, navigation, application card)
+- Deterministic Python generators across UI automation, control flow, data operations, error handling, integrations, orchestrator, file system, HTTP/JSON, invoke, logging, dialogs, navigation, and application card
 - JSON spec intermediate format — LLMs write JSON, generators produce structurally correct XAML
-- All generators anchored to real UiPath Studio 24.10 exports
+- Generators anchored to real UiPath Studio 24.10 exports
 - Enum validation, namespace locking, and child element enforcement on every generated activity
 
 **Validation Pipeline**
-- 71 lint rules targeting LLM hallucination patterns in UiPath XAML
-- Severity tiers: ERROR (Studio crash), WARN (runtime failure), INFO (best practice)
+- Lint rules targeting LLM hallucination patterns in UiPath XAML
+- Severity tiers — ERROR (Studio crash), WARN (runtime failure), INFO (best practice)
 - Auto-fix support for common issues (`--fix` flag)
 - Catches hallucinated properties, invalid enum values, missing xmlns declarations, placeholder paths, wrong child elements
 
 **Project Scaffolding**
-- Three project variants: simple sequence, REFramework dispatcher, REFramework performer
+- Three project variants — simple sequence, REFramework dispatcher, REFramework performer
 - Config.xlsx generation with three-sheet structure (Settings, Constants, Assets)
 - Customized GetTransactionData for dispatcher (DataTable row indexing) vs performer (queue item)
 
 **Framework Wiring**
 - `modify_framework.py` — insert InvokeWorkflowFile calls, inject variables, replace scaffold markers, wire UiElement argument chains, replace placeholder expressions
 - `generate_object_repository.py` — build `.objects/` tree from captured selectors
-- `resolve_nuget.py` — resolve real NuGet package versions against UiPath feed, add/update deps in project.json
+- `resolve_nuget.py` — resolve real NuGet package versions against UiPath feed, add/update deps in `project.json`
 - `config_xlsx_manager.py` — add, list, and validate Config.xlsx keys against XAML references
 
 **UI Inspection**
 - Desktop inspection via PowerShell (`inspect-ui-tree.ps1`) — UIA tree capture for WPF, Win32, WinForms, DirectUI, UWP
-- Web inspection workflow via Playwright MCP — 5-step process with login gate safety
+- Web inspection workflow via Playwright MCP — multi-step process with login gate safety
 - Playwright-to-UiPath selector mapping
 
 **Plugin Architecture**
@@ -45,10 +91,8 @@ Initial release of **uipath-core** — the foundational skill for generating pro
 - Auto-discovery of sibling skill directories with `extensions/__init__.py`
 
 **Reference Documentation**
-- 24 reference documents covering XAML structure, expressions, selectors, decomposition, scaffolding, generation, UI inspection, and lint rules
+- Reference documents covering XAML structure, expressions, selectors, decomposition, scaffolding, generation, UI inspection, and lint rules
 
 **Test Infrastructure**
-- 81 lint test cases
-- 18 regression tests
-- Generator snapshot tests
+- Lint test suite, regression suite, generator snapshot tests
 - Semi-automated battle test grading (`grade_battle_test.py`)
