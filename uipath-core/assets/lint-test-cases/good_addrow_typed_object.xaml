@@ -1,0 +1,9 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="TestGoodAddRowTypedObject" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Sequence DisplayName="Test" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="sd:DataTable" Name="dt_LineItems" />
+    </Sequence.Variables>
+    <!-- Properly wrapped as New Object() so VB.NET knows the element type. -->
+    <ui:AddDataRow DataRow="{x:Null}" ArrayRow="[New Object() {&quot;ACM-314&quot;, &quot;On-site installation&quot;, 4, 400.00}]" DataTable="[dt_LineItems]" DisplayName="Add Data Row" sap:VirtualizedContainerService.HintSize="452,221" sap2010:WorkflowViewState.IdRef="AddDataRow_1" />
+  </Sequence>
+</Activity>

@@ -229,6 +229,9 @@ def gen_add_data_row(datatable_variable, array_values, id_ref,
     - Using element syntax for ArrayRow (must be attribute)
     - Missing DataRow="{x:Null}" when using ArrayRow
     - Wrong escaping in array literal
+    - Bare VB array literal {"a", 4, 4.0} — Studio rejects mixed-type rows
+      with compile error BC36915 ("cannot infer element type"). Wrapped
+      here with New Object() so heterogeneous rows compile.
 
     Args:
         datatable_variable: Variable name (no brackets), e.g. "dt_Output"
@@ -237,7 +240,14 @@ def gen_add_data_row(datatable_variable, array_values, id_ref,
     """
     dn = _escape_xml_attr(display_name)
     i = indent
-    arr = _escape_xml_attr(array_values)
+
+    # Normalise bare VB array literals to New Object() {...} so Studio doesn't
+    # throw BC36915 on heterogeneous row values. Leaves properly-typed
+    # expressions like `New String() {...}` or variable references alone.
+    raw = (array_values or "").strip()
+    if raw.startswith("{") and not raw.lower().startswith("new "):
+        raw = f"New Object() {raw}"
+    arr = _escape_xml_attr(raw)
 
     return f'{i}<ui:AddDataRow DataRow="{{x:Null}}" ArrayRow="[{arr}]" DataTable="[{datatable_variable}]" DisplayName="{dn}" sap2010:WorkflowViewState.IdRef="AddDataRow_{id_ref}" />'
 
