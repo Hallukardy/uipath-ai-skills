@@ -8,9 +8,7 @@
   xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
   xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common"
   xmlns:ui="http://schemas.uipath.com/workflow/activities"
-  xmlns:upae="clr-namespace:UiPath.Persistence.Activities.ExternalTask;assembly=UiPath.Persistence.Activities"
   xmlns:upaf="clr-namespace:UiPath.Persistence.Activities.FormTask;assembly=UiPath.Persistence.Activities"
-  xmlns:upat="clr-namespace:UiPath.Persistence.Activities.Tasks;assembly=UiPath.Persistence.Activities"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <VisualBasic.Settings>
     <x:Null />
@@ -27,8 +25,6 @@
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
       <x:String>UiPath.Persistence.Activities.FormTask</x:String>
-      <x:String>UiPath.Persistence.Activities.ExternalTask</x:String>
-      <x:String>UiPath.Persistence.Activities.Tasks</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -51,9 +47,9 @@
           <Variable x:TypeArguments="x:String" Name="strTaskAction" />
         </Sequence.Variables>
             <ui:LogMessage DisplayName="Log Message Start Test_Tasks" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[START] Test_Tasks&quot;]" />
-            <upaf:CreateFormTask BucketFolderPath="{x:Null}" BulkFormLayout="{x:Null}" DynamicFormPath="{x:Null}" ExternalTag="{x:Null}" Labels="{x:Null}" TimeoutMs="{x:Null}" BucketName="{x:Null}" BulkFormLayoutGuid="UUID_001" DisplayName="Create Form Task" EnableBulkEdit="False" EnableDynamicForms="True" EnableV2="False" FormLayout="{}{&quot;components&quot;:[{&quot;type&quot;:&quot;textfield&quot;,&quot;key&quot;:&quot;invoiceId&quot;,&quot;label&quot;:&quot;Invoice ID&quot;}]}" FormLayoutGuid="UUID_002" GenerateInputFields="True" TaskCatalog="{x:Null}" TaskOutput="[fdtTaskData]" TaskPriority="Medium" TaskTitle="[&quot;Review Invoice&quot;]" sap2010:WorkflowViewState.IdRef="CreateFormTask_1">
+            <upaf:CreateFormTask BucketFolderPath="{x:Null}" BulkFormLayout="{x:Null}" DynamicFormPath="{x:Null}" ExternalTag="{x:Null}" Labels="{x:Null}" TimeoutMs="{x:Null}" BucketName="{x:Null}" BulkFormLayoutGuid="UUID_001" DisplayName="Create Form Task" EnableBulkEdit="False" EnableDynamicForms="True" EnableV2="False" FormLayout="{}{&quot;components&quot;:[{&quot;type&quot;:&quot;textfield&quot;,&quot;key&quot;:&quot;invoiceId&quot;,&quot;label&quot;:&quot;Invoice ID&quot;}]}" FormLayoutGuid="UUID_002" GenerateInputFields="True" TaskCatalog="{x:Null}" TaskOutput="[fdtTaskData]" TaskPriority="Medium" TaskTitle="[&quot;Review Invoice&quot;]" sap:VirtualizedContainerService.HintSize="600,300" sap2010:WorkflowViewState.IdRef="CreateFormTask_1">
             </upaf:CreateFormTask>
-            <upaf:WaitForFormTaskAndResume StatusMessage="{x:Null}" TaskAction="[strTaskAction]" TaskOutput="{x:Null}" TimeoutMs="{x:Null}" WaitItemDataObject="{x:Null}" DisplayName="Wait for Form Task and Resume" TaskInput="[fdtTaskData]" sap2010:WorkflowViewState.IdRef="WaitForFormTask_1" />
+            <upaf:WaitForFormTaskAndResume StatusMessage="{x:Null}" TaskAction="[strTaskAction]" TaskOutput="{x:Null}" TimeoutMs="{x:Null}" WaitItemDataObject="{x:Null}" DisplayName="Wait for Form Task and Resume" TaskInput="[fdtTaskData]" sap:VirtualizedContainerService.HintSize="400,100" sap2010:WorkflowViewState.IdRef="WaitForFormTask_1" />
             <ui:LogMessage DisplayName="Log Message End Test_Tasks" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[END] Test_Tasks&quot;]" />
   </Sequence>
 </Activity>

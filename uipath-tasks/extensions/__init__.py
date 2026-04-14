@@ -24,6 +24,7 @@ from plugin_loader import (
     register_test_spec,
     register_lint_test_fixture,
     register_type_mapping,
+    register_variable_prefix,
 )
 
 REQUIRED_API_VERSION = 1
@@ -79,6 +80,14 @@ register_type_mapping("FormTaskData", "upaf:FormTaskData")
 register_type_mapping("ExternalTaskData", "upae:ExternalTaskData")
 register_type_mapping("List(FormTaskData)", "scg:List(upaf:FormTaskData)")
 register_type_mapping("List(ExternalTaskData)", "scg:List(upae:ExternalTaskData)")
+
+# --- Variable-name prefixes for plugin types (consumed by lint rule 16) ---
+# Teaches `lint_naming_conventions` that variables typed as FormTaskData /
+# ExternalTaskData should start with `fdt` / `edt` respectively. Without
+# these, variables of plugin-native types get flagged as missing a type
+# prefix because the core list doesn't know about them.
+register_variable_prefix("upaf:FormTaskData", "fdt")
+register_variable_prefix("upae:ExternalTaskData", "edt")
 
 # --- Known activities (IdRef required) ---
 register_known_activities(

@@ -126,6 +126,7 @@ def gen_create_form_task(task_title_expr, task_output_variable, form_layout_json
         f'TaskOutput="[{task_output_variable}]" '
         f'TaskPriority="{task_priority}" '
         f'TaskTitle="[{_escape_vb_expr(task_title_expr)}]" '
+        f'sap:VirtualizedContainerService.HintSize="600,300" '
         f'sap2010:WorkflowViewState.IdRef="{id_ref}">'
         f'{form_data_block}\n'
         f'{i}</upaf:CreateFormTask>'
@@ -171,6 +172,7 @@ def gen_wait_for_form_task(task_input_variable, id_ref,
         f'TimeoutMs="{{x:Null}}" WaitItemDataObject="{{x:Null}}" '
         f'DisplayName="{dn}" '
         f'TaskInput="[{task_input_variable}]" '
+        f'sap:VirtualizedContainerService.HintSize="400,100" '
         f'sap2010:WorkflowViewState.IdRef="{id_ref}" />'
     )
 
@@ -260,6 +262,7 @@ def gen_create_external_task(task_title_expr, task_output_variable, id_ref,
         f'{catalog} '
         f'TimeoutMs="{{x:Null}}" '
         f'DisplayName="{dn}" '
+        f'sap:VirtualizedContainerService.HintSize="600,300" '
         f'sap2010:WorkflowViewState.IdRef="{id_ref}" '
         f'TaskOutput="[{task_output_variable}]" '
         f'TaskPriority="{task_priority}" '
@@ -309,6 +312,7 @@ def gen_wait_for_external_task(task_input_variable, id_ref,
         f'TimeoutMs="{{x:Null}}" WaitItemDataObject="{{x:Null}}" '
         f'DisplayName="{dn}" '
         f'TaskInput="[{task_input_variable}]" '
+        f'sap:VirtualizedContainerService.HintSize="400,100" '
         f'sap2010:WorkflowViewState.IdRef="{id_ref}" />'
     )
 
@@ -365,6 +369,7 @@ def gen_get_form_tasks(output_variable, id_ref,
         f'{top} '
         f'DisplayName="{dn}" '
         f'{filt} '
+        f'sap:VirtualizedContainerService.HintSize="400,200" '
         f'sap2010:WorkflowViewState.IdRef="{id_ref}" '
         f'TaskObjects="[{output_variable}]" />'
     )
@@ -401,6 +406,7 @@ def gen_complete_task(task_id_expr, id_ref,
         f'{i}<upat:CompleteTask Data="{{x:Null}}" TimeoutMs="{{x:Null}}" '
         f'Action="{_escape_xml_attr(action_expr)}" '
         f'DisplayName="{dn}" '
+        f'sap:VirtualizedContainerService.HintSize="400,200" '
         f'sap2010:WorkflowViewState.IdRef="{id_ref}" '
         f'TaskId="[{_escape_vb_expr(task_id_expr)}]" />'
     )
@@ -467,6 +473,7 @@ def gen_assign_tasks(task_id_expr, id_ref,
         f'UserId="{{x:Null}}" '
         f'DisplayName="{dn}" '
         f'EnableMultipleAssignments="False" '
+        f'sap:VirtualizedContainerService.HintSize="400,200" '
         f'sap2010:WorkflowViewState.IdRef="{id_ref}" '
         f'MigrateV144="False" '
         f'TaskAssignmentType="Assign" '
