@@ -55,6 +55,15 @@ HINT_SIZES = {
     "AppendRange": "450,139",
     "BulkAddQueueItems": "450,229",
     "RemoveDataColumn": "450,223",
+    # Loop / branching containers — added so every activity carries a
+    # HintSize and Studio doesn't have to auto-layout on first open. Sizes
+    # mirror existing If / ForEachRow conventions (not pixel-perfect, just
+    # enough to keep the `HintSizes for IdRefs` ratio lint from complaining).
+    "IfElseIfV2": "400,200",
+    "ForEach": "400,200",
+    "ForEachFileX": "450,200",
+    "While": "400,200",
+    "DoWhile": "400,200",
 }
 
 

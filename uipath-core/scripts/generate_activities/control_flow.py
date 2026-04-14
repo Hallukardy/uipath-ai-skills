@@ -107,7 +107,7 @@ def gen_if_else_if(conditions, id_ref, else_content="",
 {i3}</Sequence>
 {i2}</ui:IfElseIfV2.Else>"""
 
-    return f"""{i}<ui:IfElseIfV2 Condition="[{primary_cond}]" DisplayName="{dn}" sap2010:WorkflowViewState.IdRef="IfElseIfV2_{id_ref}">
+    return f"""{i}<ui:IfElseIfV2 Condition="[{primary_cond}]" DisplayName="{dn}" {_hs("IfElseIfV2")} sap2010:WorkflowViewState.IdRef="IfElseIfV2_{id_ref}">
 {i2}<ui:IfElseIfV2.Then>
 {i3}<Sequence DisplayName="Then" sap2010:WorkflowViewState.IdRef="Sequence_Then_{id_ref}">
 {primary_then}
@@ -188,7 +188,7 @@ def gen_foreach(collection_variable, id_ref, body_content, body_sequence_idref,
     i, i2, i3, i4, i5, i6 = (indent, indent+"  ", indent+"    ",
                                indent+"      ", indent+"        ", indent+"          ")
 
-    return f"""{i}<ui:ForEach x:TypeArguments="{item_type}" CurrentIndex="{{x:Null}}" DisplayName="{dn}" Values="[{collection_variable}]" sap2010:WorkflowViewState.IdRef="ForEach_{id_ref}">
+    return f"""{i}<ui:ForEach x:TypeArguments="{item_type}" CurrentIndex="{{x:Null}}" DisplayName="{dn}" {_hs("ForEach")} Values="[{collection_variable}]" sap2010:WorkflowViewState.IdRef="ForEach_{id_ref}">
 {i2}<ui:ForEach.Body>
 {i3}<ActivityAction x:TypeArguments="{item_type}">
 {i4}<ActivityAction.Argument>
@@ -266,7 +266,7 @@ def gen_foreach_file(folder_variable, id_ref, body_content, body_sequence_idref,
     i, i2, i3, i4, i5, i6 = (indent, indent+"  ", indent+"    ",
                                indent+"      ", indent+"        ", indent+"          ")
 
-    return f"""{i}<ui:ForEachFileX DisplayName="{dn}" Folder="[{folder_variable}]" sap2010:WorkflowViewState.IdRef="ForEachFileX_{id_ref}" IncludeSubDirectories="{include_subdirs}" OrderBy="{order_by}">
+    return f"""{i}<ui:ForEachFileX DisplayName="{dn}" Folder="[{folder_variable}]" {_hs("ForEachFileX")} sap2010:WorkflowViewState.IdRef="ForEachFileX_{id_ref}" IncludeSubDirectories="{include_subdirs}" OrderBy="{order_by}">
 {i2}<ui:ForEachFileX.Body>
 {i3}<ActivityAction x:TypeArguments="si:FileInfo, x:Int32">
 {i4}<ActivityAction.Argument1>
@@ -295,7 +295,7 @@ def gen_while(condition_expression, id_ref, body_content, body_sequence_idref,
     dn = _escape_xml_attr(display_name)
     i, i2, i3 = indent, indent+"  ", indent+"    "
 
-    return f"""{i}<While Condition="[{_escape_xml_attr(condition_expression)}]" DisplayName="{dn}" sap2010:WorkflowViewState.IdRef="While_{id_ref}">
+    return f"""{i}<While Condition="[{_escape_xml_attr(condition_expression)}]" DisplayName="{dn}" {_hs("While")} sap2010:WorkflowViewState.IdRef="While_{id_ref}">
 {i2}<Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="{body_sequence_idref}">
 {i3}{_viewstate_block(body_sequence_idref)}
 {body_content}
@@ -313,7 +313,7 @@ def gen_do_while(condition_expression, id_ref, body_content, body_sequence_idref
     dn = _escape_xml_attr(display_name)
     i, i2, i3 = indent, indent+"  ", indent+"    "
 
-    return f"""{i}<DoWhile Condition="[{_escape_xml_attr(condition_expression)}]" DisplayName="{dn}" sap2010:WorkflowViewState.IdRef="DoWhile_{id_ref}">
+    return f"""{i}<DoWhile Condition="[{_escape_xml_attr(condition_expression)}]" DisplayName="{dn}" {_hs("DoWhile")} sap2010:WorkflowViewState.IdRef="DoWhile_{id_ref}">
 {i2}<Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="{body_sequence_idref}">
 {i3}{_viewstate_block(body_sequence_idref)}
 {body_content}

@@ -42,13 +42,45 @@ def lint_duplicate_variables(ctx: FileContext, result: ValidationResult):
         result.ok(f"{len(var_names)} variables, no duplicates")
 
 
+_RE_VARIABLE_DECL_WITH_TYPE = re.compile(
+    r'<Variable\s+x:TypeArguments="([^"]*)"\s+Name="([^"]*)"'
+)
+
+
 @lint_rule(16, golden_suppressed=True)
 def lint_naming_conventions(ctx: FileContext, result: ValidationResult):
-    """Lint 16: Variable and argument naming conventions."""
+    """Lint 16: Variable and argument naming conventions.
+
+    Plugins can extend the convention via `plugin_loader.register_variable_prefix(xaml_type, prefix)`:
+    a variable whose XAML type matches a plugin-registered mapping must start
+    with the registered prefix (e.g. `upaf:FormTaskData` → `fdt`). Other
+    variables fall back to the core `_VAR_PREFIXES` list. This lets plugin
+    types travel with their own naming convention without modifying core.
+    """
     try:
         content = ctx.active_content
     except Exception:
         return
+
+    # Pull plugin-registered prefixes once per file (cheap — small dict).
+    try:
+        from plugin_loader import get_variable_prefixes
+        plugin_prefixes = get_variable_prefixes()  # xaml_type -> prefix
+    except Exception:
+        plugin_prefixes = {}
+
+    # name -> XAML type, for variables whose declaration carries an explicit
+    # x:TypeArguments. Only used when plugin_prefixes has something to match.
+    name_to_type = {}
+    if plugin_prefixes:
+        for xaml_type, var_name in _RE_VARIABLE_DECL_WITH_TYPE.findall(content):
+            name_to_type[var_name] = xaml_type
+
+    # Widen the fallback prefix list with plugin values so a plugin-prefixed
+    # variable isn't flagged just because the core list doesn't know about
+    # "fdt" / "edt". The type-specific check below is still the authoritative
+    # signal; this just keeps the fallback honest.
+    extended_var_prefixes = tuple(_VAR_PREFIXES) + tuple(plugin_prefixes.values())
 
     # Check variable names
     var_names = _RE_VARIABLE_DECL.findall(content)
@@ -66,7 +98,13 @@ def lint_naming_conventions(ctx: FileContext, result: ValidationResult):
     for name in var_names:
         if name in skip_vars:
             continue
-        if not any(name.startswith(p) for p in _VAR_PREFIXES):
+        xaml_type = name_to_type.get(name)
+        if xaml_type and xaml_type in plugin_prefixes:
+            # Plugin type: require the specific registered prefix.
+            if not name.startswith(plugin_prefixes[xaml_type]):
+                bad_vars.append(name)
+            continue
+        if not any(name.startswith(p) for p in extended_var_prefixes):
             bad_vars.append(name)
     if bad_vars:
         result.warn(
@@ -378,12 +416,17 @@ def lint_undeclared_variables(ctx: FileContext, result: ValidationResult):
 
 @lint_rule(113)
 def lint_assign_operation_type_mismatch(ctx: FileContext, result: ValidationResult):
-    """Lint 113: AssignOperation.To type doesn't match declared variable type.
+    """Lint 113: Assign / AssignOperation TypeArguments don't match the declared variable type.
 
-    MultipleAssign emits <OutArgument x:TypeArguments="TYPE">[varName]</OutArgument>
-    for each assignment's .To element. If the TypeArguments doesn't match the
-    declared variable type, Studio raises BC30512 (Option Strict On disallows
-    implicit conversions).
+    Both MultipleAssign (`<ui:AssignOperation.To>`) and plain Assign
+    (`<Assign.To>`) emit `<OutArgument x:TypeArguments="TYPE">[varName]`.
+    If TypeArguments doesn't match the declared variable type, Studio raises
+    BC30512 / BC30311 ("Option Strict On disallows implicit conversions" or
+    "Value of type X cannot be converted to Y"). Common symptom: a spec
+    emitted a plain `assign` with the default `value_type="x:String"` but
+    the target variable is a DataTable, Int32, or similar — the generator
+    should auto-enrich from the variable declaration (see `_VAR_TYPE_LOOKUP`
+    in `generate_workflow.py`), and this rule catches the residual cases.
     """
     content = ctx.active_content
 
@@ -404,20 +447,33 @@ def lint_assign_operation_type_mismatch(ctx: FileContext, result: ValidationResu
     if not var_types:
         return
 
-    # Find AssignOperation.To blocks
+    def _report(kind, var_name, assign_type, declared_type):
+        result.error(
+            f"[lint 113] {kind} for '{var_name}' uses "
+            f"x:TypeArguments=\"{assign_type}\" but variable is declared as "
+            f"\"{declared_type}\". This causes BC30311/BC30512 (Option Strict "
+            f"On disallows implicit conversions). Fix: use the correct type "
+            f"in the assignment."
+        )
+
+    # MultipleAssign wrapper (<ui:AssignOperation.To>)
     for m in re.finditer(
         r'<ui:AssignOperation\.To>\s*'
         r'<OutArgument\s+x:TypeArguments="([^"]*)"\s*>\[([^\]]*)\]</OutArgument>',
         content,
     ):
-        assign_type = m.group(1)
-        var_name = m.group(2)
+        assign_type, var_name = m.group(1), m.group(2)
         declared_type = var_types.get(var_name)
         if declared_type and declared_type != assign_type:
-            result.error(
-                f"[lint 113] AssignOperation for '{var_name}' uses "
-                f"x:TypeArguments=\"{assign_type}\" but variable is declared as "
-                f"\"{declared_type}\". This causes BC30512 (Option Strict On "
-                f"disallows implicit conversions). Fix: use the correct type "
-                f"in the assignment."
-            )
+            _report("AssignOperation", var_name, assign_type, declared_type)
+
+    # Plain Assign (<Assign.To>) — same mismatch, different wrapper.
+    for m in re.finditer(
+        r'<Assign\.To>\s*'
+        r'<OutArgument\s+x:TypeArguments="([^"]*)"\s*>\[([^\]]*)\]</OutArgument>',
+        content,
+    ):
+        assign_type, var_name = m.group(1), m.group(2)
+        declared_type = var_types.get(var_name)
+        if declared_type and declared_type != assign_type:
+            _report("Assign", var_name, assign_type, declared_type)

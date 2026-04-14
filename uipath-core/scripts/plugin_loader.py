@@ -37,6 +37,7 @@ _scaffold_hooks = []        # list of callables
 _extra_namespaces = {}      # prefix -> xmlns URI
 _extra_known_activities = set()  # activity local names for IdRef checks
 _extra_key_activities = []  # prefixed activity names for DisplayName checks
+_variable_prefixes = {}     # xaml_type -> expected variable-name prefix (e.g. "upaf:FormTaskData" -> "fdt")
 _loaded = False
 _load_failures = []  # list of (skill_name, error_str) tuples
 
@@ -99,6 +100,26 @@ def register_key_activities(*names):
     _extra_key_activities.extend(names)
 
 
+def register_variable_prefix(xaml_type, prefix):
+    """Register an expected variable-name prefix for a plugin XAML type.
+
+    The variable-naming lint rule (`lint_naming_conventions`, rule 16) checks
+    that each declared variable starts with a recognised type prefix (str,
+    int, dt_, list_, etc.). Plugin types like `upaf:FormTaskData` aren't in
+    the core prefix table — registering one here teaches the rule that
+    variables of that type should start with the given prefix, and widens
+    the fallback prefix list so other variables are still accepted.
+
+    Args:
+        xaml_type: Full XAML type with namespace prefix, matching the value
+                   emitted in `<Variable x:TypeArguments="...">`
+                   (e.g. "upaf:FormTaskData", "scg:List(upaf:FormTaskData)")
+        prefix: Expected variable-name prefix string (e.g. "fdt", "edt").
+                Case-sensitive substring used with `startswith`.
+    """
+    _variable_prefixes[xaml_type] = prefix
+
+
 # ---------------------------------------------------------------------------
 # Query API (called by core scripts)
 # ---------------------------------------------------------------------------
@@ -141,6 +162,11 @@ def get_extra_key_activities():
 def get_ui_generators():
     """Return set of gen names that require uix: namespace (UI activities)."""
     return set(_ui_generators)
+
+
+def get_variable_prefixes():
+    """Return dict of xaml_type -> variable-name prefix from plugins."""
+    return dict(_variable_prefixes)
 
 
 # ---------------------------------------------------------------------------
@@ -212,6 +238,7 @@ def load_plugins():
         snap_ns = dict(_extra_namespaces)
         snap_known = set(_extra_known_activities)
         snap_key = list(_extra_key_activities)
+        snap_variable_prefixes = dict(_variable_prefixes)
 
         def _restore_registries():
             """Roll back all registries to pre-load snapshot."""
@@ -223,6 +250,7 @@ def load_plugins():
             _extra_namespaces.clear(); _extra_namespaces.update(snap_ns)
             _extra_known_activities.clear(); _extra_known_activities.update(snap_known)
             _extra_key_activities.clear(); _extra_key_activities.extend(snap_key)
+            _variable_prefixes.clear(); _variable_prefixes.update(snap_variable_prefixes)
 
         try:
             # Register the package first so relative imports resolve
