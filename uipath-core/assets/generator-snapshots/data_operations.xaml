@@ -85,10 +85,10 @@
 </sap:WorkflowViewStateService.ViewState>
                 <Assign DisplayName="Assign - intCount" sap:VirtualizedContainerService.HintSize="600,175" sap2010:WorkflowViewState.IdRef="Assign_1">
                   <Assign.To>
-                    <OutArgument x:TypeArguments="x:String">[intCount]</OutArgument>
+                    <OutArgument x:TypeArguments="x:Int32">[intCount]</OutArgument>
                   </Assign.To>
                   <Assign.Value>
-                    <InArgument x:TypeArguments="x:String">[intCount + 1]</InArgument>
+                    <InArgument x:TypeArguments="x:Int32">[intCount + 1]</InArgument>
                   </Assign.Value>
                 </Assign>
                 <ui:LogMessage DisplayName="Log Message Processing row  &amp; intCount.ToString" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Trace" Message="[&quot;Processing row &quot; &amp; intCount.ToString]" />

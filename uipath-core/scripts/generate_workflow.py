@@ -91,6 +91,7 @@ import functools
 import inspect
 import json
 import os
+import re
 import sys
 import uuid
 from pathlib import Path
@@ -721,6 +722,18 @@ def _generate_activity(spec: dict, scope_id: str, counter: _IdRefCounter,
                 enriched.append(assign)
         args = dict(args, assignments=enriched)
 
+    # --- Auto-enrich plain assign value_type from the target variable ---
+    # Mirrors the multiple_assign block above. Prevents Studio BC30311
+    # ("Value of type X cannot be converted to String") when a spec emits an
+    # Assign without an explicit value_type and the target variable is not a
+    # String (e.g. DataTable, Int32, FormTaskData). Leaves specs that
+    # explicitly requested a non-default value_type alone.
+    if gen == "assign" and _VAR_TYPE_LOOKUP and "to_variable" in args:
+        to_var = args["to_variable"]
+        inferred_type = _VAR_TYPE_LOOKUP.get(to_var)
+        if inferred_type and args.get("value_type", "x:String") == "x:String":
+            args = dict(args, value_type=inferred_type)
+
     # --- Auto-wire Object Repository references ---
     if _OBJ_REPO_LOOKUP and "obj_repo" not in args:
         selector = args.get("selector", "")
@@ -847,13 +860,11 @@ def generate_workflow(spec: dict) -> str:
     has_http = bool(all_gen_names & http_gens)
     type_map = _type_map()
 
-    # Collect plugin namespaces when plugin generators appear in the spec
-    plugin_gens = get_generators()
-    used_plugin_gens = all_gen_names & set(plugin_gens.keys())
-    extra_ns = get_extra_namespaces() if used_plugin_gens else None
-
-    namespaces = _build_namespaces(has_ui, has_datatable, has_securestring, has_http,
-                                    extra_namespaces=extra_ns)
+    # Candidate plugin namespaces. Which ones actually get declared in the
+    # header is determined *after* the body is built so we can filter out
+    # prefixes whose activities or types never appear — no more unused xmlns
+    # lines in the emitted XAML.
+    plugin_ns_map = get_extra_namespaces()
 
     # Build x:Members
     args_xml = _build_arguments_xml(arguments, type_map, all_xmlns_prefixes=_ALL_XMLNS_PREFIXES)
@@ -878,6 +889,26 @@ def generate_workflow(spec: dict) -> str:
             .replace("sd:Image", "sdd:Image")
             .replace("sd1:Rectangle", "sdd1:Rectangle")
         )
+
+    # Filter plugin_ns_map down to prefixes that actually appear somewhere in
+    # the emitted body, variables, or arguments. A prefix like `upaf:` shows
+    # up as an element start (`<upaf:CreateFormTask`), a type reference
+    # (`x:TypeArguments="upaf:FormTaskData"`), an expression-bracketed type
+    # (`[upaf:FormTaskData]`), or in the value of an xmlns-qualified
+    # variable/argument declaration — the single regex below catches all of
+    # those entry points by anchoring on a preceding `<`, `:`, `[`, `"`, or
+    # whitespace character.
+    extra_ns = None
+    if plugin_ns_map:
+        search_haystack = body + "\n" + (vars_xml or "") + "\n" + (args_xml or "")
+        used_plugin_ns = {
+            p: u for p, u in plugin_ns_map.items()
+            if re.search(rf'(?:[<:\["\s]){re.escape(p)}:', search_haystack)
+        }
+        extra_ns = used_plugin_ns or None
+
+    namespaces = _build_namespaces(has_ui, has_datatable, has_securestring, has_http,
+                                    extra_namespaces=extra_ns)
 
     # ViewState for root sequence
     seq_idref = counter.next("Sequence")

@@ -705,3 +705,41 @@ def lint_hardcoded_user_path(ctx: FileContext, result: ValidationResult):
             f'FilePath="[in_Config(\\"AppPath\\").ToString]".'
         )
 
+
+# Matches a bare VB array literal `{...}` inside an expression-bracketed
+# attribute value (ArrayRow / Values / Collection). The negative lookahead
+# skips the correct form, `New <Type>() {...}`, so only un-typed literals
+# are flagged. VB.NET has no dict/set literal syntax, so there is no
+# false-positive surface for standalone `{…}` in an expression.
+_RE_BARE_VB_ARRAY_LITERAL = re.compile(
+    r'(ArrayRow|Values|Collection)="\[\s*(?!New\s+\w+\s*\()\{[^}]*\}\s*\]"'
+)
+
+
+@lint_rule(114)
+def lint_bare_vb_array_literal(ctx: FileContext, result: ValidationResult):
+    """Lint 114: Bare VB array literal `{...}` in an expression attribute.
+
+    A raw `{"a", "b", 4, 4.0}` in an `ArrayRow` / `Values` / `Collection`
+    expression has mixed element types and VB.NET refuses to infer a common
+    one — Studio rejects the XAML with compile error BC36915 ("Cannot infer
+    an element type because more than one type is possible"). The type-safe
+    form is `New Object() {...}` or a narrower typed array like
+    `New String() {...}`.
+
+    Catches what the generator didn't — a defence-in-depth check for
+    generators that still hand-build bare array literals.
+    """
+    content = ctx.active_content
+
+    hits = _RE_BARE_VB_ARRAY_LITERAL.findall(content)
+    if hits:
+        attrs = sorted(set(hits))
+        result.error(
+            f"[lint 114] {len(hits)} bare VB array literal(s) in "
+            f"{'/'.join(attrs)} expression attribute(s) — will fail Studio "
+            f"compile with BC36915 on heterogeneous rows. Wrap with "
+            f'"New Object() {{...}}" or a narrower typed array like '
+            f'"New String() {{...}}".'
+        )
+

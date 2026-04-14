@@ -96,10 +96,13 @@ TESTS = [
     ("bad_ncheckstate_empty_ifnotexists_NavigateToTab.xaml", "lint 111", "WARN"),
     ("bad_nclick_checkbox.xaml", "lint 112", "WARN"),
     ("bad_assign_type_mismatch.xaml", "lint 113", "ERROR"),
+    ("bad_assign_plain_datatable.xaml", "lint 113", "ERROR"),
+    ("bad_addrow_mixed_types.xaml", "lint 114", "ERROR"),
 ]
 
 GOOD_FILES = [
     "good_browser_workflow.xaml",
+    "good_addrow_typed_object.xaml",
 ]
 
 # Tests that require specific filenames (path relative to lint-test-cases/)

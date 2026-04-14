@@ -48,13 +48,13 @@
             <ui:LogMessage DisplayName="Log Message Start Test_WhileLoop" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[START] Test_WhileLoop&quot;]" />
             <Assign DisplayName="Assign - intCounter" sap:VirtualizedContainerService.HintSize="600,175" sap2010:WorkflowViewState.IdRef="Assign_1">
               <Assign.To>
-                <OutArgument x:TypeArguments="x:String">[intCounter]</OutArgument>
+                <OutArgument x:TypeArguments="x:Int32">[intCounter]</OutArgument>
               </Assign.To>
               <Assign.Value>
-                <InArgument x:TypeArguments="x:String">[0]</InArgument>
+                <InArgument x:TypeArguments="x:Int32">[0]</InArgument>
               </Assign.Value>
             </Assign>
-            <While Condition="[intCounter &lt; in_intMax]" DisplayName="Process Loop" sap2010:WorkflowViewState.IdRef="While_While_1">
+            <While Condition="[intCounter &lt; in_intMax]" DisplayName="Process Loop" sap:VirtualizedContainerService.HintSize="400,200" sap2010:WorkflowViewState.IdRef="While_While_1">
               <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_1">
                 <sap:WorkflowViewStateService.ViewState>
   <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -63,10 +63,10 @@
 </sap:WorkflowViewStateService.ViewState>
                 <Assign DisplayName="Assign - intCounter" sap:VirtualizedContainerService.HintSize="600,175" sap2010:WorkflowViewState.IdRef="Assign_2">
                   <Assign.To>
-                    <OutArgument x:TypeArguments="x:String">[intCounter]</OutArgument>
+                    <OutArgument x:TypeArguments="x:Int32">[intCounter]</OutArgument>
                   </Assign.To>
                   <Assign.Value>
-                    <InArgument x:TypeArguments="x:String">[intCounter + 1]</InArgument>
+                    <InArgument x:TypeArguments="x:Int32">[intCounter + 1]</InArgument>
                   </Assign.Value>
                 </Assign>
                 <ui:LogMessage DisplayName="Log Message Iteration  &amp; intCounter.ToString" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Trace" Message="[&quot;Iteration &quot; &amp; intCounter.ToString]" />
