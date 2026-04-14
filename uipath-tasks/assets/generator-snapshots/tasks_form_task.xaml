@@ -1,4 +1,4 @@
-<Activity mc:Ignorable="sap sap2010" x:Class="Test_Dialogs"
+<Activity mc:Ignorable="sap sap2010" x:Class="Test_Tasks"
   xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"
@@ -8,10 +8,8 @@
   xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
   xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common"
   xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:upaf="clr-namespace:UiPath.Persistence.Activities.FormTask;assembly=UiPath.Persistence.Activities"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <x:Members>
-    <x:Property Name="in_strMessage" Type="InArgument(x:String)" />
-  </x:Members>
   <VisualBasic.Settings>
     <x:Null />
   </VisualBasic.Settings>
@@ -26,6 +24,7 @@
       <x:String>System.Linq</x:String>
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Persistence.Activities.FormTask</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -34,24 +33,23 @@
       <AssemblyReference>System.Linq</AssemblyReference>
       <AssemblyReference>System.ObjectModel</AssemblyReference>
       <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Persistence.Activities</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence DisplayName="Test_Dialogs" sap2010:WorkflowViewState.IdRef="Sequence_1">
+  <Sequence DisplayName="Test_Tasks" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <sap:WorkflowViewStateService.ViewState>
       <scg:Dictionary x:TypeArguments="x:String, x:Object">
         <x:Boolean x:Key="IsExpanded">True</x:Boolean>
       </scg:Dictionary>
     </sap:WorkflowViewStateService.ViewState>
         <Sequence.Variables>
-          <Variable x:TypeArguments="x:String" Name="strUserInput" />
+          <Variable x:TypeArguments="upaf:FormTaskData" Name="fdtTaskData" />
+          <Variable x:TypeArguments="x:String" Name="strTaskAction" />
         </Sequence.Variables>
-            <ui:LogMessage DisplayName="Log Message Start Test_Dialogs" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[START] Test_Dialogs&quot;]" />
-            <ui:InputDialog Options="{x:Null}" OptionsString="{x:Null}" DisplayName="Prompt User" sap2010:WorkflowViewState.IdRef="InputDialog_InputDialog_1" IsPassword="False" Label="in_strMessage" Title="&quot;Enter Value&quot;" TopMost="False">
-              <ui:InputDialog.Result>
-                <OutArgument x:TypeArguments="x:String">[strUserInput]</OutArgument>
-              </ui:InputDialog.Result>
-            </ui:InputDialog>
-            <ui:MessageBox Caption="{x:Null}" ChosenButton="{x:Null}" AutoCloseAfter="00:00:00" DisplayName="Show Result" sap2010:WorkflowViewState.IdRef="MessageBox_MessageBox_1" Text="[strUserInput]" />
-            <ui:LogMessage DisplayName="Log Message End Test_Dialogs" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[END] Test_Dialogs&quot;]" />
+            <ui:LogMessage DisplayName="Log Message Start Test_Tasks" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[START] Test_Tasks&quot;]" />
+            <upaf:CreateFormTask BucketFolderPath="{x:Null}" BulkFormLayout="{x:Null}" DynamicFormPath="{x:Null}" ExternalTag="{x:Null}" Labels="{x:Null}" TimeoutMs="{x:Null}" BucketName="{x:Null}" BulkFormLayoutGuid="UUID_001" DisplayName="Create Form Task" EnableBulkEdit="False" EnableDynamicForms="True" EnableV2="False" FormLayout="{}{&quot;components&quot;:[{&quot;type&quot;:&quot;textfield&quot;,&quot;key&quot;:&quot;invoiceId&quot;,&quot;label&quot;:&quot;Invoice ID&quot;}]}" FormLayoutGuid="UUID_002" GenerateInputFields="True" TaskCatalog="{x:Null}" TaskOutput="[fdtTaskData]" TaskPriority="Medium" TaskTitle="[&quot;Review Invoice&quot;]" sap:VirtualizedContainerService.HintSize="600,300" sap2010:WorkflowViewState.IdRef="CreateFormTask_1">
+            </upaf:CreateFormTask>
+            <upaf:WaitForFormTaskAndResume StatusMessage="{x:Null}" TaskAction="[strTaskAction]" TaskOutput="{x:Null}" TimeoutMs="{x:Null}" WaitItemDataObject="{x:Null}" DisplayName="Wait for Form Task and Resume" TaskInput="[fdtTaskData]" sap:VirtualizedContainerService.HintSize="400,100" sap2010:WorkflowViewState.IdRef="WaitForFormTask_1" />
+            <ui:LogMessage DisplayName="Log Message End Test_Tasks" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[END] Test_Tasks&quot;]" />
   </Sequence>
 </Activity>

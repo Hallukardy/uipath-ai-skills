@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cross-plugin interaction test.
 
-Tests that plugin-provided generators (Action Center) produce XAML that
+Tests that plugin-provided generators (Tasks) produce XAML that
 passes both core lint rules and plugin-specific lint rules. Also verifies
 that plugin registration doesn't break core functionality.
 
@@ -69,6 +69,11 @@ def test_plugin_loader_integrity() -> TestResult:
         plugin_loader._extra_known_activities.clear()
         plugin_loader._extra_key_activities.clear()
         plugin_loader._load_failures.clear()
+        plugin_loader._hallucination_patterns.clear()
+        plugin_loader._common_packages.clear()
+        plugin_loader._battle_test_graders.clear()
+        plugin_loader._test_specs.clear()
+        plugin_loader._lint_test_fixtures.clear()
 
         failures = plugin_loader.load_plugins()
 
@@ -78,7 +83,7 @@ def test_plugin_loader_integrity() -> TestResult:
             return t
         t.ok("All plugins loaded without errors")
 
-        # Check Action Center registrations
+        # Check Tasks registrations
         gens = plugin_loader.get_generators()
         if "create_form_task" in gens:
             t.ok("Generator 'create_form_task' registered")
@@ -92,10 +97,10 @@ def test_plugin_loader_integrity() -> TestResult:
 
         lint_rules = plugin_loader.get_lint_rules()
         lint_names = [name for _, name in lint_rules]
-        if any("action_center" in n for n in lint_names):
-            t.ok(f"Action Center lint rule registered ({len(lint_rules)} total plugin lint rules)")
+        if any("tasks" in n for n in lint_names):
+            t.ok(f"Tasks lint rule registered ({len(lint_rules)} total plugin lint rules)")
         else:
-            t.fail(f"No Action Center lint rules found. Registered: {lint_names}")
+            t.fail(f"No Tasks lint rules found. Registered: {lint_names}")
 
         hooks = plugin_loader.get_scaffold_hooks()
         if hooks:
@@ -435,6 +440,11 @@ def test_api_version_mismatch() -> TestResult:
         plugin_loader._extra_known_activities.clear()
         plugin_loader._extra_key_activities.clear()
         plugin_loader._load_failures.clear()
+        plugin_loader._hallucination_patterns.clear()
+        plugin_loader._common_packages.clear()
+        plugin_loader._battle_test_graders.clear()
+        plugin_loader._test_specs.clear()
+        plugin_loader._lint_test_fixtures.clear()
 
         # Remove cached plugin modules so load_plugins() re-discovers them
         for key in list(sys.modules):
@@ -483,9 +493,9 @@ def test_api_version_mismatch() -> TestResult:
 
         # 3. Real plugins still loaded successfully
         if "create_form_task" in gens:
-            t.ok("Action Center generator 'create_form_task' still present")
+            t.ok("Tasks generator 'create_form_task' still present")
         else:
-            t.fail("Action Center generator 'create_form_task' missing after mismatch test")
+            t.fail("Tasks generator 'create_form_task' missing after mismatch test")
 
         if "sap_logon" in gens:
             t.ok("SAP WinGUI generator 'sap_logon' still present")

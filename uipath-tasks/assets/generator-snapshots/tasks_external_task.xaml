@@ -1,4 +1,4 @@
-<Activity mc:Ignorable="sap sap2010" x:Class="Test_PDF"
+<Activity mc:Ignorable="sap sap2010" x:Class="Test_ExternalTask"
   xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"
@@ -8,11 +8,8 @@
   xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
   xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common"
   xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:upae="clr-namespace:UiPath.Persistence.Activities.ExternalTask;assembly=UiPath.Persistence.Activities"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <x:Members>
-    <x:Property Name="in_strFilePath" Type="InArgument(x:String)" />
-    <x:Property Name="out_strText" Type="OutArgument(x:String)" />
-  </x:Members>
   <VisualBasic.Settings>
     <x:Null />
   </VisualBasic.Settings>
@@ -27,6 +24,7 @@
       <x:String>System.Linq</x:String>
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Persistence.Activities.ExternalTask</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -35,16 +33,27 @@
       <AssemblyReference>System.Linq</AssemblyReference>
       <AssemblyReference>System.ObjectModel</AssemblyReference>
       <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Persistence.Activities</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence DisplayName="Test_PDF" sap2010:WorkflowViewState.IdRef="Sequence_1">
+  <Sequence DisplayName="Test_ExternalTask" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <sap:WorkflowViewStateService.ViewState>
       <scg:Dictionary x:TypeArguments="x:String, x:Object">
         <x:Boolean x:Key="IsExpanded">True</x:Boolean>
       </scg:Dictionary>
     </sap:WorkflowViewStateService.ViewState>
-            <ui:LogMessage DisplayName="Log Message Start Test_PDF" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[START] Test_PDF&quot;]" />
-            <ui:ReadPDFText PreserveFormatting="{x:Null}" DisplayName="Read PDF Text" FileName="[in_strFilePath]" sap:VirtualizedContainerService.HintSize="797,59" sap2010:WorkflowViewState.IdRef="ReadPDFText_ReadPDFText_1" Range="All" Text="[out_strText]" />
-            <ui:LogMessage DisplayName="Log Message End Test_PDF" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[END] Test_PDF&quot;]" />
+        <Sequence.Variables>
+          <Variable x:TypeArguments="upae:ExternalTaskData" Name="edtTaskData" />
+          <Variable x:TypeArguments="x:String" Name="strTaskAction" />
+          <Variable x:TypeArguments="upae:ExternalTaskData" Name="edtUpdatedTask" />
+        </Sequence.Variables>
+            <ui:LogMessage DisplayName="Log Message Start Test_ExternalTask" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[START] Test_ExternalTask&quot;]" />
+            <upae:CreateExternalTask ExternalTag="{x:Null}" Labels="{x:Null}" TaskCatalog="{x:Null}" TimeoutMs="{x:Null}" DisplayName="Create External Task" sap:VirtualizedContainerService.HintSize="600,300" sap2010:WorkflowViewState.IdRef="CreateExternalTask_1" TaskOutput="[edtTaskData]" TaskPriority="High" TaskTitle="[&quot;JIRA Integration Task&quot;]">
+              <upae:CreateExternalTask.TaskData>
+                <scg:Dictionary x:TypeArguments="x:String, Argument" />
+              </upae:CreateExternalTask.TaskData>
+            </upae:CreateExternalTask>
+            <upae:WaitForExternalTaskAndResume StatusMessage="{x:Null}" TaskAction="[strTaskAction]" TaskOutput="[edtUpdatedTask]" TimeoutMs="{x:Null}" WaitItemDataObject="{x:Null}" DisplayName="Wait for External Task and Resume" TaskInput="[edtTaskData]" sap:VirtualizedContainerService.HintSize="400,100" sap2010:WorkflowViewState.IdRef="WaitForExternalTask_1" />
+            <ui:LogMessage DisplayName="Log Message End Test_ExternalTask" sap:VirtualizedContainerService.HintSize="1058,179" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[END] Test_ExternalTask&quot;]" />
   </Sequence>
 </Activity>
