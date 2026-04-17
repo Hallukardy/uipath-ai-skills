@@ -146,6 +146,7 @@ TYPE_MAP_BASE = {
     "UiElement": "ui:UiElement",
     "QueueItem": "ui:QueueItem",
     "GenericValue": "ui:GenericValue",
+    "Image": "ui:Image",
     # Data types
     "DataTable": "sd:DataTable",
     "DataRow": "sd:DataRow",
