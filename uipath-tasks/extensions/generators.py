@@ -12,10 +12,27 @@ Namespace prefixes used:
 
 import json
 import os
+import re
 
 from utils import escape_xml_attr as _escape_xml_attr
 from utils import escape_vb_expr as _escape_vb_expr
 from utils import generate_uuid as _uuid
+
+
+_FORM_SLUG_RE = re.compile(r"[^A-Za-z0-9]+")
+_DEFAULT_FORM_DISPLAY_NAME = "Create Form Task"
+
+
+def _derive_default_form_path(display_name, id_ref):
+    """Return `Forms/<slug>.json` for a CreateFormTask with no explicit path.
+
+    Uses sanitized ``display_name`` when the caller gave it a meaningful name;
+    otherwise falls back to ``id_ref`` (always unique per workflow — comes from
+    the IdRef counter, e.g. ``CreateFormTask_1``).
+    """
+    base = display_name if display_name and display_name != _DEFAULT_FORM_DISPLAY_NAME else id_ref
+    slug = _FORM_SLUG_RE.sub("_", base).strip("_") or id_ref
+    return f"Forms/{slug}.json"
 
 
 def form_layout_to_external_file(form_layout_json, form_id=None):
@@ -124,11 +141,16 @@ def gen_create_form_task(task_title_expr, task_output_variable, form_layout_json
                            ``{x:Null}`` — Studio's form designer loads the
                            file for editing, and schema changes diff cleanly.
                            AC-32 will fire if the file is missing on disk.
+                           When empty but ``project_root`` is set, a default
+                           path is derived from ``display_name`` (or
+                           ``id_ref`` if the display name is the default).
         project_root: Absolute path to the UiPath project directory. When
-                      set together with ``dynamic_form_path``, the converted
-                      form schema is written to ``<project_root>/<path>``.
-                      Omit to emit the DynamicFormPath attribute without
-                      writing the file (caller handles the write).
+                      set together with ``dynamic_form_path`` (explicit or
+                      auto-derived), the converted form schema is written
+                      to ``<project_root>/<path>``. Omit to emit the
+                      DynamicFormPath attribute without writing the file
+                      (caller handles the write) — or emit ``{x:Null}`` if
+                      no path was supplied either.
         form_id: Explicit id for the external form file. Generated UUID when
                  omitted. Ignored when ``dynamic_form_path`` is empty.
     """
@@ -165,8 +187,14 @@ def gen_create_form_task(task_title_expr, task_output_variable, form_layout_json
     # FormLayout is not editable from the designer. When writing, convert
     # form.io {"components":[…]} to UiPath {"id":…,"form":[…]} per
     # form-tasks.md:298–316.
-    if dynamic_form_path:
-        normalized_path = dynamic_form_path.replace("\\", "/")
+    # Auto-extract when project_root is known but no path was given — gives
+    # "it just works" sidecar emission to CLI callers who pass --project-dir.
+    effective_form_path = dynamic_form_path
+    if not effective_form_path and project_root:
+        effective_form_path = _derive_default_form_path(display_name, id_ref)
+
+    if effective_form_path:
+        normalized_path = effective_form_path.replace("\\", "/")
         dynamic_form_attr = (
             f'DynamicFormPath="{_escape_xml_attr(normalized_path)}"'
         )
