@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.2.0] - 2026-04-21
+
+### Added
+
+**uipath-tasks — local form file emission** (PR #18, #19, #20)
+- `gen_create_form_task` accepts new `dynamic_form_path` and `project_root` kwargs. When set, the generator emits `DynamicFormPath="<path>"` instead of `{x:Null}` and writes the schema to `<project_root>/<path>` in UiPath's external-file shape — `{"id": "<guid>", "form": [...]}` — per `form-tasks.md`
+- When `project_root` is set but `dynamic_form_path` is empty, the generator derives `Forms/<sanitized-display-name>.json` automatically (falls back to `id_ref` when display name is the default)
+- New exported helper `form_layout_to_external_file()` converts form.io `{"components": [...]}` to the UiPath shape for callers that write files themselves
+- `generate_workflow.py` now threads `--project-dir` through to plugin generators via a new `_PROJECT_ROOT` module global forwarded in `_auto_dispatch`; core generators without a `project_root` parameter are unaffected because `_auto_dispatch` filters kwargs by signature
+
+**uipath-tasks — new lint rules** (PRs #15, #17, #18)
+- **AC-27** (error): `Wait*AndResume` nested in `ForEach` / `ForEachRow` / `RetryScope` / `TryCatch` / `Parallel` / `Pick` / `While` / `DoWhile`. Studio rejects with "the scope does not offer support for it". Complements file-level AC-26 with intra-file ancestor walking (commit 605f59e, fixes #14)
+- **AC-28** (warn): `CreateFormTask` / `CreateExternalTask` missing or `{x:Null}` `FolderPath` — runtime error 1101
+- **AC-29** (error): `<ui:InvokeMethod>` belongs in the default activities namespace, not `ui:`; Studio refuses to load the XAML
+- **AC-30** (warn): `<InvokeMethod TargetObject="[expr]">` attribute form — `TargetObject` needs element form with typed `InArgument`
+- **AC-31** (warn): `fdt*.Data("key")` / `edt*.Data("key")` / `FormTaskData*.Data(...)` default-indexer access — late-bound, fails under Option Strict On (BC30574). Recommends `Title` property or typed `OutArgument` variable (AC-28/29/30/31 from commit 937ca74, refs #16)
+- **AC-32** (error): `DynamicFormPath` points to a file that is missing, unparseable, has wrong root key (`components` / bare array / `display: "form"` instead of `form`), or lacks the required `id`
+- **AC-33** (warn): inline `FormLayout` exceeds ~500 chars of raw JSON while `DynamicFormPath` is null — large inline schemas aren't editable from Studio's form designer and poison XAML diffs (AC-32/33 from commit 87084e0)
+
+**Documentation — form-tasks reference expansion** (commit 47c9215)
+- `references/form-tasks.md` — new subsections on external form file schema (DynamicFormPath), typed output (`FormTaskData.Title` and typed `OutArgument` over `.Data("key")`), Orchestrator folder requirement, and InvokeMethod placement and element-form rules
+- `references/external-tasks.md` — mirrored FolderPath and typed-output notes; Shadow Task Pattern example updated to correct InvokeMethod namespace and element form
+
+### Fixed
+
+- `uipath-core` Image type mapping (PR #13, #12) — `TYPE_MAP_BASE` gained `"Image": "ui:Image"`. Variables declared with `type: "Image"` (e.g. `img_Screenshot`) were previously emitted as bare `x:TypeArguments="Image"` and Studio failed with "Cannot create unknown type ... Image". The fix cascades to the variable emitter, argument normalizer, and spec validator via `TYPE_MAP_BASE`
+
+### Internal
+
+- New cross-plugin test file `uipath-core/scripts/test_cross_plugin.py` covers both the subprocess emit path (asserts sidecar JSON shape plus XAML attribute) and the no-project-root inline fallback for local form-file emission
+- Lint test suite expanded to 92/92 with new fixtures under `uipath-tasks/assets/lint-test-cases/` covering AC-27 through AC-33
+
+---
+
 ## [1.1.0] - 2026-04-14
 
 ### Added
