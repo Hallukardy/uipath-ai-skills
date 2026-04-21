@@ -40,6 +40,10 @@ from .lint_rules import (
     lint_tasks, lint_formdata_key_mismatch,
     lint_persistence_in_subworkflow, lint_external_task,
     lint_persistence_in_unsupported_scope,
+    lint_task_create_missing_folder,
+    lint_ui_invoke_method,
+    lint_invoke_method_targetobject_attribute,
+    lint_formtaskdata_data_late_binding,
 )
 from .scaffold_hooks import enable_persistence_support
 from .battle_test_grading import grade_ac
@@ -58,6 +62,10 @@ register_lint(lint_tasks, "lint_tasks")
 register_lint(lint_formdata_key_mismatch, "lint_formdata_key_mismatch")
 register_lint(lint_persistence_in_subworkflow, "lint_persistence_in_subworkflow")
 register_lint(lint_persistence_in_unsupported_scope, "lint_persistence_in_unsupported_scope")
+register_lint(lint_task_create_missing_folder, "lint_task_create_missing_folder")
+register_lint(lint_ui_invoke_method, "lint_ui_invoke_method")
+register_lint(lint_invoke_method_targetobject_attribute, "lint_invoke_method_targetobject_attribute")
+register_lint(lint_formtaskdata_data_late_binding, "lint_formtaskdata_data_late_binding")
 register_lint(lint_external_task, "lint_external_task")
 
 # --- Scaffold hooks ---
@@ -210,5 +218,21 @@ register_lint_test_fixture(
 )
 register_lint_test_fixture(
     "bad_persistence_in_foreachrow.xaml", "AC-27", "ERROR",
+    _PLUGIN_ROOT / "assets" / "lint-test-cases",
+)
+register_lint_test_fixture(
+    "bad_create_form_task_no_folder.xaml", "AC-28", "WARN",
+    _PLUGIN_ROOT / "assets" / "lint-test-cases",
+)
+register_lint_test_fixture(
+    "bad_ui_invoke_method.xaml", "AC-29", "ERROR",
+    _PLUGIN_ROOT / "assets" / "lint-test-cases",
+)
+register_lint_test_fixture(
+    "bad_invoke_method_targetobject_attribute.xaml", "AC-30", "WARN",
+    _PLUGIN_ROOT / "assets" / "lint-test-cases",
+)
+register_lint_test_fixture(
+    "bad_formtaskdata_data_late_binding.xaml", "AC-31", "WARN",
     _PLUGIN_ROOT / "assets" / "lint-test-cases",
 )

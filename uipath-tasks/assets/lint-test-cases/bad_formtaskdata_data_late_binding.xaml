@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="Main"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:upaf="clr-namespace:UiPath.Persistence.Activities.FormTask;assembly=UiPath.Persistence.Activities">
+  <Sequence DisplayName="Main" sap2010:WorkflowViewState.IdRef="Sequence_Main">
+    <ui:LogMessage DisplayName="Log" Level="Info" Message="[String.Format(&quot;Invoice {0}&quot;, fdtTask.Data(&quot;invoiceNumber&quot;).ToString())]" sap2010:WorkflowViewState.IdRef="LogMessage_Bad" />
+  </Sequence>
+</Activity>
