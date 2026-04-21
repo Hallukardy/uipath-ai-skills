@@ -177,6 +177,7 @@ _ALL_CHILD_KEYS = ("children", "try_children", "then_children", "else_children",
 # ---------------------------------------------------------------------------
 
 _OBJ_REPO_LOOKUP = None  # Set by _build_obj_repo_lookup() when --project-dir is provided
+_PROJECT_ROOT = None     # Set in main() when --project-dir is provided; forwarded to plugin generators
 _VAR_TYPE_LOOKUP = {}    # {var_name: xaml_type} — set by generate_workflow() for type inference
 
 # Generators that have a 'selector' arg and accept obj_repo
@@ -796,7 +797,8 @@ def _generate_activity(spec: dict, scope_id: str, counter: _IdRefCounter,
     if gen in plugin_gens:
         id_ref = counter.next(_idref_prefix(gen))
         return _auto_dispatch(plugin_gens[gen], args,
-                              id_ref=id_ref, scope_id=scope_id, indent=indent)
+                              id_ref=id_ref, scope_id=scope_id,
+                              indent=indent, project_root=_PROJECT_ROOT)
 
     raise ValueError(f"Unknown generator: {gen}")
 
@@ -1088,9 +1090,10 @@ def main():
     output_path = positional[1]
 
     # --- Load Object Repository lookup if --project-dir provided ---
-    global _OBJ_REPO_LOOKUP
+    global _OBJ_REPO_LOOKUP, _PROJECT_ROOT
     if project_dir:
         _OBJ_REPO_LOOKUP = _build_obj_repo_lookup(project_dir)
+    _PROJECT_ROOT = project_dir
 
     # --- Load spec ---
     spec = _load_spec(spec_path)

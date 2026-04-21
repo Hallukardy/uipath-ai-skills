@@ -391,6 +391,134 @@ def test_sap_generators_produce_valid_xml() -> TestResult:
     return t
 
 
+def test_create_form_task_emits_external_file(tmpdir: str) -> TestResult:
+    """CLI --project-dir reaches create_form_task → Forms/<slug>.json written."""
+    t = TestResult("CreateFormTask auto-emits external form file when --project-dir is set")
+
+    project_dir = os.path.join(tmpdir, "FormTaskExtract")
+    os.makedirs(project_dir, exist_ok=True)
+
+    # Realistic ~600-char form.io schema (above AC-33's 500-char soft limit).
+    form_layout = json.dumps({
+        "components": [
+            {"label": "Supplier", "key": "supplier", "type": "textfield",
+             "input": True, "disabled": True, "tableView": True},
+            {"label": "Invoice Number", "key": "invoiceNumber", "type": "textfield",
+             "input": True, "disabled": True, "tableView": True},
+            {"label": "Amount (EUR)", "key": "amount", "type": "number",
+             "input": True, "disabled": True, "tableView": True},
+            {"label": "Decision", "key": "decision", "type": "select",
+             "input": True,
+             "data": {"values": [
+                 {"label": "Approve", "value": "approve"},
+                 {"label": "Reject", "value": "reject"},
+             ]},
+             "validate": {"required": True}},
+            {"type": "button", "label": "Submit", "key": "submit",
+             "action": "submit", "input": True, "tableView": False},
+        ]
+    }, separators=(",", ":"))
+
+    spec = {
+        "class_name": "Main",
+        "arguments": [],
+        "variables": [
+            {"name": "fdtTask", "type": "FormTaskData"},
+        ],
+        "activities": [
+            {"gen": "create_form_task", "args": {
+                "task_title_expr": '"Approve Invoice"',
+                "task_output_variable": "fdtTask",
+                "form_layout_json": form_layout,
+                "display_name": "Approve Invoice Task",
+            }},
+        ],
+    }
+    spec_path = os.path.join(project_dir, "spec.json")
+    xaml_path = os.path.join(project_dir, "Main.xaml")
+    with open(spec_path, "w", encoding="utf-8") as f:
+        json.dump(spec, f)
+
+    cmd = [sys.executable, str(GENERATOR), spec_path, xaml_path,
+           "--project-dir", project_dir]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        t.fail(f"generate_workflow failed: {proc.stderr.strip()}")
+        return t
+    t.ok("generate_workflow completed with --project-dir")
+
+    expected_form_path = os.path.join(project_dir, "Forms", "Approve_Invoice_Task.json")
+    if not os.path.isfile(expected_form_path):
+        forms_dir = os.path.join(project_dir, "Forms")
+        existing = os.listdir(forms_dir) if os.path.isdir(forms_dir) else []
+        t.fail(f"Expected sidecar file {expected_form_path} was not written. "
+               f"Forms/ contents: {existing}")
+        return t
+    t.ok("Forms/Approve_Invoice_Task.json written to project dir")
+
+    with open(expected_form_path, "r", encoding="utf-8") as f:
+        schema = json.load(f)
+    if not isinstance(schema.get("id"), str) or not schema["id"]:
+        t.fail(f"External form file missing string 'id' at root: {schema}")
+        return t
+    if not isinstance(schema.get("form"), list) or not schema["form"]:
+        t.fail(f"External form file missing 'form' array at root: {schema}")
+        return t
+    t.ok(f"External form file has UiPath shape (id + {len(schema['form'])} components)")
+
+    with open(xaml_path, "r", encoding="utf-8") as f:
+        xaml = f.read()
+    if 'DynamicFormPath="Forms/Approve_Invoice_Task.json"' not in xaml:
+        t.fail('XAML missing expected DynamicFormPath="Forms/Approve_Invoice_Task.json"')
+        return t
+    t.ok('XAML CreateFormTask element carries DynamicFormPath="Forms/Approve_Invoice_Task.json"')
+
+    # Sanity: the CreateFormTask element must NOT still claim {x:Null}
+    m = re.search(r'<upaf:CreateFormTask\b[^>]*?(/>|>)', xaml, flags=re.DOTALL)
+    if m and 'DynamicFormPath="{x:Null}"' in m.group(0):
+        t.fail("CreateFormTask element still has DynamicFormPath={x:Null}")
+        return t
+    t.ok("CreateFormTask no longer emits DynamicFormPath={x:Null}")
+
+    return t
+
+
+def test_create_form_task_without_project_dir_stays_inline() -> TestResult:
+    """Without --project-dir, CreateFormTask keeps today's inline-form behavior."""
+    t = TestResult("CreateFormTask stays inline when project_root is absent")
+
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    try:
+        from plugin_loader import load_plugins, get_generators
+        load_plugins()
+        gens = get_generators()
+        gen_create = gens.get("create_form_task")
+        if not gen_create:
+            t.fail("create_form_task generator not registered")
+            return t
+
+        xml = gen_create(
+            task_title_expr='"X"',
+            task_output_variable="fdtTask",
+            form_layout_json='{"components":[{"type":"textfield","key":"a","label":"A"}]}',
+            id_ref="CreateFormTask_1",
+            display_name="Some Task",
+            # no project_root → must not try to write anything
+        )
+        if 'DynamicFormPath="{x:Null}"' in xml:
+            t.ok("DynamicFormPath={x:Null} preserved when project_root is None")
+        else:
+            t.fail(f"Expected DynamicFormPath={{x:Null}} when project_root is None. Got: {xml[:300]}")
+
+        if 'DynamicFormPath="Forms/' in xml:
+            t.fail("Generator wrote a DynamicFormPath even though project_root was None")
+
+    except Exception as e:
+        t.fail(f"Error testing no-project-root path: {type(e).__name__}: {e}")
+
+    return t
+
+
 def test_plugin_load_failure_propagation() -> TestResult:
     """Plugin load failures are properly tracked and retrievable."""
     t = TestResult("Plugin load failure propagation")
@@ -527,6 +655,8 @@ def main():
         results.append(test_plugin_generators_produce_valid_xml())
         results.append(test_core_generators_unaffected_by_plugins())
         results.append(test_scaffold_with_persistence(tmpdir))
+        results.append(test_create_form_task_emits_external_file(tmpdir))
+        results.append(test_create_form_task_without_project_dir_stays_inline())
         results.append(test_sap_plugin_integrity())
         results.append(test_sap_generators_produce_valid_xml())
         results.append(test_plugin_load_failure_propagation())
