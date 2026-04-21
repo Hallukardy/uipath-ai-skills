@@ -259,11 +259,14 @@ This avoids blocking: the shadow task doesn't delay creation of the main task.
     <ActivityAction x:TypeArguments="sd:DataRow">
       <Sequence>
         <upaf:CreateFormTask TaskOutput="[fdtInvoiceTask]" ... />
-        <ui:InvokeMethod TargetObject="[lstInvoiceTasks]" MethodName="Add">
-          <ui:InvokeMethod.Parameters>
+        <InvokeMethod MethodName="Add">
+          <InvokeMethod.TargetObject>
+            <InArgument x:TypeArguments="scg:List(upaf:FormTaskData)">[lstInvoiceTasks]</InArgument>
+          </InvokeMethod.TargetObject>
+          <InvokeMethod.Parameters>
             <InArgument x:TypeArguments="upaf:FormTaskData">[fdtInvoiceTask]</InArgument>
-          </ui:InvokeMethod.Parameters>
-        </ui:InvokeMethod>
+          </InvokeMethod.Parameters>
+        </InvokeMethod>
       </Sequence>
     </ActivityAction>
   </ui:ForEachRow.Body>
@@ -282,6 +285,66 @@ This avoids blocking: the shadow task doesn't delay creation of the main task.
 
 Enforced by AC-27 (`lint_persistence_in_unsupported_scope`).
 
+### InvokeMethod notes
+
+`InvokeMethod` lives in the **default** activities namespace (`http://schemas.microsoft.com/netfx/2009/xaml/activities`), not under `ui:`. Using `<ui:InvokeMethod>` fails Studio validation with *"Could not find type 'InvokeMethod' in namespace 'http://schemas.uipath.com/workflow/activities'"* (AC-29). Also set `TargetObject` via element form, because the attribute-form `TargetObject="[expr]"` doesn't always dispatch through the `InArgument` converter (AC-30).
+
+## Using an external form file (DynamicFormPath)
+
+When the form is large or shared across workflows, keep it in a `.json` file under the project and set:
+- `EnableDynamicForms="True"`
+- `DynamicFormPath="Forms\MyForm.json"` (relative to project root)
+
+**The file schema is NOT standard form.io.** UiPath expects:
+
+```json
+{
+  "id": "<any-guid-or-slug>",
+  "form": [
+    { "label": "Supplier", "key": "supplier", "type": "textfield", "input": true, "disabled": true, "tableView": true },
+    { "label": "Action", "key": "action", "type": "select", "input": true,
+      "data": { "values": [ { "label": "Approve", "value": "approve" }, { "label": "Reject", "value": "reject" } ] },
+      "validate": { "required": true } },
+    { "type": "button", "label": "Submit", "key": "submit", "action": "submit", "input": true }
+  ]
+}
+```
+
+Critical differences from standard form.io:
+- Root key is **`form`**, not `components`.
+- Root **`id`** is required (any string).
+- No `display`, `name`, `title` wrapper fields needed.
+
+Wrong shapes produce misleading runtime errors (all observed):
+- `{"components":[...]}` → `Cannot deserialize the current JSON object into List<FormIOComponent> ... Path 'components'`.
+- `[...]` (bare array) → `JArray does not contain a definition for 'id'`.
+- `{"display":"form","components":[...]}` → `Form File has invalid format`.
+
+## Reading task output
+
+After `WaitForFormTaskAndResume` completes, prefer **typed properties** and your **OutArgument variables** over `.Data("key")` access.
+
+`FormTaskData.Data` is a weakly-typed dictionary. Calling `fdtTask.Data("invoiceNumber")` returns `Object`, which fails under `Option Strict On` with *"BC30574: Option Strict On disallows late binding"* (AC-31).
+
+```xml
+<!-- ❌ Wrong -->
+<ui:LogMessage Message="[String.Format(&quot;Invoice {0} approved&quot;, fdtTask.Data(&quot;invoiceNumber&quot;).ToString())]" />
+
+<!-- ✅ Right — use the typed Title property (already formatted via CreateFormTask.TaskTitle) -->
+<ui:LogMessage Message="[String.Format(&quot;{0} approved&quot;, fdtTask.Title)]" />
+
+<!-- ✅ Right — use the OutArgument variable you bound in CreateFormTask.FormData -->
+<ui:LogMessage Message="[String.Format(&quot;Invoice {0} approved&quot;, strInvoiceNum)]" />
+```
+
+`FormData` OutArgument bindings (`<OutArgument x:Key="fieldKey">[strMyVar]</OutArgument>` inside `<upaf:CreateFormTask.FormData>`) set typed variables at resume time — that's the strongly-typed path.
+
+## Orchestrator folder (FolderPath)
+
+`CreateFormTask`, `WaitForFormTaskAndResume`, and related Action Center activities need to know which Orchestrator folder to create the task in. Without it, runtime fails with *"A folder is required for this action. Error code: 1101"* (AC-28).
+
+Set the `FolderPath` attribute on the activity to an Orchestrator folder name (e.g. `"Shared"`, or a Config.xlsx key). Studio injects this automatically when you set the value via the Properties panel.
+
 ## Validation & Lint Rules
 
 These lint rules live in uipath-core's `validate_xaml` and apply to Tasks workflows:
@@ -291,6 +354,10 @@ These lint rules live in uipath-core's `validate_xaml` and apply to Tasks workfl
 | AC-10 | Warning | CreateFormTask count must match WaitForFormTaskAndResume count |
 | AC-26 | Error | Persistence activities (WaitForFormTaskAndResume) must be in Main.xaml only |
 | AC-27 | Error | Persistence activities must not be nested in ForEach/ForEachRow/RetryScope/TryCatch/Parallel/Pick/While/DoWhile |
+| AC-28 | Warning | `CreateFormTask` needs `FolderPath` set (runtime error code 1101 otherwise) |
+| AC-29 | Error | `<ui:InvokeMethod>` doesn't exist — use default namespace `<InvokeMethod>` |
+| AC-30 | Warning | `<InvokeMethod TargetObject="[expr]">` attribute form; use element form with typed `InArgument` |
+| AC-31 | Warning | `fdtTask.Data("key")` is late-bound — use typed `Title` property or OutArgument variable |
 
 Additional checks within lint 10:
 - `TaskOutput="{x:Null}"` — warns that task data won't be captured

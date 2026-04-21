@@ -181,6 +181,10 @@ Enforced by AC-27 (`lint_persistence_in_unsupported_scope`).
 | AC-12 | Warning | CreateExternalTask count should match WaitForExternalTaskAndResume count |
 | AC-26 | Error | WaitForExternalTaskAndResume must be in Main.xaml only |
 | AC-27 | Error | WaitForExternalTaskAndResume must not be nested in ForEach/ForEachRow/RetryScope/TryCatch/Parallel/Pick/While/DoWhile |
+| AC-28 | Warning | `CreateExternalTask` needs `FolderPath` set (runtime error code 1101 otherwise) |
+| AC-31 | Warning | `edtTask.Data("key")` is late-bound — use typed `Title` property or OutArgument variable |
+
+See `form-tasks.md` for the full Orchestrator-folder and typed-output discussion — same rules apply to external tasks (swap `fdt`/`upaf:` for `edt`/`upae:`).
 
 Additional checks within AC-12:
 - `TaskOutput="{x:Null}"` — warns that task data won't be captured

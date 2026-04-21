@@ -5,6 +5,10 @@ AC-11: FormData keys don't match form.io component keys
 AC-12: CreateExternalTask / WaitForExternalTaskAndResume count mismatch
 AC-26: Persistence activities in non-Main workflow
 AC-27: Persistence activities nested in a scope that can't serialize bookmarks
+AC-28: CreateFormTask / CreateExternalTask missing FolderPath (runtime 1101)
+AC-29: <ui:InvokeMethod> — wrong namespace; InvokeMethod is in the default one
+AC-30: InvokeMethod.TargetObject attribute form; needs element form
+AC-31: FormTaskData.Data(...) / ExternalTaskData.Data(...) late-binding (BC30574)
 """
 
 import json
@@ -381,3 +385,144 @@ def lint_persistence_in_unsupported_scope(ctx, result):
                 )
                 break
             ancestor = parents.get(ancestor)
+
+
+_TASK_CREATE_ACTIVITIES = ("upaf:CreateFormTask", "upae:CreateExternalTask")
+
+
+def lint_task_create_missing_folder(ctx, result):
+    """AC-28: CreateFormTask / CreateExternalTask should have FolderPath set.
+
+    Without an Orchestrator folder context, the Action Center API rejects the
+    task creation call at runtime with 'A folder is required for this action.
+    Error code: 1101'. Studio auto-injects FolderPath when the user sets it via
+    the Properties panel; generated XAML does not, so the activity arrives with
+    FolderPath missing or as {x:Null} and only fails at the first run.
+    """
+    try:
+        content = ctx.active_content
+    except Exception:
+        return
+    if not content:
+        return
+
+    for act in _TASK_CREATE_ACTIVITIES:
+        for m in re.finditer(rf"<{act}\b([^>]*)>", content, flags=re.DOTALL):
+            attrs = m.group(1)
+            folder_match = re.search(r'\sFolderPath="([^"]*)"', attrs)
+            if folder_match is None:
+                missing = True
+                value = None
+            else:
+                value = folder_match.group(1)
+                missing = value in ("", "{x:Null}")
+
+            if not missing:
+                continue
+
+            display_match = re.search(r'\sDisplayName="([^"]*)"', attrs)
+            display = display_match.group(1) if display_match else "(no DisplayName)"
+            activity_local = act.split(":", 1)[-1]
+            if value is None:
+                reason = "no FolderPath attribute"
+            else:
+                reason = f'FolderPath="{value}"'
+            result.warn(
+                f"[AC-28] {activity_local} '{display}' has {reason}. Action Center "
+                f"activities need an Orchestrator folder — runtime will fail with "
+                f"'A folder is required for this action. Error code: 1101'. "
+                f"Set FolderPath to a folder name (e.g. \"Shared\" or a Config key)."
+            )
+
+
+def lint_ui_invoke_method(ctx, result):
+    """AC-29: <ui:InvokeMethod> is not a UiPath activity.
+
+    InvokeMethod lives in the default activities namespace
+    (http://schemas.microsoft.com/netfx/2009/xaml/activities), not under ui:.
+    The ui: prefix is a plausible hallucination because ui:InvokeWorkflowFile
+    and ui:InvokeCode exist. Studio fails to load any XAML that declares
+    <ui:InvokeMethod> with "Could not find type 'InvokeMethod' in namespace
+    'http://schemas.uipath.com/workflow/activities'".
+    """
+    try:
+        content = ctx.active_content
+    except Exception:
+        return
+    if not content:
+        return
+
+    for m in re.finditer(r"<ui:InvokeMethod\b", content):
+        result.error(
+            f"[AC-29] <ui:InvokeMethod> is not a UiPath activity — InvokeMethod "
+            f"lives in the default activities namespace. Remove the 'ui:' prefix: "
+            f"use <InvokeMethod .../> directly."
+        )
+
+
+def lint_invoke_method_targetobject_attribute(ctx, result):
+    """AC-30: InvokeMethod.TargetObject must use element form, not attribute form.
+
+    Studio rejects <InvokeMethod TargetObject="[expr]"> with "String is not
+    assignable to InArgument of member 'TargetObject' and there is no
+    TypeConverter defined on the member". TargetObject is typed InArgument(T)
+    and the default attribute-to-InArgument converter does not dispatch on
+    this property — element form with an explicit typed <InArgument> is
+    required.
+    """
+    try:
+        content = ctx.active_content
+    except Exception:
+        return
+    if not content:
+        return
+
+    for m in re.finditer(
+        r"<InvokeMethod\b[^>]*?\sTargetObject=\"\[[^\"]+\]\"",
+        content,
+    ):
+        result.warn(
+            f"[AC-30] InvokeMethod uses attribute-form TargetObject=\"[expr]\". "
+            f"Studio's default converter rejects this on TargetObject. "
+            f"Use element form: "
+            f"<InvokeMethod.TargetObject><InArgument x:TypeArguments=\"...\">[expr]"
+            f"</InArgument></InvokeMethod.TargetObject>."
+        )
+
+
+_FORMDATA_LATE_BINDING_RE = re.compile(
+    r"\b(fdt\w+|edt\w+|FormTaskData\w*|ExternalTaskData\w*)\.Data\s*\("
+)
+
+
+def lint_formtaskdata_data_late_binding(ctx, result):
+    """AC-31: FormTaskData.Data("key") / ExternalTaskData.Data("key") is late-bound.
+
+    .Data returns a weakly-typed dictionary (IDictionary / JObject). Default-
+    indexer access fails under Option Strict On with BC30574 ("Option Strict On
+    disallows late binding"). Prefer the typed Title property or the FormData
+    OutArgument variable you already bound in CreateFormTask.FormData.
+
+    Scoped to variable names starting with the skill's fdt/edt prefixes or to
+    literal type names to avoid false positives on unrelated .Data members.
+    """
+    try:
+        content = ctx.active_content
+    except Exception:
+        return
+    if not content:
+        return
+
+    seen = set()
+    for m in _FORMDATA_LATE_BINDING_RE.finditer(content):
+        var = m.group(1)
+        if var in seen:
+            continue
+        seen.add(var)
+        result.warn(
+            f"[AC-31] Late-bound access '{var}.Data(...)' — .Data is a weakly-typed "
+            f"dictionary; Option Strict On rejects default-indexer access (BC30574). "
+            f"Use the typed Title property (e.g. {var}.Title) or the OutArgument "
+            f"variable you bound in <CreateFormTask.FormData> / "
+            f"<CreateExternalTask.TaskData>."
+        )
