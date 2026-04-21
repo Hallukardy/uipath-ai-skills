@@ -163,12 +163,24 @@ Unlike Form Tasks (which use FormData with In/Out/InOut bindings), External Task
 
 Each entry becomes an `InArgument` in the dictionary. The external system receives these key-value pairs and can include response data when completing the task.
 
+## Anti-pattern: persistence inside a loop/retry scope
+
+`WaitForExternalTaskAndResume` **cannot** be nested inside `ui:ForEachRow`, `ui:ForEach`, `ui:RetryScope`, `TryCatch`, `Parallel`, `Pick`, `While`, or `DoWhile`. These scopes hold per-iteration or per-branch state that cannot serialize mid-flight when a bookmark suspends the workflow. Studio rejects it with: *"Cannot place activity under scope '<name>', as the activity requires persistence and the scope does not offer support for it."*
+
+When iterating over a batch (e.g., one external ticket per input row), use the same **Shadow Task Pattern** described in `form-tasks.md`:
+
+1. First loop: `CreateExternalTask` per row, append the returned `ExternalTaskData` to a `List(ExternalTaskData)`.
+2. Second loop (directly under the root `Sequence`, not nested): `WaitForExternalTaskAndResume` per item.
+
+Enforced by AC-27 (`lint_persistence_in_unsupported_scope`).
+
 ## Validation & Lint Rules
 
 | Lint | Severity | What it checks |
 |---|---|---|
 | AC-12 | Warning | CreateExternalTask count should match WaitForExternalTaskAndResume count |
 | AC-26 | Error | WaitForExternalTaskAndResume must be in Main.xaml only |
+| AC-27 | Error | WaitForExternalTaskAndResume must not be nested in ForEach/ForEachRow/RetryScope/TryCatch/Parallel/Pick/While/DoWhile |
 
 Additional checks within AC-12:
 - `TaskOutput="{x:Null}"` — warns that task data won't be captured

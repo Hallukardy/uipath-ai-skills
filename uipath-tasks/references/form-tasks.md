@@ -233,6 +233,55 @@ Advanced pattern from real production workflows:
 ```
 This avoids blocking: the shadow task doesn't delay creation of the main task.
 
+## Anti-pattern: persistence inside a loop/retry scope
+
+`WaitForFormTaskAndResume` **cannot** be nested inside `ui:ForEachRow`, `ui:ForEach`, `ui:RetryScope`, `TryCatch`, `Parallel`, `Pick`, `While`, or `DoWhile`. These scopes hold per-iteration or per-branch state that cannot serialize mid-flight when a bookmark suspends the workflow. Studio rejects it at validation time with: *"Cannot place activity under scope '<name>', as the activity requires persistence and the scope does not offer support for it."*
+
+❌ Wrong — wait nested inside `ui:ForEachRow`:
+```xml
+<ui:ForEachRow DisplayName="For Each Invoice">
+  <ui:ForEachRow.Body>
+    <ActivityAction x:TypeArguments="sd:DataRow">
+      <Sequence>
+        <upaf:CreateFormTask TaskOutput="[fdtInvoiceTask]" ... />
+        <upaf:WaitForFormTaskAndResume TaskInput="[fdtInvoiceTask]" ... />  <!-- fails validation -->
+      </Sequence>
+    </ActivityAction>
+  </ui:ForEachRow.Body>
+</ui:ForEachRow>
+```
+
+✅ Right — Shadow Task Pattern: collect tasks in the loop, wait outside:
+```xml
+<!-- Variable: lstInvoiceTasks : List(FormTaskData) = New List(Of FormTaskData) -->
+<ui:ForEachRow DisplayName="For Each Invoice">
+  <ui:ForEachRow.Body>
+    <ActivityAction x:TypeArguments="sd:DataRow">
+      <Sequence>
+        <upaf:CreateFormTask TaskOutput="[fdtInvoiceTask]" ... />
+        <ui:InvokeMethod TargetObject="[lstInvoiceTasks]" MethodName="Add">
+          <ui:InvokeMethod.Parameters>
+            <InArgument x:TypeArguments="upaf:FormTaskData">[fdtInvoiceTask]</InArgument>
+          </ui:InvokeMethod.Parameters>
+        </ui:InvokeMethod>
+      </Sequence>
+    </ActivityAction>
+  </ui:ForEachRow.Body>
+</ui:ForEachRow>
+<ui:ForEach x:TypeArguments="upaf:FormTaskData" Values="[lstInvoiceTasks]">
+  <ui:ForEach.Body>
+    <ActivityAction x:TypeArguments="upaf:FormTaskData">
+      <Sequence>
+        <upaf:WaitForFormTaskAndResume TaskInput="[item]" ... />
+        <!-- handle decision here -->
+      </Sequence>
+    </ActivityAction>
+  </ui:ForEach.Body>
+</ui:ForEach>
+```
+
+Enforced by AC-27 (`lint_persistence_in_unsupported_scope`).
+
 ## Validation & Lint Rules
 
 These lint rules live in uipath-core's `validate_xaml` and apply to Tasks workflows:
@@ -241,6 +290,7 @@ These lint rules live in uipath-core's `validate_xaml` and apply to Tasks workfl
 |---|---|---|
 | AC-10 | Warning | CreateFormTask count must match WaitForFormTaskAndResume count |
 | AC-26 | Error | Persistence activities (WaitForFormTaskAndResume) must be in Main.xaml only |
+| AC-27 | Error | Persistence activities must not be nested in ForEach/ForEachRow/RetryScope/TryCatch/Parallel/Pick/While/DoWhile |
 
 Additional checks within lint 10:
 - `TaskOutput="{x:Null}"` — warns that task data won't be captured
