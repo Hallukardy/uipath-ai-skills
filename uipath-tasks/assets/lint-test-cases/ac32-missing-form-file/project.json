@@ -1,0 +1,22 @@
+{
+  "name": "ac32_missing_form_file_fixture",
+  "description": "Fixture project for AC-32 — DynamicFormPath references a missing file.",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.System.Activities": "[26.2.4]",
+    "UiPath.Persistence.Activities": "[1.9.0]",
+    "UiPath.FormActivityLibrary": "[2.0.8]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "supportsPersistence": true
+  },
+  "entryPoints": [
+    { "filePath": "Main.xaml", "uniqueId": "00000000-0000-0000-0000-000000000032", "input": [], "output": [] }
+  ],
+  "expressionLanguage": "VisualBasic",
+  "targetFramework": "Windows"
+}

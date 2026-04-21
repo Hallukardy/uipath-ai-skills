@@ -295,6 +295,31 @@ When the form is large or shared across workflows, keep it in a `.json` file und
 - `EnableDynamicForms="True"`
 - `DynamicFormPath="Forms\MyForm.json"` (relative to project root)
 
+### Generating both sides at once
+
+`gen_create_form_task` accepts two optional kwargs that write the external file for you:
+
+- `dynamic_form_path` — project-relative path, emitted verbatim as the `DynamicFormPath` attribute.
+- `project_root` — absolute path to the project directory. When set together with `dynamic_form_path`, the form schema is converted to the UiPath external-file shape (`{"components":[...]}` → `{"id":"<guid>","form":[...]}`) and written to `<project_root>/<dynamic_form_path>`. Parent directories are created automatically.
+
+```python
+gen_create_form_task(
+    task_title_expr='"Review Invoice"',
+    task_output_variable="fdtTask",
+    form_layout_json='{"components":[...]}',       # standard form.io shape
+    id_ref="CreateFormTask_1",
+    dynamic_form_path="Forms/InvoiceApproval.json",
+    project_root=r"C:\…\InvoiceApprovalProcess",
+)
+```
+
+The helper `form_layout_to_external_file(form_layout_json, form_id=None)` exposes the shape conversion standalone — useful when you're writing the file yourself or migrating an existing workflow from inline FormLayout to a sibling file.
+
+### Lints that enforce this pattern
+
+- **AC-32** (`lint_dynamic_form_path_missing_file`) — fires when `DynamicFormPath` is set but the referenced file is missing, unreadable, or uses the wrong root key (`components`/bare array instead of `form`) or lacks the required `id`. Catches the runtime errors listed below before they hit Studio or Action Center.
+- **AC-33** (`lint_inline_form_layout_should_extract`) — warns when inline `FormLayout` exceeds 500 chars of raw JSON while `DynamicFormPath="{x:Null}"`. Recommends extraction so the form designer can edit it and diffs stay clean.
+
 **The file schema is NOT standard form.io.** UiPath expects:
 
 ```json

@@ -10,9 +10,61 @@ Namespace prefixes used:
     upat: UiPath.Persistence.Activities.Tasks       — CompleteTask, AssignTasks
 """
 
+import json
+import os
+
 from utils import escape_xml_attr as _escape_xml_attr
 from utils import escape_vb_expr as _escape_vb_expr
 from utils import generate_uuid as _uuid
+
+
+def form_layout_to_external_file(form_layout_json, form_id=None):
+    """Convert form.io schema to the UiPath external-form-file shape.
+
+    form.io default: `{"components": [...], "display"?: "form", ...}`
+    UiPath DynamicFormPath file: `{"id": "<guid-or-slug>", "form": [...]}`
+
+    Critical differences (see form-tasks.md:298-316):
+    - Root key is `form`, not `components`.
+    - Root `id` is required (any string).
+    - No `display`/`name`/`title` wrappers.
+
+    Args:
+        form_layout_json: Raw JSON string with form.io schema.
+        form_id: Optional explicit id; generated UUID if omitted.
+
+    Returns:
+        JSON string ready to write as `<project>/<DynamicFormPath>`.
+
+    Raises:
+        ValueError: if input is not parseable JSON or missing `components`.
+    """
+    try:
+        schema = json.loads(form_layout_json)
+    except (TypeError, json.JSONDecodeError) as e:
+        raise ValueError(f"form_layout_json is not valid JSON: {e}") from e
+
+    if isinstance(schema, list):
+        components = schema
+    elif isinstance(schema, dict):
+        if "form" in schema and isinstance(schema["form"], list):
+            # Already UiPath shape — preserve, only fix missing id.
+            if not schema.get("id"):
+                schema["id"] = form_id or _uuid()
+            return json.dumps(schema, indent=2)
+        components = schema.get("components")
+        if not isinstance(components, list):
+            raise ValueError(
+                "form_layout_json must contain a 'components' array (form.io) "
+                "or a 'form' array (UiPath external file)."
+            )
+    else:
+        raise ValueError("form_layout_json must be a JSON object or array.")
+
+    return json.dumps(
+        {"id": form_id or _uuid(), "form": components},
+        indent=2,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -24,6 +76,9 @@ def gen_create_form_task(task_title_expr, task_output_variable, form_layout_json
                          task_catalog_expr="",
                          task_priority="Medium",
                          bucket_name_expr="",
+                         dynamic_form_path="",
+                         project_root=None,
+                         form_id=None,
                          display_name="Create Form Task", indent="    "):
     """Generate CreateFormTask — human-in-the-loop form task.
 
@@ -47,8 +102,14 @@ def gen_create_form_task(task_title_expr, task_output_variable, form_layout_json
         task_title_expr: VB expression for task title (no brackets),
                          e.g. 'String.Format("Review_{0}", strDocName)'
         task_output_variable: Variable receiving FormTaskData (no brackets)
-        form_layout_json: Raw JSON string for form.io schema. Will be XML-escaped
-                          and {} prefixed automatically.
+        form_layout_json: Raw JSON string for form.io schema. When
+                          ``dynamic_form_path`` is empty, this is inlined in
+                          the XAML FormLayout attribute (XML-escaped, `{}`
+                          prefixed). When ``dynamic_form_path`` is set, the
+                          schema is converted to the UiPath external-file
+                          shape and optionally written to disk; the XAML
+                          still carries the inline FormLayout as a fallback
+                          (required — UiPath validates it at load time).
         form_data: Dict of {field_key: (direction, type, variable)}.
                    direction: "In", "Out", "InOut"
                    type: "x:String", "sd:DataTable", "x:Int32", etc.
@@ -57,6 +118,19 @@ def gen_create_form_task(task_title_expr, task_output_variable, form_layout_json
         task_catalog_expr: VB expression for catalog name, or empty
         task_priority: "Low", "Medium", "High", "Critical"
         bucket_name_expr: VB expression for storage bucket, or empty
+        dynamic_form_path: Project-relative path for the external form file,
+                           e.g. ``"Forms/InvoiceApproval.json"``. When set,
+                           ``DynamicFormPath`` is emitted instead of
+                           ``{x:Null}`` — Studio's form designer loads the
+                           file for editing, and schema changes diff cleanly.
+                           AC-32 will fire if the file is missing on disk.
+        project_root: Absolute path to the UiPath project directory. When
+                      set together with ``dynamic_form_path``, the converted
+                      form schema is written to ``<project_root>/<path>``.
+                      Omit to emit the DynamicFormPath attribute without
+                      writing the file (caller handles the write).
+        form_id: Explicit id for the external form file. Generated UUID when
+                 omitted. Ignored when ``dynamic_form_path`` is empty.
     """
     valid_priorities = ("Low", "Medium", "High", "Critical")
     if task_priority not in valid_priorities:
@@ -86,6 +160,27 @@ def gen_create_form_task(task_title_expr, task_output_variable, form_layout_json
     form_layout_guid = _uuid()
     bulk_form_layout_guid = _uuid()
 
+    # External form file: emit DynamicFormPath and (optionally) write the file.
+    # Studio's form designer edits .json files at DynamicFormPath — inline
+    # FormLayout is not editable from the designer. When writing, convert
+    # form.io {"components":[…]} to UiPath {"id":…,"form":[…]} per
+    # form-tasks.md:298–316.
+    if dynamic_form_path:
+        normalized_path = dynamic_form_path.replace("\\", "/")
+        dynamic_form_attr = (
+            f'DynamicFormPath="{_escape_xml_attr(normalized_path)}"'
+        )
+        if project_root:
+            converted = form_layout_to_external_file(form_layout_json, form_id)
+            abs_target = os.path.join(
+                project_root, normalized_path.replace("/", os.sep)
+            )
+            os.makedirs(os.path.dirname(abs_target) or ".", exist_ok=True)
+            with open(abs_target, "w", encoding="utf-8") as f:
+                f.write(converted)
+    else:
+        dynamic_form_attr = 'DynamicFormPath="{x:Null}"'
+
     # FormData children
     valid_directions = ("In", "Out", "InOut")
     form_data_block = ""
@@ -113,7 +208,7 @@ def gen_create_form_task(task_title_expr, task_output_variable, form_layout_json
 
     return (
         f'{i}<upaf:CreateFormTask BucketFolderPath="{{x:Null}}" BulkFormLayout="{{x:Null}}" '
-        f'DynamicFormPath="{{x:Null}}" ExternalTag="{{x:Null}}" Labels="{{x:Null}}" '
+        f'{dynamic_form_attr} ExternalTag="{{x:Null}}" Labels="{{x:Null}}" '
         f'TimeoutMs="{{x:Null}}" '
         f'{bucket} '
         f'BulkFormLayoutGuid="{bulk_form_layout_guid}" '

@@ -35,6 +35,7 @@ from .generators import (
     gen_create_form_task, gen_wait_for_form_task,
     gen_create_external_task, gen_wait_for_external_task,
     gen_get_form_tasks, gen_complete_task, gen_assign_tasks,
+    form_layout_to_external_file,
 )
 from .lint_rules import (
     lint_tasks, lint_formdata_key_mismatch,
@@ -44,6 +45,8 @@ from .lint_rules import (
     lint_ui_invoke_method,
     lint_invoke_method_targetobject_attribute,
     lint_formtaskdata_data_late_binding,
+    lint_dynamic_form_path_missing_file,
+    lint_inline_form_layout_should_extract,
 )
 from .scaffold_hooks import enable_persistence_support
 from .battle_test_grading import grade_ac
@@ -66,6 +69,8 @@ register_lint(lint_task_create_missing_folder, "lint_task_create_missing_folder"
 register_lint(lint_ui_invoke_method, "lint_ui_invoke_method")
 register_lint(lint_invoke_method_targetobject_attribute, "lint_invoke_method_targetobject_attribute")
 register_lint(lint_formtaskdata_data_late_binding, "lint_formtaskdata_data_late_binding")
+register_lint(lint_dynamic_form_path_missing_file, "lint_dynamic_form_path_missing_file")
+register_lint(lint_inline_form_layout_should_extract, "lint_inline_form_layout_should_extract")
 register_lint(lint_external_task, "lint_external_task")
 
 # --- Scaffold hooks ---
@@ -234,5 +239,13 @@ register_lint_test_fixture(
 )
 register_lint_test_fixture(
     "bad_formtaskdata_data_late_binding.xaml", "AC-31", "WARN",
+    _PLUGIN_ROOT / "assets" / "lint-test-cases",
+)
+register_lint_test_fixture(
+    "ac32-missing-form-file/Main.xaml", "AC-32", "ERROR",
+    _PLUGIN_ROOT / "assets" / "lint-test-cases",
+)
+register_lint_test_fixture(
+    "bad_large_inline_form_layout.xaml", "AC-33", "WARN",
     _PLUGIN_ROOT / "assets" / "lint-test-cases",
 )
