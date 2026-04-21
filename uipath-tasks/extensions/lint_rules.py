@@ -9,6 +9,8 @@ AC-28: CreateFormTask / CreateExternalTask missing FolderPath (runtime 1101)
 AC-29: <ui:InvokeMethod> — wrong namespace; InvokeMethod is in the default one
 AC-30: InvokeMethod.TargetObject attribute form; needs element form
 AC-31: FormTaskData.Data(...) / ExternalTaskData.Data(...) late-binding (BC30574)
+AC-32: DynamicFormPath points to a file that's missing or has the wrong shape
+AC-33: Large inline FormLayout should be extracted to a sibling .json file
 """
 
 import json
@@ -487,6 +489,171 @@ def lint_invoke_method_targetobject_attribute(ctx, result):
             f"Use element form: "
             f"<InvokeMethod.TargetObject><InArgument x:TypeArguments=\"...\">[expr]"
             f"</InArgument></InvokeMethod.TargetObject>."
+        )
+
+
+def _find_project_root(filepath):
+    """Walk up from ``filepath`` looking for the nearest project.json.
+
+    Mirrors the lookup in _current_file_is_entry_point but returns the
+    directory containing project.json (or None if not found).
+    """
+    if not filepath:
+        return None
+    filepath = os.path.abspath(filepath)
+    project_dir = os.path.dirname(filepath)
+    while project_dir and not os.path.isfile(os.path.join(project_dir, "project.json")):
+        parent = os.path.dirname(project_dir)
+        if parent == project_dir:
+            return None
+        project_dir = parent
+    return project_dir or None
+
+
+_CREATE_FORM_TASK_RE = re.compile(r"<upaf:CreateFormTask\b([^>]*)>", re.DOTALL)
+
+
+def _dynamic_form_path_value(attrs):
+    """Return the DynamicFormPath attribute value or None if absent/null."""
+    m = re.search(r'\bDynamicFormPath="([^"]*)"', attrs)
+    if m is None:
+        return None
+    v = m.group(1)
+    return None if v in ("", "{x:Null}") else v
+
+
+def _inline_form_layout_size(attrs):
+    """Return the raw JSON length of the inline FormLayout attribute (0 if absent)."""
+    m = re.search(r'\bFormLayout="\{\}(.*?)"', attrs)
+    if not m:
+        return 0
+    return len(unescape(m.group(1)))
+
+
+def lint_dynamic_form_path_missing_file(ctx, result):
+    """AC-32: DynamicFormPath must point to an existing, correctly-shaped file.
+
+    When CreateFormTask sets ``DynamicFormPath="Forms/X.json"``, Studio (and
+    the runtime) load the external form file instead of the inline
+    FormLayout. If the file is missing, the form designer fails to open;
+    at runtime the task errors with 'Form File has invalid format' or
+    'Cannot deserialize … List<FormIOComponent>' (see form-tasks.md:319-321).
+
+    Required shape: root ``form`` array + required ``id`` string. The common
+    mistakes — ``{"components": [...]}`` (form.io default) and bare arrays —
+    are explicitly flagged.
+    """
+    try:
+        content = ctx.active_content
+        filepath = getattr(ctx, "filepath", None)
+    except Exception:
+        return
+    if not content or "<upaf:CreateFormTask" not in content:
+        return
+
+    project_root = _find_project_root(filepath)
+    if project_root is None:
+        return  # Without project root we can't resolve the relative path.
+
+    for m in _CREATE_FORM_TASK_RE.finditer(content):
+        attrs = m.group(1)
+        dyn_path = _dynamic_form_path_value(attrs)
+        if dyn_path is None:
+            continue
+
+        display_match = re.search(r'\sDisplayName="([^"]*)"', attrs)
+        display = display_match.group(1) if display_match else "(no DisplayName)"
+
+        normalized = dyn_path.replace("\\", "/").replace("/", os.sep)
+        abs_path = os.path.join(project_root, normalized)
+        if not os.path.isfile(abs_path):
+            result.error(
+                f"[AC-32] CreateFormTask '{display}' sets DynamicFormPath="
+                f"\"{dyn_path}\" but no file exists at that path under the "
+                f"project root. The form designer won't open and the task "
+                f"will fail at runtime. Either write the form schema to "
+                f"'{dyn_path}' or clear DynamicFormPath to fall back to "
+                f"inline FormLayout."
+            )
+            continue
+
+        try:
+            with open(abs_path, encoding="utf-8") as f:
+                schema = json.load(f)
+        except (OSError, json.JSONDecodeError, ValueError) as e:
+            result.error(
+                f"[AC-32] CreateFormTask '{display}' DynamicFormPath file "
+                f"'{dyn_path}' is unreadable or invalid JSON: {e}."
+            )
+            continue
+
+        if not isinstance(schema, dict) or "form" not in schema or \
+                not isinstance(schema.get("form"), list):
+            hint = (
+                " Root key 'components' is the form.io default; UiPath "
+                "external form files require 'form'. Convert with "
+                "form_layout_to_external_file()."
+                if isinstance(schema, dict) and "components" in schema
+                else ""
+            )
+            result.error(
+                f"[AC-32] CreateFormTask '{display}' DynamicFormPath file "
+                f"'{dyn_path}' has the wrong shape — root key must be 'form' "
+                f"(array of components). Runtime will raise 'Cannot "
+                f"deserialize the current JSON object into "
+                f"List<FormIOComponent>' or 'Form File has invalid format'."
+                f"{hint}"
+            )
+            continue
+
+        if not schema.get("id"):
+            result.error(
+                f"[AC-32] CreateFormTask '{display}' DynamicFormPath file "
+                f"'{dyn_path}' is missing the required 'id' string at the "
+                f"root. Runtime will raise 'JArray does not contain a "
+                f"definition for \\'id\\''."
+            )
+
+
+# Inline FormLayout above this many characters of raw JSON should live in a
+# sibling file (better diffs, designer-editable, reusable). Chosen to fire on
+# real-world forms (~10 fields / ~1KB+) without nagging tiny demo snippets.
+_INLINE_FORM_LAYOUT_SOFT_LIMIT = 500
+
+
+def lint_inline_form_layout_should_extract(ctx, result):
+    """AC-33: Large inline FormLayout — recommend extraction to a .json file.
+
+    Inline FormLayout isn't editable from Studio's form designer, blows up
+    XAML diffs, and can't be shared across workflows. Past the soft limit
+    (~500 chars of raw JSON), the payoff of extracting to a sibling
+    DynamicFormPath file outweighs the ceremony.
+    """
+    try:
+        content = ctx.active_content
+    except Exception:
+        return
+    if not content or "<upaf:CreateFormTask" not in content:
+        return
+
+    for m in _CREATE_FORM_TASK_RE.finditer(content):
+        attrs = m.group(1)
+        if _dynamic_form_path_value(attrs) is not None:
+            continue
+
+        size = _inline_form_layout_size(attrs)
+        if size < _INLINE_FORM_LAYOUT_SOFT_LIMIT:
+            continue
+
+        display_match = re.search(r'\sDisplayName="([^"]*)"', attrs)
+        display = display_match.group(1) if display_match else "(no DisplayName)"
+        result.warn(
+            f"[AC-33] CreateFormTask '{display}' carries a {size}-char inline "
+            f"FormLayout with DynamicFormPath={{x:Null}}. Studio's form "
+            f"designer can't edit inline schemas and large FormLayout "
+            f"attributes poison XAML diffs. Extract to a sibling file and "
+            f"set DynamicFormPath=\"Forms/<name>.json\" — generators.py "
+            f"exposes form_layout_to_external_file() for the shape conversion."
         )
 
 
