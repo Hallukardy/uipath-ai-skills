@@ -4,11 +4,13 @@ AC-10: CreateFormTask / WaitForFormTaskAndResume count mismatch
 AC-11: FormData keys don't match form.io component keys
 AC-12: CreateExternalTask / WaitForExternalTaskAndResume count mismatch
 AC-26: Persistence activities in non-Main workflow
+AC-27: Persistence activities nested in a scope that can't serialize bookmarks
 """
 
 import json
 import os
 import re
+import xml.etree.ElementTree as ET
 from html import unescape
 
 
@@ -292,3 +294,90 @@ def lint_persistence_in_subworkflow(ctx, result):
                 f"bookmark context only exists in entry points. Move '{activity}' to an entry "
                 f"point or register this file as one."
             )
+
+
+_PERSISTENCE_ACTIVITIES = frozenset({
+    "WaitForFormTaskAndResume",
+    "WaitForFormTaskCompletion",
+    "WaitForExternalTaskAndResume",
+    "WaitForAppTaskAndResume",
+    "WaitForJobAndResume",
+    "WaitForQueueItemAndResume",
+    "ResumeAfterDelay",
+    "WaitForItemEvent",
+    "ResumeBookmark",
+})
+
+_UNSUPPORTED_PERSISTENCE_SCOPES = frozenset({
+    "ForEach",
+    "ForEachRow",
+    "ForEachFileX",
+    "ForEachFolderX",
+    "RetryScope",
+    "TryCatch",
+    "Parallel",
+    "ParallelForEach",
+    "Pick",
+    "While",
+    "DoWhile",
+})
+
+
+def _local_name(tag):
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+
+def lint_persistence_in_unsupported_scope(ctx, result):
+    """AC-27: Persistence activities must not be nested in scopes that can't serialize bookmarks.
+
+    ForEachRow/ForEach/RetryScope/TryCatch/Parallel/Pick/While hold per-iteration
+    or per-branch state that cannot be persisted mid-flight, so a nested
+    Wait*AndResume triggers Studio's "the scope does not offer support for it"
+    validation error. The fix is the Shadow Task Pattern: create tasks inside
+    the loop, then wait on them in a second loop directly under the root Sequence.
+    """
+    try:
+        content = ctx.active_content
+    except Exception:
+        return
+    if not content:
+        return
+
+    if not any(name in content for name in _PERSISTENCE_ACTIVITIES):
+        return
+
+    try:
+        root = ET.fromstring(content)
+    except ET.ParseError:
+        return
+
+    parents = {child: parent for parent in root.iter() for child in parent}
+
+    for elem in root.iter():
+        name = _local_name(elem.tag)
+        if name not in _PERSISTENCE_ACTIVITIES:
+            continue
+
+        id_ref = next(
+            (v for k, v in elem.attrib.items() if _local_name(k).endswith("IdRef")),
+            None,
+        )
+
+        ancestor = parents.get(elem)
+        while ancestor is not None:
+            anc_name = _local_name(ancestor.tag)
+            if anc_name in _UNSUPPORTED_PERSISTENCE_SCOPES:
+                display_name = ancestor.attrib.get("DisplayName") or "(no DisplayName)"
+                result.error(
+                    f"[AC-27] Persistence activity '{name}'"
+                    + (f" (IdRef '{id_ref}')" if id_ref else "")
+                    + f" is nested inside scope '{anc_name}' "
+                    f"(DisplayName '{display_name}'), which does not support persistence "
+                    f"bookmarks. Wait-and-resume activities cannot run inside "
+                    f"ForEach/ForEachRow/RetryScope/TryCatch/Parallel/Pick/While. Use the "
+                    f"Shadow Task Pattern: first loop creates tasks into a List(FormTaskData); "
+                    f"a second loop directly under the root Sequence (not nested) runs "
+                    f"Wait*AndResume per task. See uipath-tasks/references/form-tasks.md."
+                )
+                break
+            ancestor = parents.get(ancestor)

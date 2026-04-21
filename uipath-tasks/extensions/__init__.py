@@ -39,6 +39,7 @@ from .generators import (
 from .lint_rules import (
     lint_tasks, lint_formdata_key_mismatch,
     lint_persistence_in_subworkflow, lint_external_task,
+    lint_persistence_in_unsupported_scope,
 )
 from .scaffold_hooks import enable_persistence_support
 from .battle_test_grading import grade_ac
@@ -56,6 +57,7 @@ register_generator("assign_tasks", gen_assign_tasks, display_name="AssignTasks")
 register_lint(lint_tasks, "lint_tasks")
 register_lint(lint_formdata_key_mismatch, "lint_formdata_key_mismatch")
 register_lint(lint_persistence_in_subworkflow, "lint_persistence_in_subworkflow")
+register_lint(lint_persistence_in_unsupported_scope, "lint_persistence_in_unsupported_scope")
 register_lint(lint_external_task, "lint_external_task")
 
 # --- Scaffold hooks ---
@@ -204,5 +206,9 @@ register_lint_test_fixture(
 )
 register_lint_test_fixture(
     "bad_external_task_subworkflow.xaml", "AC-26", "ERROR",
+    _PLUGIN_ROOT / "assets" / "lint-test-cases",
+)
+register_lint_test_fixture(
+    "bad_persistence_in_foreachrow.xaml", "AC-27", "ERROR",
     _PLUGIN_ROOT / "assets" / "lint-test-cases",
 )
