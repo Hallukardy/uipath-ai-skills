@@ -261,7 +261,9 @@ This avoids blocking: the shadow task doesn't delay creation of the main task. A
 
 ## Anti-pattern: persistence inside a loop/retry scope
 
-`WaitForFormTaskAndResume` **cannot** be nested inside `ui:ForEachRow`, `ui:ForEach`, `ui:RetryScope`, `TryCatch`, `Parallel`, `Pick`, `While`, or `DoWhile`. These scopes hold per-iteration or per-branch state that cannot serialize mid-flight when a bookmark suspends the workflow. Studio rejects it at validation time with: *"Cannot place activity under scope '<name>', as the activity requires persistence and the scope does not offer support for it."*
+`WaitForFormTaskAndResume` **cannot** be nested inside `ui:ForEachRow`, `ui:RetryScope`, `TryCatch`, `Parallel`, `ParallelForEach`, `Pick`, `While`, or `DoWhile`, **or inside a `ui:ForEach` whose `x:TypeArguments` isn't a persistable task-data type**. These scopes hold per-iteration or per-branch state that cannot serialize mid-flight when a bookmark suspends the workflow. Studio rejects it at validation time with: *"Cannot place activity under scope '<name>', as the activity requires persistence and the scope does not offer support for it."*
+
+**The one carve-out:** a `ui:ForEach x:TypeArguments="upaf:FormTaskData"` (or `upae:ExternalTaskData`) **is** allowed to contain `Wait*AndResume`. Studio accepts it because the iteration state is just `List<FormTaskData>` + `Int32` index — both fully persistable. This is exactly the ✅ Shadow Task Pattern's second loop below. AC-27 has a targeted carve-out for these two item types; any other `ui:ForEach<T>` (e.g. `x:String`, `sd:DataRow`, `x:Int32`) still fails.
 
 ❌ Wrong — wait nested inside `ui:ForEachRow`:
 ```xml

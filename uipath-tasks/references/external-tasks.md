@@ -165,12 +165,14 @@ Each entry becomes an `InArgument` in the dictionary. The external system receiv
 
 ## Anti-pattern: persistence inside a loop/retry scope
 
-`WaitForExternalTaskAndResume` **cannot** be nested inside `ui:ForEachRow`, `ui:ForEach`, `ui:RetryScope`, `TryCatch`, `Parallel`, `Pick`, `While`, or `DoWhile`. These scopes hold per-iteration or per-branch state that cannot serialize mid-flight when a bookmark suspends the workflow. Studio rejects it with: *"Cannot place activity under scope '<name>', as the activity requires persistence and the scope does not offer support for it."*
+`WaitForExternalTaskAndResume` **cannot** be nested inside `ui:ForEachRow`, `ui:RetryScope`, `TryCatch`, `Parallel`, `ParallelForEach`, `Pick`, `While`, or `DoWhile`, **or inside a `ui:ForEach` whose `x:TypeArguments` isn't `upae:ExternalTaskData`**. These scopes hold per-iteration or per-branch state that cannot serialize mid-flight when a bookmark suspends the workflow. Studio rejects it with: *"Cannot place activity under scope '<name>', as the activity requires persistence and the scope does not offer support for it."*
+
+**Carve-out:** a `ui:ForEach x:TypeArguments="upae:ExternalTaskData"` (or `upaf:FormTaskData`) **is** allowed to contain the Wait — the `List<T>` + `Int32` iteration state serializes cleanly. That's the second loop of the Shadow Task Pattern below.
 
 When iterating over a batch (e.g., one external ticket per input row), use the same **Shadow Task Pattern** described in `form-tasks.md`:
 
-1. First loop: `CreateExternalTask` per row, append the returned `ExternalTaskData` to a `List(ExternalTaskData)`.
-2. Second loop (directly under the root `Sequence`, not nested): `WaitForExternalTaskAndResume` per item.
+1. First loop (`ui:ForEachRow` over the DataTable, or `ui:ForEach` over a list of inputs): `CreateExternalTask` per row, append the returned `ExternalTaskData` to a `List(ExternalTaskData)`. The list variable **must be initialized** (`Default="[New System.Collections.Generic.List(Of UiPath.Persistence.Activities.ExternalTask.ExternalTaskData)()]"`) or the first `InvokeMethod.Add` throws `Value cannot be null. (Parameter 'TargetObject')`.
+2. Second loop (`ui:ForEach x:TypeArguments="upae:ExternalTaskData"` directly under the root `Sequence`): `WaitForExternalTaskAndResume` per item.
 
 Enforced by AC-27 (`lint_persistence_in_unsupported_scope`).
 

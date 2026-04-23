@@ -228,6 +228,10 @@ register_lint_test_fixture(
     _PLUGIN_ROOT / "assets" / "lint-test-cases",
 )
 register_lint_test_fixture(
+    "bad_persistence_in_foreach_string.xaml", "AC-27", "ERROR",
+    _PLUGIN_ROOT / "assets" / "lint-test-cases",
+)
+register_lint_test_fixture(
     "bad_create_form_task_no_folder.xaml", "AC-28", "WARN",
     _PLUGIN_ROOT / "assets" / "lint-test-cases",
 )

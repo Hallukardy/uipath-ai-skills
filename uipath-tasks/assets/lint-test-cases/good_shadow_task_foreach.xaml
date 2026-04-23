@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="Main"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
+  xmlns:upaf="clr-namespace:UiPath.Persistence.Activities.FormTask;assembly=UiPath.Persistence.Activities">
+  <Sequence DisplayName="Main" sap2010:WorkflowViewState.IdRef="Sequence_Main">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="scg:List(upaf:FormTaskData)" Name="lstInvoiceTasks"
+                Default="[New System.Collections.Generic.List(Of UiPath.Persistence.Activities.FormTask.FormTaskData)()]" />
+      <Variable x:TypeArguments="upaf:FormTaskData" Name="fdtInvoiceTask" />
+      <Variable x:TypeArguments="x:String" Name="strAction" />
+    </Sequence.Variables>
+    <ui:ForEachRow DisplayName="Create Task Per Invoice" sap2010:WorkflowViewState.IdRef="ForEachRow_Create">
+      <ui:ForEachRow.Body>
+        <ActivityAction x:TypeArguments="sd:DataRow">
+          <Sequence DisplayName="Create Body" sap2010:WorkflowViewState.IdRef="Sequence_Create_Body">
+            <upaf:CreateFormTask DisplayName="Create Form Task" FolderPath="Shared" TaskOutput="[fdtInvoiceTask]" sap2010:WorkflowViewState.IdRef="CreateFormTask_1" />
+            <InvokeMethod MethodName="Add" sap2010:WorkflowViewState.IdRef="InvokeMethod_Add">
+              <InvokeMethod.TargetObject>
+                <InArgument x:TypeArguments="scg:List(upaf:FormTaskData)">[lstInvoiceTasks]</InArgument>
+              </InvokeMethod.TargetObject>
+              <InvokeMethod.Parameters>
+                <InArgument x:TypeArguments="upaf:FormTaskData">[fdtInvoiceTask]</InArgument>
+              </InvokeMethod.Parameters>
+            </InvokeMethod>
+          </Sequence>
+        </ActivityAction>
+      </ui:ForEachRow.Body>
+    </ui:ForEachRow>
+    <ui:ForEach x:TypeArguments="upaf:FormTaskData" DisplayName="Wait For Each Task" Values="[lstInvoiceTasks]" sap2010:WorkflowViewState.IdRef="ForEach_Wait">
+      <ui:ForEach.Body>
+        <ActivityAction x:TypeArguments="upaf:FormTaskData">
+          <Sequence DisplayName="Wait Body" sap2010:WorkflowViewState.IdRef="Sequence_Wait_Body">
+            <upaf:WaitForFormTaskAndResume DisplayName="Wait For Manager Decision" TaskInput="[item]" TaskAction="[strAction]" sap2010:WorkflowViewState.IdRef="WaitForFormTask_1" />
+          </Sequence>
+        </ActivityAction>
+      </ui:ForEach.Body>
+    </ui:ForEach>
+  </Sequence>
+</Activity>
