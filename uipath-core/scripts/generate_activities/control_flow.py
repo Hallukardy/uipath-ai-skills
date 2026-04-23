@@ -452,9 +452,16 @@ def gen_flowchart(steps, decisions, start_ref_id, id_ref,
 
     steps_xml = "\n".join(step_blocks)
 
-    # All references at end (excluding start, which is referenced via StartNode)
+    # Trailing refs make nested nodes (FlowDecisions inlined into FlowStep.Next)
+    # discoverable as Flowchart children. Top-level FlowSteps are already direct
+    # children via their <FlowStep x:Name=> declaration — listing them again
+    # here would make WPF add the same Visual twice and crash the FlowchartDesigner
+    # with "Specified Visual is already a child of another Visual".
+    top_level_step_refs = {step["ref_id"] for step in steps}
     ref_lines = []
     for ref in sorted(all_refs):
+        if ref in top_level_step_refs:
+            continue
         ref_lines.append(f'{i2}<x:Reference>{ref}</x:Reference>')
     refs_xml = "\n".join(ref_lines)
 
