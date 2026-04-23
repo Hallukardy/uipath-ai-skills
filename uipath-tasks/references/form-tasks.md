@@ -366,9 +366,11 @@ After `WaitForFormTaskAndResume` completes, prefer **typed properties** and your
 
 ## Orchestrator folder (FolderPath)
 
-`CreateFormTask`, `WaitForFormTaskAndResume`, and related Action Center activities need to know which Orchestrator folder to create the task in. Without it, runtime fails with *"A folder is required for this action. Error code: 1101"* (AC-28).
+`CreateFormTask` (and `CreateExternalTask`) needs to know which Orchestrator folder to create the task in. Without it, runtime fails with *"A folder is required for this action. Error code: 1101"* (AC-28).
 
-Set the `FolderPath` attribute on the activity to an Orchestrator folder name (e.g. `"Shared"`, or a Config.xlsx key). Studio injects this automatically when you set the value via the Properties panel.
+Set the `FolderPath` attribute on `CreateFormTask` to an Orchestrator folder name (e.g. `"Shared"`, or a Config.xlsx key). Studio injects this automatically when you set the value via the Properties panel.
+
+`WaitForFormTaskAndResume` does **not** declare a `FolderPath` property — the wait operates on the `FormTaskData` returned by `CreateFormTask`, which already carries the folder context. Adding `FolderPath` to the wait activity makes Studio demote it to `UnresolvedActivity` and crash the FlowchartDesigner.
 
 ## Validation & Lint Rules
 
