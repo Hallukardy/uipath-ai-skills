@@ -4,6 +4,7 @@ Moved from uipath-core/scripts/grade_battle_test.py to keep task-specific
 grading logic in the plugin. Imports shared primitives from core.
 """
 
+import re
 from pathlib import Path
 
 from grade_battle_test import (
@@ -164,14 +165,54 @@ def grade_ac(scenario: int, project_dir: Path) -> GradeResult:
             gr.check("Form.io datagrid component present", False)
 
     elif scenario == 3:
-        # Shadow task pattern
+        # Shadow task pattern: single CreateFormTask inside a ForEach, a
+        # List(FormTaskData) accumulator, and NO flat unrolled Create*Task
+        # repetition at the root Sequence level.
+        create_in_foreach = False
+        unrolled_detected = False
+        has_list_formtaskdata = False
         for xaml in find_xaml_files(project_dir):
             content = read_text(xaml)
-            if "ForEach" in content and "CreateFormTask" in content:
-                gr.check("CreateFormTask inside ForEach loop", True)
-                break
-        else:
-            gr.check("CreateFormTask inside ForEach loop", False)
+            if "CreateFormTask" not in content:
+                continue
+            if "ForEach" in content:
+                create_in_foreach = True
+            # Strong unroll signals (mirrors AC-34 lint heuristic): repeated
+            # hardcoded Rows(N) indexing across If conditions, or the same
+            # TaskOutput variable reused across multiple CreateFormTask calls.
+            row_index_hits = len(re.findall(r"Rows\(\s*\d+\s*\)", content))
+            task_outputs = re.findall(
+                r'<(?:upaf|upae):Create(?:Form|External)Task\b[^>]*?\bTaskOutput="\[([^\]]+)\]"',
+                content,
+                flags=re.DOTALL,
+            )
+            reused_output = (
+                len(task_outputs) >= 2
+                and len(set(task_outputs)) < len(task_outputs)
+            )
+            if row_index_hits >= 2 or reused_output:
+                unrolled_detected = True
+            if re.search(
+                r"List\s*\(\s*Of\s+FormTaskData\s*\)|scg:List\s*\(\s*upaf:FormTaskData\s*\)",
+                content,
+            ):
+                has_list_formtaskdata = True
+
+        gr.check("CreateFormTask inside ForEach loop", create_in_foreach)
+        gr.check(
+            "No unrolled per-item Create→Wait antipattern",
+            not unrolled_detected,
+            "hardcoded Rows(N) unroll or reused TaskOutput across sibling Creates detected"
+            if unrolled_detected
+            else "",
+        )
+        gr.check(
+            "List(Of FormTaskData) accumulator present",
+            has_list_formtaskdata,
+            "Shadow Task Pattern requires a List(Of FormTaskData) to carry tasks from create loop to wait loop"
+            if not has_list_formtaskdata
+            else "",
+        )
 
     elif scenario == 5:
         # Negative: persistence in sub-workflow

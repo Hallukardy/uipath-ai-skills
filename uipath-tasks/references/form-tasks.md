@@ -221,9 +221,35 @@ gen_wait_for_form_task(
 5. Process user input from InOutArgument/OutArgument variables
 ```
 
-## Shadow Task Pattern
+## Shadow Task Pattern (default for N-item batches)
 
-Advanced pattern from real production workflows:
+**This is the default shape any time the workflow creates a task per item in a collection** — DataTable rows, a list of documents, N invoices, N records, etc. Not an advanced pattern. Any PDD that reads "for each X, create an approval task" maps to this pattern directly.
+
+### Two antipatterns to avoid
+
+1. **Inline Create → Wait per item at flat Sequence level.** Each `CreateFormTask` is immediately followed by its `WaitForFormTaskAndResume` in the same Sequence. Approvals run strictly sequentially; the robot is tied up for the **sum** of all human wait times instead of the max. Enforced by AC-34.
+2. **Unrolled loop by row-index.** Hardcoded `If dt.Rows.Count >= N` blocks that read `dt.Rows(0)..Rows(N-1)` into the same scalar `FormTaskData` variable, each block containing an inline Create → Wait. Same performance failure as (1), and additionally bypasses AC-27 because there's no loop scope. Enforced by AC-34 via the `Rows(\d+)` row-index signal + the reused-TaskOutput-variable signal.
+
+❌ Unrolled-by-index (the pattern AC-34 catches):
+```xml
+<If Condition="[dt.Rows.Count &gt;= 1]">
+  <Sequence>
+    <upaf:CreateFormTask TaskOutput="[fdtTask]" ... />      <!-- dt.Rows(0) -->
+    <upaf:WaitForFormTaskAndResume TaskInput="[fdtTask]" ... />
+  </Sequence>
+</If>
+<If Condition="[dt.Rows.Count &gt;= 2]">
+  <Sequence>
+    <upaf:CreateFormTask TaskOutput="[fdtTask]" ... />      <!-- dt.Rows(1), same variable -->
+    <upaf:WaitForFormTaskAndResume TaskInput="[fdtTask]" ... />
+  </Sequence>
+</If>
+<!-- repeat for Rows(2..N-1) -->
+```
+
+### Historical note — two-task shadow pattern
+
+A related, distinct pattern from production workflows uses **one shadow task + one main task** for a single workflow entity (not N items):
 ```
 1. Create "shadow" task first (a lightweight form for preliminary data)
 2. Create main review task (with full form + datagrid of records)
@@ -231,7 +257,7 @@ Advanced pattern from real production workflows:
 4. After main task completes, WaitForFormTaskAndResume → shadow task
    (shadow task was already submitted by user earlier — bot just catches up)
 ```
-This avoids blocking: the shadow task doesn't delay creation of the main task.
+This avoids blocking: the shadow task doesn't delay creation of the main task. AC-34 is tuned to stay silent on this case (only 2 flat Creates, no row-index unroll, distinct TaskOutput variables).
 
 ## Anti-pattern: persistence inside a loop/retry scope
 
@@ -252,8 +278,17 @@ This avoids blocking: the shadow task doesn't delay creation of the main task.
 ```
 
 ✅ Right — Shadow Task Pattern: collect tasks in the loop, wait outside:
+
+**The `List(FormTaskData)` variable MUST be initialized before the create loop runs.** A bare `<Variable x:TypeArguments="scg:List(upaf:FormTaskData)" Name="lstInvoiceTasks" />` leaves the variable `Nothing`, and the first `InvokeMethod.Add` throws `Value cannot be null. (Parameter 'TargetObject')` at runtime. Set the `Default` attribute on the variable declaration:
+
 ```xml
-<!-- Variable: lstInvoiceTasks : List(FormTaskData) = New List(Of FormTaskData) -->
+<Variable x:TypeArguments="scg:List(upaf:FormTaskData)" Name="lstInvoiceTasks"
+          Default="[New System.Collections.Generic.List(Of UiPath.Persistence.Activities.FormTask.FormTaskData)()]" />
+```
+
+Use the fully qualified VB type name inside `Default="[...]"` — XAML namespace prefixes like `upaf:` are for the XAML type system and don't resolve inside a VB expression. For JSON spec authors using `generate_workflow.py`, pass it via the variable's `default` key.
+
+```xml
 <ui:ForEachRow DisplayName="For Each Invoice">
   <ui:ForEachRow.Body>
     <ActivityAction x:TypeArguments="sd:DataRow">
@@ -385,6 +420,7 @@ These lint rules live in uipath-core's `validate_xaml` and apply to Tasks workfl
 | AC-29 | Error | `<ui:InvokeMethod>` doesn't exist — use default namespace `<InvokeMethod>` |
 | AC-30 | Warning | `<InvokeMethod TargetObject="[expr]">` attribute form; use element form with typed `InArgument` |
 | AC-31 | Warning | `fdtTask.Data("key")` is late-bound — use typed `Title` property or OutArgument variable |
+| AC-34 | Error/Warning | Unrolled / sequential per-item `Create → Wait` — use Shadow Task Pattern (ForEach over collection + List(FormTaskData) + second ForEach) |
 
 Additional checks within lint 10:
 - `TaskOutput="{x:Null}"` — warns that task data won't be captured

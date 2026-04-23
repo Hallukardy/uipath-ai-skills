@@ -49,7 +49,7 @@ uipath-tasks/
 | Create a form task workflow | `references/tasks.md` → Create Form Task + FormData Bindings |
 | Design a form.io form schema | `references/tasks.md` → Form.io Component Reference |
 | Wait for human approval / resume | `references/tasks.md` → Wait for Form Task and Resume |
-| Shadow task or multi-task patterns | `references/tasks.md` → Shadow Task Pattern |
+| **Any PDD with "for each X" / "multiple X" / "batch of X" / N rows** (default for N-item approvals, not advanced) | `references/tasks.md` → Shadow Task Pattern |
 | Compare action types (Form vs External) | `references/tasks.md` → Action Types Comparison |
 | Create an external task (system-in-the-loop) | `references/external-tasks.md` → Create External Task |
 | Wait for external system resolution | `references/external-tasks.md` → Wait for External Task and Resume |
@@ -75,6 +75,7 @@ uipath-tasks/
 - **AC-7: Wrap Create*Task in RetryScope.** Orchestrator API calls can transiently fail.
 - **AC-8: External tasks have NO form.** Don't use FormLayout/FormData on CreateExternalTask — use TaskData dict.
 - **AC-9: Task Management activities are NOT persistence points.** GetFormTasks, CompleteTask, AssignTasks can be used in sub-workflows.
+- **AC-Shadow: Shadow Task Pattern is the default shape for N-item approvals.** When the PDD / workflow processes N items from a collection (DataTable rows, list, etc.) and each needs a human task, emit **one** `ui:ForEachRow` / `ui:ForEach` that only calls `CreateFormTask` and appends the returned `FormTaskData` to a `List(Of FormTaskData)`, followed by a **second** `ui:ForEach` (at the root-Sequence level) that runs `WaitForFormTaskAndResume` + decision handling per task. **The `List(FormTaskData)` variable MUST be initialized** — set `Default="[New System.Collections.Generic.List(Of UiPath.Persistence.Activities.FormTask.FormTaskData)()]"` on the variable declaration (or pass `"default": "[...]"` in the JSON spec). A null List throws `Value cannot be null. (Parameter 'TargetObject')` on the first `InvokeMethod.Add`. Never emit inline `Create → Wait` per item, and never unroll the loop into hardcoded `If Rows.Count >= N` / `Rows(0..N-1)` blocks. The inline form ties up the robot for the sum of all wait times instead of the max; the unrolled form additionally bypasses AC-27. See `references/form-tasks.md` → Shadow Task Pattern (default for N-item batches). Loop-nested case enforced by AC-27; unrolled case enforced by AC-34.
 
 ## Capabilities
 
