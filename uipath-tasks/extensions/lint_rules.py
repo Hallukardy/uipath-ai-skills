@@ -329,19 +329,42 @@ _UNSUPPORTED_PERSISTENCE_SCOPES = frozenset({
     "DoWhile",
 })
 
+# ForEach type-argument values for which Studio DOES allow a nested
+# Wait*AndResume. The persistence bookmark serializes cleanly because
+# (a) the item type is itself persistable and (b) the loop's state is
+# just a List<T> + Int32 index. Empirically verified in Studio 25.10 —
+# the Shadow Task Pattern prescribed in references/form-tasks.md works.
+_FOREACH_PERSISTABLE_ITEM_TYPES = frozenset({
+    "upaf:FormTaskData",
+    "upae:ExternalTaskData",
+})
+
 
 def _local_name(tag):
     return tag.rsplit("}", 1)[-1] if "}" in tag else tag
 
 
+def _foreach_type_argument(elem):
+    """Return the local x:TypeArguments value of a ForEach element, or None."""
+    for attr_key, attr_val in elem.attrib.items():
+        if _local_name(attr_key) == "TypeArguments":
+            return attr_val.strip()
+    return None
+
+
 def lint_persistence_in_unsupported_scope(ctx, result):
     """AC-27: Persistence activities must not be nested in scopes that can't serialize bookmarks.
 
-    ForEachRow/ForEach/RetryScope/TryCatch/Parallel/Pick/While hold per-iteration
-    or per-branch state that cannot be persisted mid-flight, so a nested
-    Wait*AndResume triggers Studio's "the scope does not offer support for it"
-    validation error. The fix is the Shadow Task Pattern: create tasks inside
-    the loop, then wait on them in a second loop directly under the root Sequence.
+    ForEachRow/RetryScope/TryCatch/Parallel/ParallelForEach/Pick/While/DoWhile
+    hold per-iteration or per-branch state that cannot be persisted mid-flight,
+    so a nested Wait*AndResume triggers Studio's "the scope does not offer
+    support for it" validation error.
+
+    Exception: a ui:ForEach whose x:TypeArguments is a persistable task-data
+    type (upaf:FormTaskData, upae:ExternalTaskData) DOES serialize cleanly,
+    because the iteration state is just List<T> + Int32. That's the Shadow
+    Task Pattern's second loop in references/form-tasks.md. Studio accepts
+    it; AC-27 must not flag it.
     """
     try:
         content = ctx.active_content
@@ -374,6 +397,14 @@ def lint_persistence_in_unsupported_scope(ctx, result):
         while ancestor is not None:
             anc_name = _local_name(ancestor.tag)
             if anc_name in _UNSUPPORTED_PERSISTENCE_SCOPES:
+                # Shadow Task Pattern carve-out: a ui:ForEach over a persistable
+                # task-data type is fine. Any other ForEach item type (String,
+                # DataRow via ForEachRow, Int32, …) still fails at runtime.
+                if anc_name == "ForEach":
+                    type_arg = _foreach_type_argument(ancestor)
+                    if type_arg in _FOREACH_PERSISTABLE_ITEM_TYPES:
+                        ancestor = parents.get(ancestor)
+                        continue
                 display_name = ancestor.attrib.get("DisplayName") or "(no DisplayName)"
                 result.error(
                     f"[AC-27] Persistence activity '{name}'"
@@ -381,10 +412,13 @@ def lint_persistence_in_unsupported_scope(ctx, result):
                     + f" is nested inside scope '{anc_name}' "
                     f"(DisplayName '{display_name}'), which does not support persistence "
                     f"bookmarks. Wait-and-resume activities cannot run inside "
-                    f"ForEach/ForEachRow/RetryScope/TryCatch/Parallel/Pick/While. Use the "
-                    f"Shadow Task Pattern: first loop creates tasks into a List(FormTaskData); "
-                    f"a second loop directly under the root Sequence (not nested) runs "
-                    f"Wait*AndResume per task. See uipath-tasks/references/form-tasks.md."
+                    f"ForEachRow/RetryScope/TryCatch/Parallel/ParallelForEach/Pick/While/"
+                    f"DoWhile, or inside a ui:ForEach whose item type isn't persistable "
+                    f"(only upaf:FormTaskData / upae:ExternalTaskData are allowed). "
+                    f"Use the Shadow Task Pattern: first loop creates tasks into a "
+                    f"List(FormTaskData); a second ui:ForEach<FormTaskData> (directly "
+                    f"under the root Sequence) runs Wait*AndResume per task. See "
+                    f"uipath-tasks/references/form-tasks.md → Shadow Task Pattern."
                 )
                 break
             ancestor = parents.get(ancestor)
