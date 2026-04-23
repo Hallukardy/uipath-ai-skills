@@ -47,6 +47,7 @@ from .lint_rules import (
     lint_formtaskdata_data_late_binding,
     lint_dynamic_form_path_missing_file,
     lint_inline_form_layout_should_extract,
+    lint_unrolled_sequential_task_pairs,
 )
 from .scaffold_hooks import enable_persistence_support
 from .battle_test_grading import grade_ac
@@ -71,6 +72,7 @@ register_lint(lint_invoke_method_targetobject_attribute, "lint_invoke_method_tar
 register_lint(lint_formtaskdata_data_late_binding, "lint_formtaskdata_data_late_binding")
 register_lint(lint_dynamic_form_path_missing_file, "lint_dynamic_form_path_missing_file")
 register_lint(lint_inline_form_layout_should_extract, "lint_inline_form_layout_should_extract")
+register_lint(lint_unrolled_sequential_task_pairs, "lint_unrolled_sequential_task_pairs")
 register_lint(lint_external_task, "lint_external_task")
 
 # --- Scaffold hooks ---
@@ -247,5 +249,9 @@ register_lint_test_fixture(
 )
 register_lint_test_fixture(
     "bad_large_inline_form_layout.xaml", "AC-33", "WARN",
+    _PLUGIN_ROOT / "assets" / "lint-test-cases",
+)
+register_lint_test_fixture(
+    "bad_unrolled_sequential_tasks.xaml", "AC-34", "ERROR",
     _PLUGIN_ROOT / "assets" / "lint-test-cases",
 )

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="Main"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common"
+  xmlns:upaf="clr-namespace:UiPath.Persistence.Activities.FormTask;assembly=UiPath.Persistence.Activities">
+  <Sequence DisplayName="Main" sap2010:WorkflowViewState.IdRef="Sequence_Main">
+    <If Condition="[dt_HighValue.Rows.Count &gt;= 1]" DisplayName="Process Invoice #1" sap2010:WorkflowViewState.IdRef="If_Invoice_1">
+      <If.Then>
+        <Sequence DisplayName="Invoice #1 Body" sap2010:WorkflowViewState.IdRef="Sequence_Invoice_1">
+          <ui:Assign DisplayName="Read Row 1" sap2010:WorkflowViewState.IdRef="Assign_Row_1">
+            <ui:Assign.To>
+              <OutArgument x:TypeArguments="x:String">[strInvoiceNumber]</OutArgument>
+            </ui:Assign.To>
+            <ui:Assign.Value>
+              <InArgument x:TypeArguments="x:String">[dt_HighValue.Rows(0)("invoiceNumber").ToString()]</InArgument>
+            </ui:Assign.Value>
+          </ui:Assign>
+          <upaf:CreateFormTask DisplayName="Create Form Task - Invoice #1" FolderPath="Shared" TaskOutput="[fdtTask]" sap2010:WorkflowViewState.IdRef="CreateFormTask_1" />
+          <upaf:WaitForFormTaskAndResume DisplayName="Wait for Manager Decision #1" TaskInput="[fdtTask]" TaskAction="[strAction]" sap2010:WorkflowViewState.IdRef="WaitForFormTask_1" />
+        </Sequence>
+      </If.Then>
+    </If>
+    <If Condition="[dt_HighValue.Rows.Count &gt;= 2]" DisplayName="Process Invoice #2" sap2010:WorkflowViewState.IdRef="If_Invoice_2">
+      <If.Then>
+        <Sequence DisplayName="Invoice #2 Body" sap2010:WorkflowViewState.IdRef="Sequence_Invoice_2">
+          <ui:Assign DisplayName="Read Row 2" sap2010:WorkflowViewState.IdRef="Assign_Row_2">
+            <ui:Assign.To>
+              <OutArgument x:TypeArguments="x:String">[strInvoiceNumber]</OutArgument>
+            </ui:Assign.To>
+            <ui:Assign.Value>
+              <InArgument x:TypeArguments="x:String">[dt_HighValue.Rows(1)("invoiceNumber").ToString()]</InArgument>
+            </ui:Assign.Value>
+          </ui:Assign>
+          <upaf:CreateFormTask DisplayName="Create Form Task - Invoice #2" FolderPath="Shared" TaskOutput="[fdtTask]" sap2010:WorkflowViewState.IdRef="CreateFormTask_2" />
+          <upaf:WaitForFormTaskAndResume DisplayName="Wait for Manager Decision #2" TaskInput="[fdtTask]" TaskAction="[strAction]" sap2010:WorkflowViewState.IdRef="WaitForFormTask_2" />
+        </Sequence>
+      </If.Then>
+    </If>
+    <If Condition="[dt_HighValue.Rows.Count &gt;= 3]" DisplayName="Process Invoice #3" sap2010:WorkflowViewState.IdRef="If_Invoice_3">
+      <If.Then>
+        <Sequence DisplayName="Invoice #3 Body" sap2010:WorkflowViewState.IdRef="Sequence_Invoice_3">
+          <ui:Assign DisplayName="Read Row 3" sap2010:WorkflowViewState.IdRef="Assign_Row_3">
+            <ui:Assign.To>
+              <OutArgument x:TypeArguments="x:String">[strInvoiceNumber]</OutArgument>
+            </ui:Assign.To>
+            <ui:Assign.Value>
+              <InArgument x:TypeArguments="x:String">[dt_HighValue.Rows(2)("invoiceNumber").ToString()]</InArgument>
+            </ui:Assign.Value>
+          </ui:Assign>
+          <upaf:CreateFormTask DisplayName="Create Form Task - Invoice #3" FolderPath="Shared" TaskOutput="[fdtTask]" sap2010:WorkflowViewState.IdRef="CreateFormTask_3" />
+          <upaf:WaitForFormTaskAndResume DisplayName="Wait for Manager Decision #3" TaskInput="[fdtTask]" TaskAction="[strAction]" sap2010:WorkflowViewState.IdRef="WaitForFormTask_3" />
+        </Sequence>
+      </If.Then>
+    </If>
+  </Sequence>
+</Activity>

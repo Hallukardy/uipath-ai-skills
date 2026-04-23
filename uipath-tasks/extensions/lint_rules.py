@@ -11,6 +11,7 @@ AC-30: InvokeMethod.TargetObject attribute form; needs element form
 AC-31: FormTaskData.Data(...) / ExternalTaskData.Data(...) late-binding (BC30574)
 AC-32: DynamicFormPath points to a file that's missing or has the wrong shape
 AC-33: Large inline FormLayout should be extracted to a sibling .json file
+AC-34: Unrolled / sequential per-item Create→Wait — use Shadow Task Pattern
 """
 
 import json
@@ -693,3 +694,123 @@ def lint_formtaskdata_data_late_binding(ctx, result):
             f"variable you bound in <CreateFormTask.FormData> / "
             f"<CreateExternalTask.TaskData>."
         )
+
+
+_CREATE_TASK_LOCAL_NAMES = frozenset({"CreateFormTask", "CreateExternalTask"})
+
+# Loop scopes that indicate the Creates are already driven by a collection —
+# AC-34 should stay silent for these (AC-27 already handles the "Wait nested
+# inside ForEach" variant of this mistake).
+_LOOP_SCOPES_FOR_AC34 = frozenset({
+    "ForEach",
+    "ForEachRow",
+    "ForEachFileX",
+    "ForEachFolderX",
+    "ParallelForEach",
+    "While",
+    "DoWhile",
+})
+
+_ROW_INDEX_RE = re.compile(r"Rows\(\s*\d+\s*\)")
+_TASK_OUTPUT_RE = re.compile(
+    r'<(?:upaf|upae):Create(?:Form|External)Task\b[^>]*?\bTaskOutput="\[([^\]]+)\]"',
+    flags=re.DOTALL,
+)
+
+
+def lint_unrolled_sequential_task_pairs(ctx, result):
+    """AC-34: Unrolled / sequential per-item Create→Wait antipattern.
+
+    Detects the shape where the workflow creates N tasks for N items but did NOT
+    use a ForEach loop — either because it unrolled the collection into
+    hardcoded `If Rows.Count >= N` / `Rows(0..N-1)` blocks, or because it
+    repeated inline `Create → Wait` pairs at the flat Sequence level.
+
+    In both cases the robot is tied up for the sum of the human wait times
+    instead of the max, and the unrolled form additionally bypasses AC-27
+    (which only fires on `Wait*AndResume` nested inside a loop scope).
+
+    The fix is the Shadow Task Pattern: one ForEach over the collection that
+    only creates tasks and appends to a List(Of FormTaskData), then a second
+    ForEach over that list that runs Wait*AndResume + decision handling.
+    """
+    try:
+        content = ctx.active_content
+    except Exception:
+        return
+    if not content:
+        return
+    if "CreateFormTask" not in content and "CreateExternalTask" not in content:
+        return
+
+    try:
+        root = ET.fromstring(content)
+    except ET.ParseError:
+        return
+
+    parents = {child: parent for parent in root.iter() for child in parent}
+
+    def has_loop_ancestor(elem):
+        anc = parents.get(elem)
+        while anc is not None:
+            if _local_name(anc.tag) in _LOOP_SCOPES_FOR_AC34:
+                return True
+            anc = parents.get(anc)
+        return False
+
+    flat_creates = [
+        elem for elem in root.iter()
+        if _local_name(elem.tag) in _CREATE_TASK_LOCAL_NAMES
+        and not has_loop_ancestor(elem)
+    ]
+
+    if len(flat_creates) < 2:
+        return
+
+    row_index_hits = len(_ROW_INDEX_RE.findall(content))
+    task_outputs = _TASK_OUTPUT_RE.findall(content)
+    reused_output = (
+        len(task_outputs) >= 2 and len(set(task_outputs)) < len(task_outputs)
+    )
+
+    # Strong signal gates: fire only when we're confident this isn't a legitimate
+    # two-step fixed pattern (e.g. "create a shadow summary task AND a main
+    # review task for the same entity"). Three or more flat Creates, or row-
+    # index unroll, or a shared TaskOutput variable reused across Creates — any
+    # of these effectively rules out the two-step case.
+    should_fire = (
+        len(flat_creates) >= 3
+        or row_index_hits >= 2
+        or reused_output
+    )
+    if not should_fire:
+        return
+
+    hints = []
+    if row_index_hits >= 2:
+        hints.append(f"hardcoded Rows(N) index access ({row_index_hits} occurrences)")
+    if reused_output:
+        dup = next(
+            (v for v in task_outputs if task_outputs.count(v) >= 2),
+            None,
+        )
+        if dup:
+            hints.append(
+                f"TaskOutput variable '{dup}' reused across multiple Creates"
+            )
+    hint_suffix = f" ({'; '.join(hints)})" if hints else ""
+
+    severity_error = row_index_hits >= 2 or len(flat_creates) >= 3
+    emit = result.error if severity_error else result.warn
+
+    emit(
+        f"[AC-34] Found {len(flat_creates)} Create*Task activities at the flat "
+        f"Sequence level with no ForEach/ForEachRow wrapper{hint_suffix}. This is "
+        f"the sequential per-item antipattern — each task blocks the next, so the "
+        f"robot is tied up for the sum of all human wait times instead of the max. "
+        f"Use the Shadow Task Pattern: one ForEach over the collection that only "
+        f"creates tasks and appends the FormTaskData to a List(Of FormTaskData), "
+        f"then a second ForEach (directly under the root Sequence) that runs "
+        f"WaitForFormTaskAndResume + decision handling per task. "
+        f"See uipath-tasks/references/form-tasks.md → Shadow Task Pattern."
+    )
