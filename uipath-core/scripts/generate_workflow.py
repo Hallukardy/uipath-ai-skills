@@ -933,6 +933,11 @@ def generate_workflow(spec: dict) -> str:
     xml += '    <sco:Collection x:TypeArguments="x:String">\n'
     xml += '      <x:String>GlobalConstantsNamespace</x:String>\n'
     xml += '      <x:String>GlobalVariablesNamespace</x:String>\n'
+    # Microsoft.VisualBasic: makes bare VB intrinsics (Now, Today, vbCrLf, DateDiff, ...)
+    # resolve without DateTime./Microsoft.VisualBasic. qualifiers. Without this import,
+    # expressions like "Now.ToString(...)" fail with BC30451 in pure VB.NET XAML compilation.
+    xml += '      <x:String>Microsoft.VisualBasic</x:String>\n'
+    xml += '      <x:String>Microsoft.VisualBasic.Activities</x:String>\n'
     xml += '      <x:String>System</x:String>\n'
     xml += '      <x:String>System.Collections.Generic</x:String>\n'
     xml += '      <x:String>System.Collections.ObjectModel</x:String>\n'
@@ -964,6 +969,8 @@ def generate_workflow(spec: dict) -> str:
     xml += '  </TextExpression.NamespacesForImplementation>\n'
     xml += '  <TextExpression.ReferencesForImplementation>\n'
     xml += '    <sco:Collection x:TypeArguments="AssemblyReference">\n'
+    xml += '      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>\n'
+    xml += '      <AssemblyReference>Microsoft.VisualBasic.Core</AssemblyReference>\n'
     xml += '      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>\n'
     xml += '      <AssemblyReference>System.Linq</AssemblyReference>\n'
     xml += '      <AssemblyReference>System.ObjectModel</AssemblyReference>\n'
