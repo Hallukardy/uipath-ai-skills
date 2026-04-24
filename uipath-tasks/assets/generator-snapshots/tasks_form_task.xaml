@@ -23,6 +23,7 @@
       <x:String>System</x:String>
       <x:String>System.Collections.Generic</x:String>
       <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.IO</x:String>
       <x:String>System.Linq</x:String>
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>

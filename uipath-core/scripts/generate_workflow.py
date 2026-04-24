@@ -941,6 +941,10 @@ def generate_workflow(spec: dict) -> str:
     xml += '      <x:String>System</x:String>\n'
     xml += '      <x:String>System.Collections.Generic</x:String>\n'
     xml += '      <x:String>System.Collections.ObjectModel</x:String>\n'
+    # System.IO: lets expressions reference Path.Combine, Directory.*, File.*,
+    # FileInfo, StreamReader, etc. by short name. Without this import,
+    # "Path.Combine(...)" fails with BC30451 in pure VB.NET XAML compilation.
+    xml += '      <x:String>System.IO</x:String>\n'
     xml += '      <x:String>System.Linq</x:String>\n'
     xml += '      <x:String>UiPath.Core</x:String>\n'
     xml += '      <x:String>UiPath.Core.Activities</x:String>\n'
