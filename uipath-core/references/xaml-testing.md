@@ -115,4 +115,4 @@ Deterministic random generators for test inputs. Each accepts a `Seed` for repro
 
 ## Template selection
 
-No golden templates for testing activities yet. Emission is via data-driven `_gen_from_annotation` using entries in `references/annotations/testing.json`. Reference harvested shapes under `references/studio-ground-truth/UiPath.Testing.Activities/25.10/`.
+No golden templates for testing activities yet. Emission is via the data-driven `gen_from_annotation` engine using entries in `references/annotations/testing.json`. Reference harvested shapes under `references/studio-ground-truth/UiPath.Testing.Activities/25.10/`.
