@@ -57,7 +57,26 @@
           "content": "InArgument/OutArgument/InOutArgument elements with x:TypeArguments and x:Key (only when arguments provided)"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "invoke",
+      "description": "Invokes a separate .xaml workflow file as a subroutine, marshalling InArgument/OutArgument values across the boundary.",
+      "use_when": "User wants to call a reusable subworkflow stored on disk; for inline business logic in a single language use InvokeCode; for reflective static/instance method calls use InvokeMethod.",
+      "alternatives": [
+        {
+          "activity": "InvokeCode",
+          "use_instead_when": "The logic is short, language-level (VB.NET / C#) snippets that do not warrant a separate XAML file."
+        },
+        {
+          "activity": "InvokeMethod",
+          "use_instead_when": "You only need to call a single method on an existing .NET object via reflection, not run a whole workflow."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "invoke",
+        "subworkflow",
+        "decomposition"
+      ]
     },
     "InvokeCode": {
       "gen_function": "gen_invoke_code",
@@ -98,7 +117,10 @@
           "attr": "Language",
           "required": false,
           "default": "VBNet",
-          "enum": ["VBNet", "CSharp"],
+          "enum": [
+            "VBNet",
+            "CSharp"
+          ],
           "escape": null,
           "bracket_wrap": false,
           "type": "string"
@@ -124,7 +146,27 @@
           "content": "InArgument/OutArgument/InOutArgument elements with x:TypeArguments and x:Key (only when arguments provided)"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "invoke",
+      "description": "Executes an inline VB.NET or C# code block with read/write access to declared In/Out arguments.",
+      "use_when": "User wants a short fragment of imperative code without authoring a full subworkflow; for shared subroutines use InvokeWorkflowFile; for calling existing CLR methods use InvokeMethod.",
+      "alternatives": [
+        {
+          "activity": "InvokeWorkflowFile",
+          "use_instead_when": "The behavior is reusable and worth modeling as its own XAML workflow with named arguments."
+        },
+        {
+          "activity": "InvokeMethod",
+          "use_instead_when": "You just need to call one method on an existing object; reflection is lighter than a code block."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "invoke",
+        "code",
+        "vbnet",
+        "csharp"
+      ]
     },
     "InvokeMethod": {
       "gen_function": "gen_invoke_method",
@@ -207,7 +249,26 @@
           "content": "InArgument with x:TypeArguments for instance method target (only when target_object provided)"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "invoke",
+      "description": "Reflectively calls a static or instance method on a CLR object, passing parameters and capturing the return value.",
+      "use_when": "User wants to call a single .NET method (e.g. String.Format, list.Add) without writing a full code block; for multi-statement logic use InvokeCode; for subworkflow reuse use InvokeWorkflowFile.",
+      "alternatives": [
+        {
+          "activity": "InvokeCode",
+          "use_instead_when": "You need more than one statement, control flow, or local variables; a code block is more natural than reflection."
+        },
+        {
+          "activity": "InvokeWorkflowFile",
+          "use_instead_when": "The behavior is reusable enough to warrant its own XAML workflow with explicit arguments."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "invoke",
+        "method",
+        "reflection"
+      ]
     }
   }
 }

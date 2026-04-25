@@ -108,7 +108,26 @@
           "omit_when": "is_secure=true",
           "replacement_attr": "SecureText"
         }
-      }
+      },
+      "category": "ui_automation",
+      "description": "Type a string into a UI element by simulating keystrokes, with optional secure-text masking and empty-field handling.",
+      "use_when": "User wants to fill a single text input by typing characters one at a time. For checkboxes use NCheck; for dropdowns use NSelectItem; for clipboard-paste fills use NSetText.",
+      "alternatives": [
+        {
+          "activity": "NSetText",
+          "use_instead_when": "The field already accepts a direct value-set and you do not need keystroke-level fidelity (faster, no focus needed)."
+        },
+        {
+          "activity": "NSetClipboard",
+          "use_instead_when": "The value is large or contains characters the target does not accept via keystrokes; paste from the clipboard instead."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "text-input",
+        "keyboard",
+        "modern"
+      ]
     },
     "NClick": {
       "gen_function": "gen_nclick",
@@ -199,7 +218,30 @@
           "content": null
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "ui_automation",
+      "description": "Click a UI element with configurable click type (Single/Double) and mouse button (Left/Right/Middle).",
+      "use_when": "User wants a single left click on a button or element. For double-clicks prefer NDoubleClick; for right-clicks prefer NRightClick; for hold-and-drag use NDragAndDrop.",
+      "alternatives": [
+        {
+          "activity": "NCheck",
+          "use_instead_when": "The target is a checkbox or radio button and you need to set its state instead of just clicking."
+        },
+        {
+          "activity": "NSelectItem",
+          "use_instead_when": "The target is a combo-box or list and you need to choose an item by visible text rather than firing a click."
+        },
+        {
+          "activity": "NCheckState",
+          "use_instead_when": "You only need to verify the element's state without interacting; this just observes, NClick acts."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "click",
+        "mouse",
+        "modern"
+      ]
     },
     "NCheck": {
       "gen_function": "gen_ncheck",
@@ -275,7 +317,30 @@
           "content": null
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "ui_automation",
+      "description": "Set a checkbox or radio button to a Check, Uncheck, or Toggle state.",
+      "use_when": "User wants to set a checkbox/radio to a known state. For arbitrary clicks use NClick; for verifying current state without changing it use NCheckState.",
+      "alternatives": [
+        {
+          "activity": "NClick",
+          "use_instead_when": "The target is a generic button or link rather than a checkbox/radio; a raw click is enough."
+        },
+        {
+          "activity": "NSelectItem",
+          "use_instead_when": "The control is a dropdown/list rather than a check or radio toggle."
+        },
+        {
+          "activity": "NCheckState",
+          "use_instead_when": "You only need to read whether the box is checked, not change it."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "checkbox",
+        "radio",
+        "modern"
+      ]
     },
     "NHover": {
       "gen_function": "gen_nhover",
@@ -368,7 +433,26 @@
         "HoverTime": {
           "omit_when": null
         }
-      }
+      },
+      "category": "ui_automation",
+      "description": "Hover the mouse over a UI element to trigger hover-only behaviours (tooltips, menus).",
+      "use_when": "User wants to surface hover-triggered UI (tooltips, fly-out menus) without clicking. For clicking use NClick.",
+      "alternatives": [
+        {
+          "activity": "NHighlight",
+          "use_instead_when": "You only want a visual debug outline, not a real mouse hover that fires the application's hover handlers."
+        },
+        {
+          "activity": "NTakeScreenshot",
+          "use_instead_when": "You need a saved image of the element rather than to interact with it."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "hover",
+        "mouse",
+        "modern"
+      ]
     },
     "NKeyboardShortcuts": {
       "gen_function": "gen_nkeyboardshortcuts",
@@ -477,7 +561,16 @@
           "note": "Only emitted when selector is non-empty; otherwise self-closing element"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "ui_automation",
+      "description": "Send a keyboard shortcut chord (modifier keys + key) to a UI element.",
+      "use_when": "User wants to invoke a keyboard shortcut (Ctrl+S, Alt+F4, etc.) on the target element. For typing literal text use NTypeInto.",
+      "_routing_review_needed": false,
+      "tags": [
+        "keyboard",
+        "shortcut",
+        "modern"
+      ]
     },
     "NDoubleClick": {
       "gen_function": "gen_ndoubleclick",
@@ -558,7 +651,16 @@
           "content": null
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "ui_automation",
+      "description": "Double-click a UI element with the chosen mouse button.",
+      "use_when": "User explicitly wants a double click. For single click use NClick; for right click use NRightClick.",
+      "_routing_review_needed": false,
+      "tags": [
+        "click",
+        "mouse",
+        "modern"
+      ]
     },
     "NRightClick": {
       "gen_function": "gen_nrightclick",
@@ -627,7 +729,17 @@
           "content": null
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "ui_automation",
+      "description": "Right-click a UI element to invoke its context menu.",
+      "use_when": "User wants to open a context menu. For ordinary clicks use NClick; for double-clicks use NDoubleClick.",
+      "_routing_review_needed": false,
+      "tags": [
+        "click",
+        "mouse",
+        "context-menu",
+        "modern"
+      ]
     },
     "NGetText": {
       "gen_function": "gen_ngettext",
@@ -711,7 +823,26 @@
           "note": "Only emitted when selector is provided (not in_ui_element mode)"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "ui_automation",
+      "description": "Read the visible text of a UI element into an output variable.",
+      "use_when": "User wants to capture the text shown on screen for an element. For OCR-only surfaces use GetOCRText; for clipboard use NGetClipboard; for browser DOM data use NGetBrowserData.",
+      "alternatives": [
+        {
+          "activity": "NGetClipboard",
+          "use_instead_when": "The source already lives on the system clipboard (e.g. user-copied text) rather than inside a UI element."
+        },
+        {
+          "activity": "NGetBrowserData",
+          "use_instead_when": "The source is structured browser data (cookies, storage, form values) rather than rendered text on an element."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "read",
+        "text",
+        "modern"
+      ]
     },
     "NCheckState": {
       "gen_function": "gen_ncheckstate",
@@ -835,7 +966,30 @@
         "OutUiElement": {
           "omit_when": ""
         }
-      }
+      },
+      "category": "ui_automation",
+      "description": "Inspect whether a UI element appears, disappears, or matches a state, returning the result without modifying the UI.",
+      "use_when": "User wants to test the presence/state of an element as a Boolean. For deciding which branch runs use this together with If; to actively check a checkbox use NCheck.",
+      "alternatives": [
+        {
+          "activity": "NClick",
+          "use_instead_when": "You need to act on the element rather than just observe its state."
+        },
+        {
+          "activity": "NCheck",
+          "use_instead_when": "You need to actually toggle the checkbox/radio rather than read its state."
+        },
+        {
+          "activity": "NCheckElement",
+          "use_instead_when": "You need to assert the element's existence/visibility rather than its checked state."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "assert",
+        "presence",
+        "modern"
+      ]
     },
     "NSelectItem": {
       "gen_function": "gen_nselectitem",
@@ -921,7 +1075,30 @@
           "content": null
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "ui_automation",
+      "description": "Select an item from a combobox/dropdown by visible text.",
+      "use_when": "User wants to pick a value from a dropdown/combobox. For multi-select lists use SelectMultipleItems; for typing into the field use NTypeInto.",
+      "alternatives": [
+        {
+          "activity": "NClick",
+          "use_instead_when": "The control is a free button or link, not a combo-box/list with named options."
+        },
+        {
+          "activity": "NCheck",
+          "use_instead_when": "The control is a checkbox or radio button rather than a multi-option selector."
+        },
+        {
+          "activity": "NSetText",
+          "use_instead_when": "The dropdown is editable and the value is free-form text rather than one of the predefined items."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "dropdown",
+        "select",
+        "modern"
+      ]
     },
     "NMouseScroll": {
       "gen_function": "gen_nmousescroll",
@@ -1022,22 +1199,56 @@
           "content": "<uix:SearchedElement><uix:SearchedElement.InUiElement><InArgument x:TypeArguments=\"ui:UiElement\" /></uix:SearchedElement.InUiElement><uix:SearchedElement.OutUiElement><OutArgument x:TypeArguments=\"ui:UiElement\" /></uix:SearchedElement.OutUiElement><uix:SearchedElement.Target>{selector}</uix:SearchedElement.Target><uix:SearchedElement.Timeout><InArgument x:TypeArguments=\"x:Double\" /></uix:SearchedElement.Timeout></uix:SearchedElement>"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "ui_automation",
+      "description": "Scroll the mouse wheel on a UI element by a number of clicks in a given direction.",
+      "use_when": "User wants to scroll a page or panel via mouse wheel. For keyboard-driven scrolling use NKeyboardShortcuts (PageDown / End).",
+      "_routing_review_needed": false,
+      "tags": [
+        "mouse",
+        "scroll",
+        "modern"
+      ]
     },
     "ApplicationEventTrigger": {
       "_unsupported_reason": "wizard-only",
-      "_review_needed": false
+      "_review_needed": false,
+      "category": "ui_automation",
+      "description": "Trigger that fires when a configured application event occurs (wizard-only).",
+      "use_when": "Do not auto-generate; direct the user to configure ApplicationEventTrigger in UiPath Studio's trigger wizard.",
+      "_routing_review_needed": false,
+      "tags": [
+        "trigger",
+        "wizard-only"
+      ]
     },
     "ExtractUIData": {
       "_unsupported_reason": "wizard-only",
-      "_review_needed": false
+      "_review_needed": false,
+      "category": "ui_automation",
+      "description": "Classic Data Scraping wizard output - extracts tabular UI data based on a recorded pattern (wizard-only).",
+      "use_when": "Do not auto-generate; direct the user to use Studio's Data Scraping wizard. The modern equivalent for forms is NFillForm + NExtractFormDataGeneric.",
+      "_routing_review_needed": false,
+      "tags": [
+        "scraping",
+        "wizard-only"
+      ]
     },
     "GetAttribute": {
       "_unsupported_reason": "wizard-only",
-      "_review_needed": false
+      "_review_needed": false,
+      "category": "ui_automation",
+      "description": "Read a named UI element attribute (innertext, aaname, etc.) into an output variable (wizard-only).",
+      "use_when": "Do not auto-generate; direct the user to configure GetAttribute through Studio's UI element wizard. For modern web data prefer NGetBrowserData.",
+      "_routing_review_needed": false,
+      "tags": [
+        "read",
+        "attribute",
+        "wizard-only"
+      ]
     },
     "GoogleCloudOCR": {
-      "gen_function": "gen_google_cloud_ocr",
+      "gen_function": null,
       "element_tag": "ui:GoogleCloudOCR",
       "params": {
         "display_name": {
@@ -1176,10 +1387,19 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "OCR engine that calls Google Cloud Vision against the captured image region.",
+      "use_when": "User wants OCR via Google Cloud and has an API key. For on-device OCR use GoogleOCR (Tesseract); for Azure use MicrosoftAzureComputerVisionOCR.",
+      "_routing_review_needed": false,
+      "tags": [
+        "ocr",
+        "cloud"
+      ]
     },
     "GoogleOCR": {
-      "gen_function": "gen_google_ocr",
+      "gen_function": null,
       "element_tag": "ui:GoogleOCR",
       "params": {
         "display_name": {
@@ -1325,10 +1545,20 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Tesseract-based on-device OCR engine (no cloud call).",
+      "use_when": "User wants free, offline OCR. For higher accuracy on noisy images consider GoogleCloudOCR or MicrosoftAzureComputerVisionOCR.",
+      "_routing_review_needed": false,
+      "tags": [
+        "ocr",
+        "tesseract",
+        "offline"
+      ]
     },
     "MicrosoftAzureComputerVisionOCR": {
-      "gen_function": "gen_microsoft_azure_computer_vision_ocr",
+      "gen_function": null,
       "element_tag": "ui:MicrosoftAzureComputerVisionOCR",
       "params": {
         "display_name": {
@@ -1466,14 +1696,33 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "OCR engine that calls Microsoft Azure Computer Vision against the captured image region.",
+      "use_when": "User wants OCR via Azure Cognitive Services. For Google use GoogleCloudOCR; for offline use GoogleOCR.",
+      "_routing_review_needed": false,
+      "tags": [
+        "ocr",
+        "azure",
+        "cloud"
+      ]
     },
     "NAccessibilityCheck": {
       "_unsupported_reason": "wizard-only",
-      "_review_needed": false
+      "_review_needed": false,
+      "category": "ui_automation",
+      "description": "Run an accessibility audit (axe-core) against the current browser/app state (wizard-only).",
+      "use_when": "Do not auto-generate; direct the user to configure NAccessibilityCheck through Studio's accessibility wizard.",
+      "_routing_review_needed": false,
+      "tags": [
+        "accessibility",
+        "audit",
+        "wizard-only"
+      ]
     },
     "NApplicationCard": {
-      "gen_function": "gen_n_application_card",
+      "gen_function": null,
       "element_tag": "uix:NApplicationCard",
       "params": {
         "display_name": {
@@ -1515,10 +1764,21 @@
           "arg_name": "WSSessionData"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Modern Use Application/Browser scope - opens or attaches to a target application or browser and runs nested activities against it.",
+      "use_when": "User wants the modern Use Application/Browser container that nests all child UI activities under one target. For just opening without nesting use NApplicationCardOpen; for attaching use NApplicationCardAttach.",
+      "_routing_review_needed": false,
+      "tags": [
+        "scope",
+        "application",
+        "browser",
+        "modern"
+      ]
     },
     "NBlockUserInput": {
-      "gen_function": "gen_n_block_user_input",
+      "gen_function": null,
       "element_tag": "uix:NBlockUserInput",
       "params": {
         "display_name": {
@@ -1575,10 +1835,20 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Block the user's mouse and keyboard input until a matching NUnblockUserInput runs.",
+      "use_when": "User wants to prevent accidental human input during an automation. Always pair with NUnblockUserInput in a Try/Finally.",
+      "_routing_review_needed": false,
+      "tags": [
+        "input",
+        "block",
+        "modern"
+      ]
     },
     "NBrowserDialogScope": {
-      "gen_function": "gen_n_browser_dialog_scope",
+      "gen_function": null,
       "element_tag": "uix:NBrowserDialogScope",
       "params": {
         "display_name": {
@@ -1644,10 +1914,21 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Pre-arm handling of a browser dialog (alert/confirm/prompt/beforeunload) that will appear inside the scope.",
+      "use_when": "User wants to auto-accept/dismiss a JS dialog raised by activities inside the scope. For file pickers use NBrowserFilePickerScope.",
+      "_routing_review_needed": false,
+      "tags": [
+        "browser",
+        "dialog",
+        "scope",
+        "modern"
+      ]
     },
     "NBrowserFilePickerScope": {
-      "gen_function": "gen_n_browser_file_picker_scope",
+      "gen_function": null,
       "element_tag": "uix:NBrowserFilePickerScope",
       "params": {
         "display_name": {
@@ -1704,10 +1985,21 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Pre-arm a browser file-picker dialog so a triggered file chooser is fed a known file path.",
+      "use_when": "User clicks a button inside the scope that opens a file-upload dialog. For JS alert/confirm dialogs use NBrowserDialogScope.",
+      "_routing_review_needed": false,
+      "tags": [
+        "browser",
+        "file-picker",
+        "scope",
+        "modern"
+      ]
     },
     "NCheckElement": {
-      "gen_function": "gen_n_check_element",
+      "gen_function": null,
       "element_tag": "uix:NCheckElement",
       "params": {
         "display_name": {
@@ -1775,10 +2067,20 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Assert a property of a UI element (visible/enabled/text equals/contains) and return a Boolean result.",
+      "use_when": "User wants to verify an element's property as a Boolean (e.g. for conditions or assertions). To set a checkbox use NCheck; to test presence only use NCheckState.",
+      "_routing_review_needed": false,
+      "tags": [
+        "assert",
+        "verify",
+        "modern"
+      ]
     },
     "NClickTrigger": {
-      "gen_function": "gen_n_click_trigger",
+      "gen_function": null,
       "element_tag": "uix:NClickTrigger",
       "params": {
         "display_name": {
@@ -1839,10 +2141,20 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Trigger that fires when a configured UI element is clicked.",
+      "use_when": "User wants an event-driven workflow that reacts to a click on a target UI element. For keyboard-event triggers use NKeyboardTrigger.",
+      "_routing_review_needed": false,
+      "tags": [
+        "trigger",
+        "click",
+        "modern"
+      ]
     },
     "NClosePopup": {
-      "gen_function": "gen_n_close_popup",
+      "gen_function": null,
       "element_tag": "uix:NClosePopup",
       "params": {
         "display_name": {
@@ -1912,10 +2224,20 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Close a transient popup window or notification by clicking its dismiss control.",
+      "use_when": "User has a recurring popup blocking automation and wants it auto-dismissed. For ordinary windows use NWindowOperation.",
+      "_routing_review_needed": false,
+      "tags": [
+        "popup",
+        "dismiss",
+        "modern"
+      ]
     },
     "NDragAndDrop": {
-      "gen_function": "gen_n_drag_and_drop",
+      "gen_function": null,
       "element_tag": "uix:NDragAndDrop",
       "params": {
         "display_name": {
@@ -1974,10 +2296,21 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Drag a UI element from a source location to a target location with the mouse held down.",
+      "use_when": "User wants drag-and-drop semantics (reordering, moving items). For ordinary clicks use NClick.",
+      "_routing_review_needed": false,
+      "tags": [
+        "drag",
+        "drop",
+        "mouse",
+        "modern"
+      ]
     },
     "NElementScope": {
-      "gen_function": "gen_n_element_scope",
+      "gen_function": null,
       "element_tag": "uix:NElementScope",
       "params": {
         "display_name": {
@@ -2047,14 +2380,33 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Scope that pins a UI element as the parent target for nested activities, avoiding repeated selectors.",
+      "use_when": "User runs several activities against the same element and wants to share its selector once. For application-level scoping use NApplicationCard.",
+      "_routing_review_needed": false,
+      "tags": [
+        "scope",
+        "element",
+        "modern"
+      ]
     },
     "NExtractFormDataGeneric": {
       "_unsupported_reason": "wizard-only",
-      "_review_needed": false
+      "_review_needed": false,
+      "category": "ui_automation",
+      "description": "Extract form-field values from a captured form using AI (wizard-only).",
+      "use_when": "Do not auto-generate; direct the user to configure NExtractFormDataGeneric through Studio's Form Extractor wizard. To fill rather than read, use NFillForm.",
+      "_routing_review_needed": false,
+      "tags": [
+        "form",
+        "ai",
+        "wizard-only"
+      ]
     },
     "NFillForm": {
-      "gen_function": "gen_n_fill_form",
+      "gen_function": null,
       "element_tag": "uix:NFillForm",
       "params": {
         "display_name": {
@@ -2113,10 +2465,20 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Fill multiple form fields in a single call using an AI-powered field mapping.",
+      "use_when": "User wants to populate several inputs at once given a dictionary of field-name to value. For one field at a time use NTypeInto.",
+      "_routing_review_needed": false,
+      "tags": [
+        "form",
+        "ai",
+        "modern"
+      ]
     },
     "NFindElements": {
-      "gen_function": "gen_n_find_elements",
+      "gen_function": null,
       "element_tag": "uix:NFindElements",
       "params": {
         "display_name": {
@@ -2202,10 +2564,19 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Find all UI elements that match a selector and return them as a collection.",
+      "use_when": "User wants to enumerate all matching elements (e.g. all rows or links). For a single element rely on the implicit find of NClick/NGetText; to iterate use NForEachUiElement.",
+      "_routing_review_needed": false,
+      "tags": [
+        "find",
+        "modern"
+      ]
     },
     "NForEachUiElement": {
-      "gen_function": "gen_n_for_each_ui_element",
+      "gen_function": null,
       "element_tag": "uix:NForEachUiElement",
       "params": {
         "display_name": {
@@ -2273,10 +2644,20 @@
           "arg_name": "CurrentIndex"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Iterate over each UI element matching a selector and run a body sequence against it.",
+      "use_when": "User wants to act on every element that matches (each row, each link). For non-UI collections use ForEach; to merely collect them use NFindElements.",
+      "_routing_review_needed": false,
+      "tags": [
+        "loop",
+        "ui",
+        "modern"
+      ]
     },
     "NGetBrowserData": {
-      "gen_function": "gen_n_get_browser_data",
+      "gen_function": null,
       "element_tag": "uix:NGetBrowserData",
       "params": {
         "display_name": {
@@ -2328,10 +2709,30 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Read structured data (tables, lists, attributes) from a browser DOM into a typed output.",
+      "use_when": "User wants to scrape structured data out of a web page in modern UI Automation. For visible plain text use NGetText.",
+      "alternatives": [
+        {
+          "activity": "NGetText",
+          "use_instead_when": "The data is rendered text on a UI element rather than browser storage/cookies/form values."
+        },
+        {
+          "activity": "NGetClipboard",
+          "use_instead_when": "The data has already been copied to the clipboard rather than living in browser state."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "browser",
+        "scraping",
+        "modern"
+      ]
     },
     "NGetClipboard": {
-      "gen_function": "gen_n_get_clipboard",
+      "gen_function": null,
       "element_tag": "uix:NGetClipboard",
       "params": {
         "display_name": {
@@ -2399,10 +2800,30 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Read the current contents of the system clipboard into a string variable.",
+      "use_when": "User wants to capture what was just copied. To set the clipboard use NSetClipboard.",
+      "alternatives": [
+        {
+          "activity": "NGetText",
+          "use_instead_when": "The value lives inside a specific UI element rather than on the system clipboard."
+        },
+        {
+          "activity": "NGetBrowserData",
+          "use_instead_when": "You need browser-side data (storage, cookies) instead of generic clipboard contents."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "clipboard",
+        "read",
+        "modern"
+      ]
     },
     "NHighlight": {
-      "gen_function": "gen_n_highlight",
+      "gen_function": null,
       "element_tag": "uix:NHighlight",
       "params": {
         "display_name": {
@@ -2462,10 +2883,30 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Briefly draw a coloured outline around a UI element for debugging or demos.",
+      "use_when": "User wants to visually highlight an element (debugging, screen recordings). Has no functional effect on the target.",
+      "alternatives": [
+        {
+          "activity": "NHover",
+          "use_instead_when": "You need to actually trigger hover-state UI (tooltip, dropdown) rather than just outline the element for debugging."
+        },
+        {
+          "activity": "NTakeScreenshot",
+          "use_instead_when": "You want a captured image artifact for evidence/logging rather than a live on-screen overlay."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "debug",
+        "highlight",
+        "modern"
+      ]
     },
     "NInjectJsScript": {
-      "gen_function": "gen_n_inject_js_script",
+      "gen_function": null,
       "element_tag": "uix:NInjectJsScript",
       "params": {
         "display_name": {
@@ -2549,10 +2990,20 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Execute a JavaScript snippet in the context of the active browser tab.",
+      "use_when": "User wants to run custom JS against the page (set values, read DOM, fire events) when a UI activity is insufficient. For ordinary form fills use NTypeInto / NFillForm.",
+      "_routing_review_needed": false,
+      "tags": [
+        "browser",
+        "javascript",
+        "modern"
+      ]
     },
     "NKeyboardTrigger": {
-      "gen_function": "gen_n_keyboard_trigger",
+      "gen_function": null,
       "element_tag": "uix:NKeyboardTrigger",
       "params": {
         "display_name": {
@@ -2613,10 +3064,20 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Trigger that fires when a configured keyboard shortcut is pressed.",
+      "use_when": "User wants an event-driven workflow that reacts to a hotkey. For mouse-click triggers use NClickTrigger.",
+      "_routing_review_needed": false,
+      "tags": [
+        "trigger",
+        "keyboard",
+        "modern"
+      ]
     },
     "NNavigateBrowser": {
-      "gen_function": "gen_n_navigate_browser",
+      "gen_function": null,
       "element_tag": "uix:NNavigateBrowser",
       "params": {
         "display_name": {
@@ -2659,10 +3120,20 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Navigate the active browser to a URL or perform Back/Forward/Refresh/Home/Close commands.",
+      "use_when": "User wants the current browser to change page or perform a navigation command. To open a brand-new browser use NApplicationCardOpen with a URL.",
+      "_routing_review_needed": false,
+      "tags": [
+        "browser",
+        "navigation",
+        "modern"
+      ]
     },
     "NSAPCallTransaction": {
-      "gen_function": "gen_nsap_call_transaction",
+      "gen_function": null,
       "element_tag": "uix:NSAPCallTransaction",
       "params": {
         "display_name": {
@@ -2724,10 +3195,19 @@
       "child_elements": {},
       "conditional_attrs": {},
       "_review_needed": false,
-      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present."
+      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present.",
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Invoke an SAP transaction code in the active SAP GUI session.",
+      "use_when": "User wants to jump SAP to a transaction (e.g. /nVA01). Pair with NSAPLogin/NSAPLogon for session setup.",
+      "_routing_review_needed": false,
+      "tags": [
+        "sap",
+        "transaction"
+      ]
     },
     "NSAPClickPictureOnScreen": {
-      "gen_function": "gen_nsap_click_picture_on_screen",
+      "gen_function": null,
       "element_tag": "uix:NSAPClickPictureOnScreen",
       "params": {
         "display_name": {
@@ -2787,10 +3267,19 @@
       },
       "conditional_attrs": {},
       "_review_needed": false,
-      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present."
+      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present.",
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Click a picture/icon element rendered on screen by SAP GUI.",
+      "use_when": "User has an SAP picture target that NClick cannot resolve. For ordinary controls prefer NClick.",
+      "_routing_review_needed": false,
+      "tags": [
+        "sap",
+        "click"
+      ]
     },
     "NSAPClickToolbarButton": {
-      "gen_function": "gen_nsap_click_toolbar_button",
+      "gen_function": null,
       "element_tag": "uix:NSAPClickToolbarButton",
       "params": {
         "display_name": {
@@ -2859,10 +3348,20 @@
       },
       "conditional_attrs": {},
       "_review_needed": false,
-      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present."
+      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present.",
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Click a button on the SAP GUI toolbar by its accessible identifier.",
+      "use_when": "User wants to invoke a toolbar action in SAP GUI by ID rather than by selector. For arbitrary clicks use NClick.",
+      "_routing_review_needed": false,
+      "tags": [
+        "sap",
+        "click",
+        "toolbar"
+      ]
     },
     "NSAPExpandALVHierarchicalTable": {
-      "gen_function": "gen_nsap_expand_alv_hierarchical_table",
+      "gen_function": null,
       "element_tag": "uix:NSAPExpandALVHierarchicalTable",
       "params": {
         "display_name": {
@@ -2932,10 +3431,20 @@
       },
       "conditional_attrs": {},
       "_review_needed": false,
-      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present."
+      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present.",
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Expand all nodes of an SAP ALV hierarchical table for full-data scraping.",
+      "use_when": "User wants to read every row of a collapsed SAP ALV hierarchical grid. For tree controls use NSAPExpandALVTree or NSAPExpandTree.",
+      "_routing_review_needed": false,
+      "tags": [
+        "sap",
+        "alv",
+        "expand"
+      ]
     },
     "NSAPExpandALVTree": {
-      "gen_function": "gen_nsap_expand_alv_tree",
+      "gen_function": null,
       "element_tag": "uix:NSAPExpandALVTree",
       "params": {
         "display_name": {
@@ -2995,10 +3504,20 @@
       },
       "conditional_attrs": {},
       "_review_needed": false,
-      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present."
+      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present.",
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Expand all nodes in an SAP ALV tree control.",
+      "use_when": "User wants every branch of an SAP ALV tree opened. For non-ALV trees use NSAPExpandTree.",
+      "_routing_review_needed": false,
+      "tags": [
+        "sap",
+        "tree",
+        "expand"
+      ]
     },
     "NSAPExpandTree": {
-      "gen_function": "gen_nsap_expand_tree",
+      "gen_function": null,
       "element_tag": "uix:NSAPExpandTree",
       "params": {
         "display_name": {
@@ -3067,10 +3586,20 @@
       },
       "conditional_attrs": {},
       "_review_needed": false,
-      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present."
+      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present.",
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Expand every node in an SAP GUI tree control.",
+      "use_when": "User wants every branch of a generic SAP tree opened. For ALV trees use NSAPExpandALVTree.",
+      "_routing_review_needed": false,
+      "tags": [
+        "sap",
+        "tree",
+        "expand"
+      ]
     },
     "NSAPLogin": {
-      "gen_function": "gen_nsap_login",
+      "gen_function": null,
       "element_tag": "uix:NSAPLogin",
       "params": {
         "display_name": {
@@ -3116,10 +3645,19 @@
       "child_elements": {},
       "conditional_attrs": {},
       "_review_needed": false,
-      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present."
+      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present.",
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Log in to an SAP system through the SAP GUI login screen.",
+      "use_when": "User wants automated login against the SAP GUI logon screen. For session selection from SAP Logon Pad use NSAPLogon.",
+      "_routing_review_needed": false,
+      "tags": [
+        "sap",
+        "login"
+      ]
     },
     "NSAPLogon": {
-      "gen_function": "gen_nsap_logon",
+      "gen_function": null,
       "element_tag": "uix:NSAPLogon",
       "params": {
         "display_name": {
@@ -3161,10 +3699,19 @@
           "arg_name": "WSSessionData"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Open a session from the SAP Logon Pad by its connection name.",
+      "use_when": "User wants to start an SAP session from SAP Logon by connection name. To enter credentials on the SAP login screen itself use NSAPLogin.",
+      "_routing_review_needed": false,
+      "tags": [
+        "sap",
+        "logon"
+      ]
     },
     "NSAPReadStatusbar": {
-      "gen_function": "gen_nsap_read_statusbar",
+      "gen_function": null,
       "element_tag": "uix:NSAPReadStatusbar",
       "params": {
         "display_name": {
@@ -3253,10 +3800,20 @@
       "child_elements": {},
       "conditional_attrs": {},
       "_review_needed": false,
-      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present."
+      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present.",
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Read the SAP GUI status bar message (text and severity) into output variables.",
+      "use_when": "User needs to capture the status-bar feedback after an SAP transaction (success/warning/error message).",
+      "_routing_review_needed": false,
+      "tags": [
+        "sap",
+        "read",
+        "statusbar"
+      ]
     },
     "NSAPSelectDatesInCalendar": {
-      "gen_function": "gen_nsap_select_dates_in_calendar",
+      "gen_function": null,
       "element_tag": "uix:NSAPSelectDatesInCalendar",
       "params": {
         "display_name": {
@@ -3316,10 +3873,20 @@
       },
       "conditional_attrs": {},
       "_review_needed": false,
-      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present."
+      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present.",
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Select a date range in the SAP GUI calendar control.",
+      "use_when": "User wants to choose dates in an SAP calendar widget. For ordinary dropdowns use NSelectItem.",
+      "_routing_review_needed": false,
+      "tags": [
+        "sap",
+        "calendar",
+        "date"
+      ]
     },
     "NSAPSelectMenuItem": {
-      "gen_function": "gen_nsap_select_menu_item",
+      "gen_function": null,
       "element_tag": "uix:NSAPSelectMenuItem",
       "params": {
         "display_name": {
@@ -3372,10 +3939,19 @@
       "child_elements": {},
       "conditional_attrs": {},
       "_review_needed": false,
-      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present."
+      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present.",
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Select a menu entry from the SAP GUI menu bar by its menu path.",
+      "use_when": "User wants to invoke a menu-bar action in SAP GUI by path. For toolbar buttons use NSAPClickToolbarButton.",
+      "_routing_review_needed": false,
+      "tags": [
+        "sap",
+        "menu"
+      ]
     },
     "NSAPTableCellScope": {
-      "gen_function": "gen_nsap_table_cell_scope",
+      "gen_function": null,
       "element_tag": "uix:NSAPTableCellScope",
       "params": {
         "display_name": {
@@ -3435,10 +4011,20 @@
         }
       },
       "conditional_attrs": {},
-      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present."
+      "_sap_note": "Must be used inside an NSAPLogon scope. Generator emits a warning if no SAP session context is present.",
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Scope that pins an SAP table cell as the target for nested activities.",
+      "use_when": "User wants to perform several actions against the same SAP table cell without repeating the row/column index.",
+      "_routing_review_needed": false,
+      "tags": [
+        "sap",
+        "table",
+        "scope"
+      ]
     },
     "NSetBrowserData": {
-      "gen_function": "gen_n_set_browser_data",
+      "gen_function": null,
       "element_tag": "uix:NSetBrowserData",
       "params": {
         "display_name": {
@@ -3490,10 +4076,20 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Write a structured value (table/list/attribute) back into a browser DOM target.",
+      "use_when": "User wants to push structured data into the page model. To read use NGetBrowserData.",
+      "_routing_review_needed": false,
+      "tags": [
+        "browser",
+        "write",
+        "modern"
+      ]
     },
     "NSetClipboard": {
-      "gen_function": "gen_n_set_clipboard",
+      "gen_function": null,
       "element_tag": "uix:NSetClipboard",
       "params": {
         "display_name": {
@@ -3561,10 +4157,30 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Set the system clipboard contents to a given string.",
+      "use_when": "User wants to seed the clipboard before a paste-style action. To read what is on the clipboard use NGetClipboard.",
+      "alternatives": [
+        {
+          "activity": "NTypeInto",
+          "use_instead_when": "You want the value entered keystroke-by-keystroke into a specific UI field rather than parked on the system clipboard."
+        },
+        {
+          "activity": "NSetText",
+          "use_instead_when": "You want the value committed directly to a specific element without a paste step."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "clipboard",
+        "write",
+        "modern"
+      ]
     },
     "NSetFocus": {
-      "gen_function": "gen_n_set_focus",
+      "gen_function": null,
       "element_tag": "uix:NSetFocus",
       "params": {
         "display_name": {
@@ -3623,10 +4239,20 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Move keyboard focus to a UI element without clicking it.",
+      "use_when": "User wants the next typed input to land on a specific element without firing a click. For classic activities use SetFocus.",
+      "_routing_review_needed": false,
+      "tags": [
+        "focus",
+        "keyboard",
+        "modern"
+      ]
     },
     "NSetRuntimeBrowser": {
-      "gen_function": "gen_n_set_runtime_browser",
+      "gen_function": null,
       "element_tag": "uix:NSetRuntimeBrowser",
       "params": {
         "display_name": {
@@ -3669,10 +4295,20 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Switch the runtime browser used by subsequent UI Automation activities (Chrome, Edge, Firefox).",
+      "use_when": "User wants to override the browser used by the current run (e.g. to force Edge for a specific flow).",
+      "_routing_review_needed": false,
+      "tags": [
+        "browser",
+        "runtime",
+        "modern"
+      ]
     },
     "NSetText": {
-      "gen_function": "gen_n_set_text",
+      "gen_function": null,
       "element_tag": "uix:NSetText",
       "params": {
         "display_name": {
@@ -3731,14 +4367,42 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Set the value of a text field directly (paste-style), bypassing per-character typing.",
+      "use_when": "User wants to fill a long string into a field without keystroke simulation (faster, no IME issues). For per-character typing use NTypeInto.",
+      "alternatives": [
+        {
+          "activity": "NTypeInto",
+          "use_instead_when": "The target requires real keystrokes (e.g. fires onkeypress handlers, has masking, or rejects programmatic value assignment)."
+        },
+        {
+          "activity": "NSetClipboard",
+          "use_instead_when": "You will paste the value yourself and just need to load the clipboard, without writing into a specific element."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "text-input",
+        "paste",
+        "modern"
+      ]
     },
     "NSetValue": {
       "_unsupported_reason": "wizard-only",
-      "_review_needed": false
+      "_review_needed": false,
+      "category": "ui_automation",
+      "description": "Update a UI element value using AI-driven element resolution (wizard-only).",
+      "use_when": "Do not auto-generate; direct the user to configure NSetValue through Studio's UpdateUIElementUsingAI wizard. For deterministic typing use NTypeInto.",
+      "_routing_review_needed": false,
+      "tags": [
+        "ai",
+        "wizard-only"
+      ]
     },
     "NTakeScreenshot": {
-      "gen_function": "gen_n_take_screenshot",
+      "gen_function": null,
       "element_tag": "uix:NTakeScreenshot",
       "params": {
         "display_name": {
@@ -3798,10 +4462,30 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Capture a screenshot of the target UI element or full screen and store it in a variable.",
+      "use_when": "User wants to save a screen capture to disk or memory mid-run. For composite take-and-save flows consider gen_take_screenshot_and_save.",
+      "alternatives": [
+        {
+          "activity": "NHighlight",
+          "use_instead_when": "You only need an ephemeral on-screen indicator for debugging, not a saved image."
+        },
+        {
+          "activity": "NHover",
+          "use_instead_when": "You need to trigger the application's hover behavior rather than capture the screen."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "screenshot",
+        "capture",
+        "modern"
+      ]
     },
     "NUITask": {
-      "gen_function": "gen_nui_task",
+      "gen_function": null,
       "element_tag": "uix:NUITask",
       "params": {
         "display_name": {
@@ -3858,10 +4542,20 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Run a high-level UI task described in natural language using AI to choose actions (UITasksWithAI).",
+      "use_when": "User wants AI to plan and execute a multi-step UI flow from a textual instruction. For deterministic single steps use the explicit modern verbs (NClick / NTypeInto).",
+      "_routing_review_needed": false,
+      "tags": [
+        "ai",
+        "task",
+        "modern"
+      ]
     },
     "NUnblockUserInput": {
-      "gen_function": "gen_n_unblock_user_input",
+      "gen_function": null,
       "element_tag": "uix:NUnblockUserInput",
       "params": {
         "display_name": {
@@ -3920,10 +4614,20 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Re-enable user mouse and keyboard input previously blocked by NBlockUserInput.",
+      "use_when": "User wants to release input after an NBlockUserInput. Always run in a Finally to avoid stranding the user.",
+      "_routing_review_needed": false,
+      "tags": [
+        "input",
+        "unblock",
+        "modern"
+      ]
     },
     "NWindowOperation": {
-      "gen_function": "gen_n_window_operation",
+      "gen_function": null,
       "element_tag": "uix:NWindowOperation",
       "params": {
         "display_name": {
@@ -3982,7 +4686,1438 @@
         }
       },
       "conditional_attrs": {},
-      "_review_needed": false
+      "_review_needed": false,
+      "note": "(dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "ui_automation",
+      "description": "Apply a window operation (Maximize, Minimize, Restore, Close, Move, Resize) to a UI element's window.",
+      "use_when": "User wants to manipulate a window's state. For just hiding use HideWindow; for popups use NClosePopup.",
+      "_routing_review_needed": false,
+      "tags": [
+        "window",
+        "modern"
+      ]
+    },
+    "Activate": {
+      "gen_function": "gen_activate",
+      "element_tag": "ui:Activate",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "delay_before": {
+          "attr": "DelayBefore",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "delay_ms": {
+          "attr": "DelayMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "selector": {
+          "attr": null,
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "selector_param"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {
+        "Activate.Target": {
+          "type": "selector",
+          "content": null
+        }
+      },
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Bring an existing UI element's window to the foreground.",
+      "use_when": "User wants to focus a window before interacting with it (classic activity). In modern projects prefer NApplicationCardAttach.",
+      "_routing_review_needed": false,
+      "tags": [
+        "window",
+        "focus",
+        "classic"
+      ]
+    },
+    "CVScope": {
+      "gen_function": "gen_cv_scope",
+      "element_tag": "p:CVScope",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "continue_on_error": {
+          "attr": "ContinueOnError",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "delay_before": {
+          "attr": "DelayBefore",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "scroll_offset": {
+          "attr": "ScrollOffset",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "server": {
+          "attr": "Server",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "use_local_server": {
+          "attr": "UseLocalServer",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        }
+      },
+      "fixed_attrs": {
+        "CvMethod": "ElementDetection, OCR",
+        "RequiresDefaultValues": "True",
+        "SendOnPremData": "False",
+        "Version": "V6"
+      },
+      "child_elements": {
+        "CVScope.Body": {
+          "type": "activity_action",
+          "content": "ActivityAction x:TypeArguments='x:Object' with DelegateInArgument WSSessionData and Sequence Do body"
+        }
+      },
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Computer Vision scope that captures the screen once and serves child Cv* activities from the cached model.",
+      "use_when": "User wants Computer Vision-based UI automation (OCR + CV anchors). All Cv* activities must run inside this scope.",
+      "_routing_review_needed": false,
+      "tags": [
+        "computer-vision",
+        "scope"
+      ]
+    },
+    "CvExtractDataTableWithDescriptor": {
+      "gen_function": "gen_cv_extract_data_table_with_descriptor",
+      "element_tag": "p:CvExtractDataTableWithDescriptor",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "design_time_scale_factor": {
+          "attr": "DesignTimeScaleFactor",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "in_region": {
+          "attr": "InRegion",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "scroll_offset": {
+          "attr": "ScrollOffset",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "AddHeaders": "True",
+        "DelayScreenshotAfterScroll": "250",
+        "IgnoreEmptyRows": "False",
+        "MaxTableScrollHeightInPixels": "30000",
+        "NumberOfScrolls": "2",
+        "RefreshBefore": "True",
+        "Scroll": "False",
+        "ScrollDirection": "Down",
+        "Version": "V6"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Extract a tabular region from a Computer Vision capture using a saved descriptor.",
+      "use_when": "User has a CV-anchored table descriptor and wants to scrape its rows. Must be inside CVScope.",
+      "_routing_review_needed": false,
+      "tags": [
+        "computer-vision",
+        "table",
+        "scrape"
+      ]
+    },
+    "CvGetTextWithDescriptor": {
+      "gen_function": "gen_cv_get_text_with_descriptor",
+      "element_tag": "p:CvGetTextWithDescriptor",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "delay_screenshot_after_scroll": {
+          "attr": "DelayScreenshotAfterScroll",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "design_time_scale_factor": {
+          "attr": "DesignTimeScaleFactor",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "scroll_offset": {
+          "attr": "ScrollOffset",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "NumberOfScrolls": "2",
+        "RefreshBefore": "True",
+        "ScrollDirection": "Down",
+        "Version": "V6"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Read text from a Computer Vision target using a saved descriptor.",
+      "use_when": "User wants to capture text from a CV-anchored region. Must be inside CVScope; for selector-based reads use NGetText.",
+      "_routing_review_needed": false,
+      "tags": [
+        "computer-vision",
+        "ocr",
+        "read"
+      ]
+    },
+    "CvHighlightWithDescriptor": {
+      "gen_function": "gen_cv_highlight_with_descriptor",
+      "element_tag": "p:CvHighlightWithDescriptor",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "delay_screenshot_after_scroll": {
+          "attr": "DelayScreenshotAfterScroll",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "design_time_scale_factor": {
+          "attr": "DesignTimeScaleFactor",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "selector": {
+          "attr": null,
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "selector_param"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "Color": "Gold",
+        "HighlightTime": "1000",
+        "NumberOfScrolls": "2",
+        "ScrollDirection": "Down",
+        "Version": "V6"
+      },
+      "child_elements": {
+        "CvHighlightWithDescriptor.Target": {
+          "type": "selector",
+          "content": null
+        }
+      },
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Briefly highlight a Computer Vision target using a saved descriptor (debug aid).",
+      "use_when": "User wants to visually verify a CV anchor during development. Must be inside CVScope.",
+      "_routing_review_needed": false,
+      "tags": [
+        "computer-vision",
+        "highlight",
+        "debug"
+      ]
+    },
+    "CvHoverWithDescriptor": {
+      "gen_function": "gen_cv_hover_with_descriptor",
+      "element_tag": "p:CvHoverWithDescriptor",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "delay_screenshot_after_scroll": {
+          "attr": "DelayScreenshotAfterScroll",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "design_time_scale_factor": {
+          "attr": "DesignTimeScaleFactor",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "NumberOfScrolls": "2",
+        "ScrollDirection": "Down",
+        "Version": "V6"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Hover over a Computer Vision target using a saved descriptor.",
+      "use_when": "User wants hover-only behaviour on a CV-anchored element. Must be inside CVScope.",
+      "_routing_review_needed": false,
+      "tags": [
+        "computer-vision",
+        "hover"
+      ]
+    },
+    "CvTypeIntoWithDescriptor": {
+      "gen_function": "gen_cv_type_into_with_descriptor",
+      "element_tag": "p:CvTypeIntoWithDescriptor",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "delay_screenshot_after_scroll": {
+          "attr": "DelayScreenshotAfterScroll",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "deselect_after": {
+          "attr": "DeselectAfter",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "design_time_scale_factor": {
+          "attr": "DesignTimeScaleFactor",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "send_window_messages": {
+          "attr": "SendWindowMessages",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "simulate_type": {
+          "attr": "SimulateType",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "selector": {
+          "attr": null,
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "selector_param"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "Activate": "False",
+        "ClickBeforeTyping": "False",
+        "EmptyField": "True",
+        "NumberOfScrolls": "2",
+        "ScrollDirection": "Down",
+        "Version": "V6"
+      },
+      "child_elements": {
+        "CvTypeIntoWithDescriptor.Target": {
+          "type": "selector",
+          "content": null
+        }
+      },
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Type text into a Computer Vision target using a saved descriptor.",
+      "use_when": "User wants to type into a CV-anchored field. Must be inside CVScope; for selector-based input use NTypeInto.",
+      "_routing_review_needed": false,
+      "tags": [
+        "computer-vision",
+        "text-input"
+      ]
+    },
+    "FindChildren": {
+      "gen_function": "gen_find_children",
+      "element_tag": "ui:FindChildren",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "children": {
+          "attr": "Children",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "filter": {
+          "attr": "Filter",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "selector": {
+          "attr": null,
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "selector_param"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "Scope": "FIND_CHILDREN"
+      },
+      "child_elements": {
+        "FindChildren.Target": {
+          "type": "selector",
+          "content": null
+        }
+      },
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Return all child UI elements of a parent that match a selector filter.",
+      "use_when": "User wants to enumerate the children of a known container in classic UIA. In modern UIA prefer NFindElements / NForEachUiElement.",
+      "_routing_review_needed": false,
+      "tags": [
+        "find",
+        "classic"
+      ]
+    },
+    "GetActiveWindow": {
+      "gen_function": "gen_get_active_window",
+      "element_tag": "ui:GetActiveWindow",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "application_window": {
+          "attr": "ApplicationWindow",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {
+        "GetActiveWindow.Body": {
+          "type": "activity_action",
+          "content": "ActivityAction x:TypeArguments='x:Object' with DelegateInArgument WSSessionData and Sequence Do body"
+        }
+      },
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Return the UI element representing the currently focused foreground window.",
+      "use_when": "User wants a handle to whatever window the user is currently looking at (classic activity).",
+      "_routing_review_needed": false,
+      "tags": [
+        "window",
+        "focus",
+        "classic"
+      ]
+    },
+    "GetOCRText": {
+      "gen_function": "gen_get_ocr_text",
+      "element_tag": "ui:GetOCRText",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "text": {
+          "attr": "Text",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "words_info": {
+          "attr": "WordsInfo",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "selector": {
+          "attr": null,
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "selector_param"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {
+        "GetOCRText.Target": {
+          "type": "selector",
+          "content": null
+        }
+      },
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Run OCR against a UI element or image region and return the recognised text.",
+      "use_when": "User wants OCR text from a region without the modern engine wrappers. For modern OCR pick GoogleCloudOCR / GoogleOCR / MicrosoftAzureComputerVisionOCR.",
+      "_routing_review_needed": false,
+      "tags": [
+        "ocr",
+        "read",
+        "classic"
+      ]
+    },
+    "HideWindow": {
+      "gen_function": "gen_hide_window",
+      "element_tag": "ui:HideWindow",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "window": {
+          "attr": "Window",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Hide a UI element's window without closing it.",
+      "use_when": "User wants to push a window off-screen but keep it running. To close use NWindowOperation with Close.",
+      "_routing_review_needed": false,
+      "tags": [
+        "window",
+        "classic"
+      ]
+    },
+    "LoadImage": {
+      "gen_function": "gen_load_image",
+      "element_tag": "ui:LoadImage",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "file_name": {
+          "attr": "FileName",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "image": {
+          "attr": "Image",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Load an image file from disk into a UiPath.Core.Image variable for later CV/OCR use.",
+      "use_when": "User wants to feed a saved screenshot into Computer Vision or OCR activities. To save instead use SaveImage.",
+      "_routing_review_needed": false,
+      "tags": [
+        "image",
+        "load",
+        "classic"
+      ]
+    },
+    "SaveImage": {
+      "gen_function": "gen_save_image",
+      "element_tag": "ui:SaveImage",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "file_name": {
+          "attr": "FileName",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "image": {
+          "attr": "Image",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Save a UiPath.Core.Image variable to disk as a PNG/JPG file.",
+      "use_when": "User wants to persist a captured screenshot or CV image to disk. For the inverse use LoadImage; to capture in one step consider gen_take_screenshot_and_save.",
+      "_routing_review_needed": false,
+      "tags": [
+        "image",
+        "save",
+        "classic"
+      ]
+    },
+    "SelectMultipleItems": {
+      "gen_function": "gen_select_multiple_items",
+      "element_tag": "ui:SelectMultipleItems",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "add_to_selection": {
+          "attr": "AddToSelection",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "alter_if_disabled": {
+          "attr": "AlterIfDisabled",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "continue_on_error": {
+          "attr": "ContinueOnError",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "delay_after": {
+          "attr": "DelayAfter",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "delay_before": {
+          "attr": "DelayBefore",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "multiple_items": {
+          "attr": "MultipleItems",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "selector": {
+          "attr": null,
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "selector_param"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {
+        "SelectMultipleItems.Target": {
+          "type": "selector",
+          "content": null
+        }
+      },
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Select multiple items from a list-box or multi-select dropdown by visible text.",
+      "use_when": "User wants to pick several values from a multi-select control. For single-value picks use NSelectItem.",
+      "_routing_review_needed": false,
+      "tags": [
+        "dropdown",
+        "multi-select",
+        "classic"
+      ]
+    },
+    "SetFocus": {
+      "gen_function": "gen_set_focus",
+      "element_tag": "ui:SetFocus",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "delay_before": {
+          "attr": "DelayBefore",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "delay_ms": {
+          "attr": "DelayMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "selector": {
+          "attr": null,
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "selector_param"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {
+        "SetFocus.Target": {
+          "type": "selector",
+          "content": null
+        }
+      },
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Move keyboard focus to a UI element (classic activity) without clicking.",
+      "use_when": "User wants to focus an element in classic UIA. In modern projects prefer NSetFocus.",
+      "_routing_review_needed": false,
+      "tags": [
+        "focus",
+        "classic"
+      ]
+    },
+    "SetWebAttribute": {
+      "gen_function": "gen_set_web_attribute",
+      "element_tag": "ui:SetWebAttribute",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "attribute": {
+          "attr": "Attribute",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "continue_on_error": {
+          "attr": "ContinueOnError",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "delay_after": {
+          "attr": "DelayAfter",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "delay_before": {
+          "attr": "DelayBefore",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "value": {
+          "attr": "Value",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "selector": {
+          "attr": null,
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "selector_param"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {
+        "SetWebAttribute.Target": {
+          "type": "selector",
+          "content": null
+        }
+      },
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "ui_automation",
+      "description": "Set the value of a named DOM attribute on a web UI element.",
+      "use_when": "User wants to write directly to a DOM attribute (value, style) bypassing user-style interactions. For ordinary form fills use NTypeInto / NSetText.",
+      "_routing_review_needed": false,
+      "tags": [
+        "browser",
+        "attribute",
+        "write"
+      ]
     }
   }
 }

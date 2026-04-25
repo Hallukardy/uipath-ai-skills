@@ -39,7 +39,12 @@
           "attr": "Level",
           "required": false,
           "default": "Info",
-          "enum": ["Info", "Warn", "Error", "Trace"],
+          "enum": [
+            "Info",
+            "Warn",
+            "Error",
+            "Trace"
+          ],
           "escape": null,
           "bracket_wrap": false,
           "type": "string"
@@ -48,7 +53,15 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag."
+      "note": "Self-closing tag.",
+      "category": "logging_misc",
+      "description": "Writes a message to the robot log at the chosen level (Trace/Info/Warn/Error/Fatal).",
+      "use_when": "User wants to record progress or a diagnostic message; for permanent log enrichment use AddLogFields; for raising alerts use RaiseAlert.",
+      "_routing_review_needed": false,
+      "tags": [
+        "logging",
+        "diagnostics"
+      ]
     },
     "Comment": {
       "gen_function": "gen_comment",
@@ -87,7 +100,15 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag."
+      "note": "Self-closing tag.",
+      "category": "logging_misc",
+      "description": "Inserts an inline comment annotation in the workflow surface — no runtime effect.",
+      "use_when": "User wants to document intent inline next to activities; for disabling a block of activities use CommentOut.",
+      "_routing_review_needed": false,
+      "tags": [
+        "comment",
+        "documentation"
+      ]
     },
     "CommentOut": {
       "gen_function": "gen_comment_out",
@@ -139,7 +160,16 @@
           "content": "Sequence DisplayName='Ignored Activities' with body_content and viewstate_block"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "logging_misc",
+      "description": "Disables a block of activities at design-time without deleting them — they remain visible but are skipped at runtime.",
+      "use_when": "User wants to temporarily disable activities while keeping them visible for context; for inline notes use Comment.",
+      "_routing_review_needed": false,
+      "tags": [
+        "comment",
+        "disable",
+        "design-time"
+      ]
     },
     "Break": {
       "gen_function": "gen_break",
@@ -170,7 +200,16 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag."
+      "note": "Self-closing tag.",
+      "category": "logging_misc",
+      "description": "Exits the enclosing loop (ForEach / While / DoWhile) immediately.",
+      "use_when": "User wants to terminate iteration once a condition is met; for skipping the rest of the current iteration only use Continue.",
+      "_routing_review_needed": false,
+      "tags": [
+        "loop",
+        "control-flow",
+        "break"
+      ]
     },
     "Continue": {
       "gen_function": "gen_continue",
@@ -201,7 +240,16 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag."
+      "note": "Self-closing tag.",
+      "category": "logging_misc",
+      "description": "Skips to the next iteration of the enclosing loop, bypassing remaining activities in the current iteration.",
+      "use_when": "User wants to skip the rest of the current iteration; for terminating the loop entirely use Break.",
+      "_routing_review_needed": false,
+      "tags": [
+        "loop",
+        "control-flow",
+        "continue"
+      ]
     },
     "KillProcess": {
       "gen_function": "gen_kill_process",
@@ -240,7 +288,16 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag."
+      "note": "Self-closing tag.",
+      "category": "logging_misc",
+      "description": "Forcibly terminates a Windows process by name or process object.",
+      "use_when": "User wants to close a hung application that won't respond to graceful shutdown; for graceful close use NApplicationCard's CloseDialog action when available.",
+      "_routing_review_needed": false,
+      "tags": [
+        "process",
+        "windows",
+        "kill"
+      ]
     },
     "TerminateWorkflow": {
       "gen_function": "gen_terminate_workflow",
@@ -283,7 +340,16 @@
           "content": "<InArgument x:TypeArguments=\"s:Exception\">[{reason_expression}]</InArgument>"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "logging_misc",
+      "description": "Terminates the running workflow with a status (Successful / Faulted / Cancelled) and optional exception.",
+      "use_when": "User wants to abort the workflow with a definitive outcome; for raising a recoverable exception use Throw inside a TryCatch.",
+      "_routing_review_needed": false,
+      "tags": [
+        "workflow",
+        "terminate",
+        "abort"
+      ]
     },
     "ShouldStop": {
       "gen_function": "gen_should_stop",
@@ -321,7 +387,16 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag."
+      "note": "Self-closing tag.",
+      "category": "logging_misc",
+      "description": "Returns True if the user has requested the job to stop via Orchestrator's Stop button.",
+      "use_when": "User wants to honor cooperative stop signals at safe checkpoints; long loops should check ShouldStop and exit cleanly.",
+      "_routing_review_needed": false,
+      "tags": [
+        "orchestrator",
+        "stop",
+        "cooperative"
+      ]
     },
     "AddLogFields": {
       "gen_function": "gen_add_log_fields",
@@ -364,7 +439,16 @@
           "content": "scg:List x:TypeArguments='ui:AddLogField' with AddLogField elements (FieldName + FieldValue attrs)"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "logging_misc",
+      "description": "Attaches structured key/value fields to every subsequent LogMessage call within the workflow scope.",
+      "use_when": "User wants to enrich logs with correlation IDs / business keys for downstream filtering; remove with RemoveLogFields when scope ends.",
+      "_routing_review_needed": false,
+      "tags": [
+        "logging",
+        "structured",
+        "context"
+      ]
     },
     "RemoveLogFields": {
       "gen_function": "gen_remove_log_fields",
@@ -407,7 +491,16 @@
           "content": "scg:List x:TypeArguments='x:String' with x:String elements"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "logging_misc",
+      "description": "Removes previously-added structured log fields by key list.",
+      "use_when": "User wants to clear log context attached by AddLogFields when leaving a scope.",
+      "_routing_review_needed": false,
+      "tags": [
+        "logging",
+        "structured",
+        "context"
+      ]
     },
     "TakeScreenshotAndSave": {
       "gen_function": "gen_take_screenshot_and_save",
@@ -470,7 +563,16 @@
           "content": "<ui:Target ClippingRegion=\"{x:Null}\" Element=\"{x:Null}\" Selector=\"{x:Null}\" WaitForReady=\"INTERACTIVE\" />"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "logging_misc",
+      "description": "Composite that captures a screenshot and persists it to the supplied path in one step.",
+      "use_when": "User wants a quick capture-and-save in error handlers or evidence trails; for take-only into a variable use NTakeScreenshot then SaveImage.",
+      "_routing_review_needed": false,
+      "tags": [
+        "screenshot",
+        "diagnostics",
+        "composite"
+      ]
     }
   }
 }

@@ -3,7 +3,7 @@
   "module": "mail_extended",
   "activities": {
     "GetOutlookMailMessages": {
-      "gen_function": "gen_get_outlook_mail_messages",
+      "gen_function": null,
       "element_tag": "ui:GetOutlookMailMessages",
       "hint_size_key": "GetOutlookMailMessages",
       "params": {
@@ -112,10 +112,32 @@
         }
       },
       "conditional_attrs": {},
-      "note": "Retrieves Outlook mail messages. Requires Outlook connection."
+      "note": "Retrieves Outlook mail messages. Requires Outlook connection. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "mail",
+      "description": "Read mail messages from a desktop Outlook folder using the local Outlook profile.",
+      "use_when": "User has Outlook installed and wants to fetch messages from a local mailbox folder. For Exchange Web Services use GetExchangeMailMessages; for Microsoft 365 Graph use plugin activities.",
+      "alternatives": [
+        {
+          "activity": "GetExchangeMailMessages",
+          "use_instead_when": "There is no locally-installed Outlook profile and you must hit Exchange Web Services directly."
+        },
+        {
+          "activity": "GetIMAPMailMessages",
+          "use_instead_when": "The mailbox is non-Exchange (e.g. Gmail, generic IMAP) and there is no Outlook client to drive."
+        },
+        {
+          "activity": "GetPOP3MailMessages",
+          "use_instead_when": "The server only exposes POP3 and you just need a one-shot download of new mail."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "outlook",
+        "read"
+      ]
     },
     "MoveOutlookMessage": {
-      "gen_function": "gen_move_outlook_message",
+      "gen_function": null,
       "element_tag": "ui:MoveOutlookMessage",
       "hint_size_key": "MoveOutlookMessage",
       "params": {
@@ -168,10 +190,18 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Moves an Outlook mail message to a specified folder."
+      "note": "Self-closing tag. Moves an Outlook mail message to a specified folder. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "mail",
+      "description": "Move a desktop Outlook MailMessage to another folder in the same store.",
+      "use_when": "User wants to file an Outlook message to another folder (Archive, Done). For IMAP use MoveIMAPMailMessageToFolder; for Exchange use MoveMessageToFolder.",
+      "_routing_review_needed": false,
+      "tags": [
+        "outlook",
+        "move"
+      ]
     },
     "SendOutlookMail": {
-      "gen_function": "gen_send_outlook_mail",
+      "gen_function": null,
       "element_tag": "ui:SendOutlookMail",
       "hint_size_key": "SendOutlookMail",
       "params": {
@@ -260,7 +290,11 @@
           "attr": "Importance",
           "required": false,
           "default": "Normal",
-          "enum": ["Normal", "High", "Low"],
+          "enum": [
+            "Normal",
+            "High",
+            "Low"
+          ],
           "escape": null,
           "bracket_wrap": false,
           "type": "string"
@@ -287,17 +321,4210 @@
         }
       },
       "conditional_attrs": {},
-      "note": "Sends an email via Outlook. Requires Outlook connection."
+      "note": "Sends an email via Outlook. Requires Outlook connection. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "mail",
+      "description": "Send an email through the local desktop Outlook profile.",
+      "use_when": "User has Outlook installed and wants to send through that profile. For Exchange use SendExchangeMail; for SMTP/Gmail use SendMailX.",
+      "alternatives": [
+        {
+          "activity": "SendExchangeMail",
+          "use_instead_when": "There is no locally-installed Outlook profile and you must talk to Exchange Web Services directly."
+        },
+        {
+          "activity": "SendMail",
+          "use_instead_when": "You only have a generic SMTP relay (no Outlook client, no Exchange credentials)."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "outlook",
+        "send"
+      ]
     },
     "OutlookApplicationCard": {
       "_unsupported_reason": "wizard-only",
       "_review_needed": false,
-      "note": "OutlookApplicationCard is a scope activity with ActivityAction body requiring Studio configuration."
+      "note": "OutlookApplicationCard is a scope activity with ActivityAction body requiring Studio configuration.",
+      "category": "mail",
+      "description": "Modern Use Outlook scope (wizard-only) - pins an Outlook account for nested mail activities.",
+      "use_when": "Do not auto-generate; direct the user to configure Outlook Application Card through UiPath Studio's Outlook wizard.",
+      "_routing_review_needed": false,
+      "tags": [
+        "outlook",
+        "scope",
+        "wizard-only"
+      ]
     },
     "ForEachEmailX": {
       "_unsupported_reason": "wizard-only",
       "_review_needed": false,
-      "note": "ForEachEmailX iterates over emails with a dual-argument ActivityAction body requiring Studio configuration."
+      "note": "ForEachEmailX iterates over emails with a dual-argument ActivityAction body requiring Studio configuration.",
+      "category": "mail",
+      "description": "StudioX For Each Email iterator (wizard-only) over a mailbox folder.",
+      "use_when": "Do not auto-generate; direct the user to configure For Each Email X through StudioX's Outlook wizard. As an alternative iterate the output of GetOutlookMailMessages with ForEach.",
+      "_routing_review_needed": false,
+      "tags": [
+        "outlook",
+        "loop",
+        "studiox",
+        "wizard-only"
+      ]
+    },
+    "ArchiveMailX": {
+      "gen_function": "gen_archive_mail_x",
+      "element_tag": "umab:ArchiveMailX",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "StudioX activity that moves an email to the configured Archive folder of the active mail account.",
+      "use_when": "User wants the StudioX 'Archive Email' button equivalent. For arbitrary moves use MoveOutlookMessage / MoveMessageToFolder.",
+      "_routing_review_needed": false,
+      "tags": [
+        "outlook",
+        "archive",
+        "studiox"
+      ]
+    },
+    "CreateDraft": {
+      "gen_function": "gen_create_draft",
+      "element_tag": "ui:CreateDraft",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "application_id": {
+          "attr": "ApplicationId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "bcc": {
+          "attr": "Bcc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "body": {
+          "attr": "Body",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "cc": {
+          "attr": "Cc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "directory_id": {
+          "attr": "DirectoryId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "domain": {
+          "attr": "Domain",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "email_autodiscover": {
+          "attr": "EmailAutodiscover",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "from": {
+          "attr": "From",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "name": {
+          "attr": "Name",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "resource_attachment_list": {
+          "attr": "ResourceAttachmentList",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "resource_attachments": {
+          "attr": "ResourceAttachments",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "server": {
+          "attr": "Server",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "subject": {
+          "attr": "Subject",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "attr": "TimeoutMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "to": {
+          "attr": "To",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "user": {
+          "attr": "User",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "AttachmentInputMode": "FilePaths",
+        "AuthenticationMode": "UserNameAndPassword",
+        "ExchangeVersion": "Exchange2007_SP1",
+        "IsBodyHtml": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Create a draft email in the chosen mail account without sending it.",
+      "use_when": "User wants to stage an email for human review or later send. To send immediately use SendOutlookMail / SendExchangeMail / SendMailX.",
+      "_routing_review_needed": false,
+      "tags": [
+        "draft",
+        "compose"
+      ]
+    },
+    "CreateHtmlContent": {
+      "gen_function": "gen_create_html_content",
+      "element_tag": "umab:CreateHtmlContent",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "html_content": {
+          "attr": "HtmlContent",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Build an HTML body string from a template and variables for use as an email body.",
+      "use_when": "User wants to compose a templated HTML email body before sending. Pair with SendOutlookMail / SendMailX.",
+      "_routing_review_needed": false,
+      "tags": [
+        "html",
+        "template",
+        "compose"
+      ]
+    },
+    "DeleteImapMailMessage": {
+      "gen_function": "gen_delete_imap_mail_message",
+      "element_tag": "ui:DeleteImapMailMessage",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "client_name": {
+          "attr": "ClientName",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "client_version": {
+          "attr": "ClientVersion",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "email": {
+          "attr": "Email",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "from_folder": {
+          "attr": "FromFolder",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "port": {
+          "attr": "Port",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "server": {
+          "attr": "Server",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "use_o_auth": {
+          "attr": "UseOAuth",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "ConnectionMode": "Undefined",
+        "IgnoreCRL": "False",
+        "SecureConnection": "Auto",
+        "UseISConnection": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Delete a MailMessage from an IMAP server.",
+      "use_when": "User wants to remove a message via IMAP. For Outlook use DeleteOutlookMailMessage; for Exchange use DeleteMail; for Lotus Notes use DeleteLotusNotesMailMessage.",
+      "_routing_review_needed": false,
+      "tags": [
+        "imap",
+        "delete"
+      ]
+    },
+    "DeleteLotusNotesMailMessage": {
+      "gen_function": "gen_delete_lotus_notes_mail_message",
+      "element_tag": "umla:DeleteLotusNotesMailMessage",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "from_folder": {
+          "attr": "FromFolder",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Delete a MailMessage from an IBM/HCL Lotus Notes mailbox.",
+      "use_when": "User automates Lotus Notes mail and wants to delete a message. For other providers use DeleteImapMailMessage / DeleteOutlookMailMessage / DeleteMail.",
+      "_routing_review_needed": false,
+      "tags": [
+        "lotus-notes",
+        "delete"
+      ]
+    },
+    "DeleteMail": {
+      "gen_function": "gen_delete_mail",
+      "element_tag": "ui:DeleteMail",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "application_id": {
+          "attr": "ApplicationId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "directory_id": {
+          "attr": "DirectoryId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "domain": {
+          "attr": "Domain",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "email_autodiscover": {
+          "attr": "EmailAutodiscover",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "server": {
+          "attr": "Server",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "attr": "TimeoutMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "user": {
+          "attr": "User",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "AuthenticationMode": "UserNameAndPassword",
+        "DeleteMode": "MoveToDeletedItems",
+        "ExchangeVersion": "Exchange2007_SP1"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Delete a MailMessage through Exchange (EWS) using the active scope.",
+      "use_when": "User wants to delete an Exchange message inside an ExchangeScope. For Outlook desktop use DeleteOutlookMailMessage; for IMAP use DeleteImapMailMessage.",
+      "_routing_review_needed": false,
+      "tags": [
+        "exchange",
+        "delete"
+      ]
+    },
+    "DeleteMailX": {
+      "gen_function": "gen_delete_mail_x",
+      "element_tag": "umab:DeleteMailX",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "StudioX 'Delete Email' activity for the active mail account.",
+      "use_when": "User wants the StudioX delete-email button equivalent. For provider-specific calls use DeleteOutlookMailMessage / DeleteImapMailMessage / DeleteMail.",
+      "_routing_review_needed": false,
+      "tags": [
+        "delete",
+        "studiox"
+      ]
+    },
+    "DeleteOutlookMailMessage": {
+      "gen_function": "gen_delete_outlook_mail_message",
+      "element_tag": "ui:DeleteOutlookMailMessage",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "PermanentlyDelete": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Delete a MailMessage from the local desktop Outlook profile.",
+      "use_when": "User wants to delete a message in desktop Outlook. For IMAP use DeleteImapMailMessage; for Exchange use DeleteMail.",
+      "_routing_review_needed": false,
+      "tags": [
+        "outlook",
+        "delete"
+      ]
+    },
+    "ExchangeScope": {
+      "gen_function": "gen_exchange_scope",
+      "element_tag": "ui:ExchangeScope",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "application_id": {
+          "attr": "ApplicationId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "directory_id": {
+          "attr": "DirectoryId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "domain": {
+          "attr": "Domain",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "email_autodiscover": {
+          "attr": "EmailAutodiscover",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "exchange_service": {
+          "attr": "ExchangeService",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "existing_exchange_service": {
+          "attr": "ExistingExchangeService",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "server": {
+          "attr": "Server",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "attr": "TimeoutMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "user": {
+          "attr": "User",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        }
+      },
+      "fixed_attrs": {
+        "AuthenticationMode": "UserNameAndPassword",
+        "ContinueOnError": "True",
+        "ExchangeVersion": "Exchange2007_SP1"
+      },
+      "child_elements": {
+        "ExchangeScope.Body": {
+          "type": "activity_action",
+          "content": "ActivityAction x:TypeArguments='x:Object' with DelegateInArgument WSSessionData and Sequence Do body"
+        }
+      },
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Connect to Exchange Web Services (EWS) and run nested Exchange mail activities under that connection.",
+      "use_when": "User wants EWS-based mail automation in a single scope. For Microsoft 365 Graph use the plugin scope; for desktop Outlook none - use the activities directly.",
+      "_routing_review_needed": false,
+      "tags": [
+        "exchange",
+        "ews",
+        "scope"
+      ]
+    },
+    "ForwardMailX": {
+      "gen_function": "gen_forward_mail_x",
+      "element_tag": "umab:ForwardMailX",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "bcc": {
+          "attr": "Bcc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "body": {
+          "attr": "Body",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "cc": {
+          "attr": "Cc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "html_body_from_text": {
+          "attr": "HtmlBodyFromText",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "new_subject": {
+          "attr": "NewSubject",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "to": {
+          "attr": "To",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "MaxBodyDocumentSizeMB": "2",
+        "UseDocumentAsBody": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "StudioX 'Forward Email' activity for the active mail account.",
+      "use_when": "User wants to forward the current StudioX email. For provider-specific forwarding use the underlying Outlook/Exchange activities.",
+      "_routing_review_needed": false,
+      "tags": [
+        "forward",
+        "studiox"
+      ]
+    },
+    "GetEmailById": {
+      "gen_function": "gen_get_email_by_id",
+      "element_tag": "umab:GetEmailById",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "account": {
+          "attr": "Account",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "email_id": {
+          "attr": "EmailId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "result": {
+          "attr": "Result",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Fetch a single mail message by its provider-specific identifier.",
+      "use_when": "User already knows the message ID (e.g. from a trigger) and wants the full MailMessage. For folder enumeration use the provider's Get*Mail* activity.",
+      "_routing_review_needed": false,
+      "tags": [
+        "read",
+        "by-id"
+      ]
+    },
+    "GetExchangeMailMessages": {
+      "gen_function": "gen_get_exchange_mail_messages",
+      "element_tag": "ui:GetExchangeMailMessages",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "application_id": {
+          "attr": "ApplicationId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "directory_id": {
+          "attr": "DirectoryId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "domain": {
+          "attr": "Domain",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "email_autodiscover": {
+          "attr": "EmailAutodiscover",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "filter_by_message_ids": {
+          "attr": "FilterByMessageIds",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "filter_expression": {
+          "attr": "FilterExpression",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "messages": {
+          "attr": "Messages",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "server": {
+          "attr": "Server",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "shared_mailbox": {
+          "attr": "SharedMailbox",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "attr": "TimeoutMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "user": {
+          "attr": "User",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "AuthenticationMode": "UserNameAndPassword",
+        "CustomFolder": "Inbox",
+        "ExchangeVersion": "Exchange2007_SP1",
+        "GetAttachements": "False",
+        "IsBodyHtml": "False",
+        "MailFolder": "Calendar",
+        "MarkAsRead": "False",
+        "OnlyUnreadMessages": "True",
+        "OrderByDate": "NewestFirst",
+        "Top": "30"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Read mail messages from an Exchange folder via Exchange Web Services (EWS).",
+      "use_when": "User automates Exchange via EWS and wants to fetch messages. For desktop Outlook use GetOutlookMailMessages; for IMAP use GetPOP3MailMessages or an IMAP variant.",
+      "alternatives": [
+        {
+          "activity": "GetOutlookMailMessages",
+          "use_instead_when": "You want to use the locally-installed Outlook desktop client instead of talking to Exchange Web Services directly."
+        },
+        {
+          "activity": "GetIMAPMailMessages",
+          "use_instead_when": "The server only exposes IMAP, or you need vendor-neutral folder access without Exchange credentials."
+        },
+        {
+          "activity": "GetPOP3MailMessages",
+          "use_instead_when": "The server only exposes POP3 for a one-shot download."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "exchange",
+        "ews",
+        "read"
+      ]
+    },
+    "GetLotusNotesMailMessages": {
+      "gen_function": "gen_get_lotus_notes_mail_messages",
+      "element_tag": "umla:GetLotusNotesMailMessages",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "messages": {
+          "attr": "Messages",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "attr": "TimeoutMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "ConnectionMode": "Undefined",
+        "GetAttachments": "False",
+        "MailFolder": "($Inbox)",
+        "Top": "30",
+        "UseISConnection": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Read mail messages from an IBM/HCL Lotus Notes mailbox.",
+      "use_when": "User automates Lotus Notes mail. For other providers use GetOutlookMailMessages / GetExchangeMailMessages / GetPOP3MailMessages.",
+      "_routing_review_needed": false,
+      "tags": [
+        "lotus-notes",
+        "read"
+      ]
+    },
+    "GetMailMessageFromFile": {
+      "gen_function": "gen_get_mail_message_from_file",
+      "element_tag": "ui:GetMailMessageFromFile",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "email_file": {
+          "attr": "EmailFile",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Load a saved .eml or .msg file from disk into a MailMessage variable.",
+      "use_when": "User has previously saved an email to disk and wants to re-load it for processing. To save use SaveMail / SaveMailX.",
+      "_routing_review_needed": false,
+      "tags": [
+        "read",
+        "file"
+      ]
+    },
+    "GetPOP3MailMessages": {
+      "gen_function": "gen_get_pop3_mail_messages",
+      "element_tag": "ui:GetPOP3MailMessages",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "email": {
+          "attr": "Email",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "messages": {
+          "attr": "Messages",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "port": {
+          "attr": "Port",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "server": {
+          "attr": "Server",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "attr": "TimeoutMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "use_o_auth": {
+          "attr": "UseOAuth",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "ConnectionMode": "Undefined",
+        "DeleteMessages": "False",
+        "EnableSSL": "False",
+        "IgnoreCRL": "False",
+        "SecureConnection": "Auto",
+        "Top": "30",
+        "UseISConnection": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Read mail messages from a POP3 server.",
+      "use_when": "User must use POP3 (legacy). Prefer IMAP or Exchange where available; use GetExchangeMailMessages or GetOutlookMailMessages instead.",
+      "alternatives": [
+        {
+          "activity": "GetIMAPMailMessages",
+          "use_instead_when": "The server supports IMAP and you need folder navigation or server-side flags rather than a one-shot POP3 download."
+        },
+        {
+          "activity": "GetExchangeMailMessages",
+          "use_instead_when": "You can use the Exchange Web Services endpoint directly for richer querying than POP3."
+        },
+        {
+          "activity": "GetOutlookMailMessages",
+          "use_instead_when": "You want to read from a logged-in Outlook desktop profile rather than poll a POP3 server."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "pop3",
+        "read"
+      ]
+    },
+    "MarkMailAsReadX": {
+      "gen_function": "gen_mark_mail_as_read_x",
+      "element_tag": "umab:MarkMailAsReadX",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "MarkAs": "Read"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "StudioX 'Mark Email as Read' activity for the active mail account.",
+      "use_when": "User wants the StudioX mark-as-read button equivalent. For provider-specific control use MarkOutlookMailAsRead.",
+      "_routing_review_needed": false,
+      "tags": [
+        "read-state",
+        "studiox"
+      ]
+    },
+    "MarkOutlookMailAsRead": {
+      "gen_function": "gen_mark_outlook_mail_as_read",
+      "element_tag": "ui:MarkOutlookMailAsRead",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "MarkAs": "Read"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Mark a desktop Outlook MailMessage as read or unread.",
+      "use_when": "User wants to flip the read flag on an Outlook message. For StudioX use MarkMailAsReadX.",
+      "_routing_review_needed": false,
+      "tags": [
+        "outlook",
+        "read-state"
+      ]
+    },
+    "MoveIMAPMailMessageToFolder": {
+      "gen_function": "gen_move_imap_mail_message_to_folder",
+      "element_tag": "ui:MoveIMAPMailMessageToFolder",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "client_name": {
+          "attr": "ClientName",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "client_version": {
+          "attr": "ClientVersion",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "email": {
+          "attr": "Email",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "from_folder": {
+          "attr": "FromFolder",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_folder": {
+          "attr": "MailFolder",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "port": {
+          "attr": "Port",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "server": {
+          "attr": "Server",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "use_o_auth": {
+          "attr": "UseOAuth",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "ConnectionMode": "Undefined",
+        "EnableSSL": "True",
+        "IgnoreCRL": "False",
+        "SecureConnection": "Auto",
+        "UseISConnection": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Move a MailMessage to another folder on an IMAP server.",
+      "use_when": "User automates IMAP and wants to file a message. For Outlook use MoveOutlookMessage; for Exchange use MoveMessageToFolder; for StudioX use MoveMailX.",
+      "_routing_review_needed": false,
+      "tags": [
+        "imap",
+        "move"
+      ]
+    },
+    "MoveLotusNotesMailMessage": {
+      "gen_function": "gen_move_lotus_notes_mail_message",
+      "element_tag": "umla:MoveLotusNotesMailMessage",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "from_folder": {
+          "attr": "FromFolder",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_folder": {
+          "attr": "MailFolder",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Move a Lotus Notes MailMessage to another mailbox folder.",
+      "use_when": "User automates Lotus Notes and wants to file a message.",
+      "_routing_review_needed": false,
+      "tags": [
+        "lotus-notes",
+        "move"
+      ]
+    },
+    "MoveMailX": {
+      "gen_function": "gen_move_mail_x",
+      "element_tag": "umab:MoveMailX",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "mail_folder": {
+          "attr": "MailFolder",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "StudioX 'Move Email' activity for the active mail account.",
+      "use_when": "User wants the StudioX move-email button equivalent. For provider-specific calls use MoveOutlookMessage / MoveIMAPMailMessageToFolder / MoveMessageToFolder.",
+      "_routing_review_needed": false,
+      "tags": [
+        "move",
+        "studiox"
+      ]
+    },
+    "MoveMessageToFolder": {
+      "gen_function": "gen_move_message_to_folder",
+      "element_tag": "ui:MoveMessageToFolder",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "application_id": {
+          "attr": "ApplicationId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "directory_id": {
+          "attr": "DirectoryId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "domain": {
+          "attr": "Domain",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "email_autodiscover": {
+          "attr": "EmailAutodiscover",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_folder": {
+          "attr": "MailFolder",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "server": {
+          "attr": "Server",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "shared_mailbox": {
+          "attr": "SharedMailbox",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "attr": "TimeoutMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "user": {
+          "attr": "User",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "AuthenticationMode": "UserNameAndPassword",
+        "ExchangeVersion": "Exchange2007_SP1"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Move an Exchange MailMessage to another folder via EWS inside an ExchangeScope.",
+      "use_when": "User automates Exchange via EWS. For Outlook use MoveOutlookMessage; for IMAP use MoveIMAPMailMessageToFolder.",
+      "_routing_review_needed": false,
+      "tags": [
+        "exchange",
+        "move"
+      ]
+    },
+    "NewIMAPEmailReceivedTrigger": {
+      "gen_function": "gen_new_imap_email_received_trigger",
+      "element_tag": "umai:NewIMAPEmailReceivedTrigger",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "connection_account_name": {
+          "attr": "ConnectionAccountName",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "connection_id": {
+          "attr": "ConnectionId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "filter": {
+          "attr": "Filter",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "filter_expression": {
+          "attr": "FilterExpression",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "job_data": {
+          "attr": "JobData",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "result": {
+          "attr": "Result",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "ui_path_event": {
+          "attr": "UiPathEvent",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "ui_path_event_connector": {
+          "attr": "UiPathEventConnector",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "ui_path_event_object_id": {
+          "attr": "UiPathEventObjectId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "ui_path_event_object_type": {
+          "attr": "UiPathEventObjectType",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "IncludeAttachments": "False",
+        "MailFolder": "INBOX",
+        "MarkAsRead": "False",
+        "UseConnectionService": "True",
+        "WithAttachmentsOnly": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Trigger that fires when a new email arrives on an IMAP server.",
+      "use_when": "User wants an event-driven workflow that reacts to new IMAP mail. For Outlook event triggers use OutlookMailMessagesTrigger.",
+      "_routing_review_needed": false,
+      "tags": [
+        "imap",
+        "trigger"
+      ]
+    },
+    "OutlookMailMessagesTrigger": {
+      "gen_function": "gen_outlook_mail_messages_trigger",
+      "element_tag": "umao:OutlookMailMessagesTrigger",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "account": {
+          "attr": "Account",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "body_filter": {
+          "attr": "BodyFilter",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "cc": {
+          "attr": "Cc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "from": {
+          "attr": "From",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "subject_filter": {
+          "attr": "SubjectFilter",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "to": {
+          "attr": "To",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "BodyIsBuilderTabModified": "False",
+        "BodyRegexOption": "None",
+        "Enabled": "True",
+        "Importance": "Any",
+        "MailFolder": "Inbox",
+        "MarkAsRead": "False",
+        "SchedulingMode": "Sequential",
+        "SubjectIsBuilderTabModified": "False",
+        "SubjectRegexOption": "None",
+        "TriggerId": "727b169b-d51a-41a8-99c5-10a745a96b87",
+        "WhenOutlookIsClosed": "Open"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Trigger that fires when a new email arrives in a desktop Outlook folder.",
+      "use_when": "User wants an event-driven workflow that reacts to new Outlook mail. For IMAP use NewIMAPEmailReceivedTrigger.",
+      "_routing_review_needed": false,
+      "tags": [
+        "outlook",
+        "trigger"
+      ]
+    },
+    "ReplyToMailX": {
+      "gen_function": "gen_reply_to_mail_x",
+      "element_tag": "umab:ReplyToMailX",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "additional_cc": {
+          "attr": "AdditionalCc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "additional_to": {
+          "attr": "AdditionalTo",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "bcc": {
+          "attr": "Bcc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "body": {
+          "attr": "Body",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "html_body_from_text": {
+          "attr": "HtmlBodyFromText",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "new_subject": {
+          "attr": "NewSubject",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "MaxBodyDocumentSizeMB": "2",
+        "ReplyToAll": "False",
+        "UseDocumentAsBody": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "StudioX 'Reply to Email' activity for the active mail account.",
+      "use_when": "User wants the StudioX reply button equivalent. For provider-specific replies use ReplyToOutlookMailMessage.",
+      "_routing_review_needed": false,
+      "tags": [
+        "reply",
+        "studiox"
+      ]
+    },
+    "ReplyToOutlookMailMessage": {
+      "gen_function": "gen_reply_to_outlook_mail_message",
+      "element_tag": "ui:ReplyToOutlookMailMessage",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "add_bcc": {
+          "attr": "AddBcc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "add_cc": {
+          "attr": "AddCc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "add_to": {
+          "attr": "AddTo",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "body": {
+          "attr": "Body",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "new_subject": {
+          "attr": "NewSubject",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "reply_from": {
+          "attr": "ReplyFrom",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "attr": "TimeoutMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "Importance": "Normal",
+        "ReplyAll": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Reply (or Reply All) to a desktop Outlook MailMessage with new body and optional attachments.",
+      "use_when": "User wants to compose a reply to an Outlook message. For Exchange/IMAP, reply via the underlying provider's send activity with appropriate headers.",
+      "_routing_review_needed": false,
+      "tags": [
+        "outlook",
+        "reply"
+      ]
+    },
+    "SaveExchangeAttachements": {
+      "gen_function": "gen_save_exchange_attachements",
+      "element_tag": "ui:SaveExchangeAttachements",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "application_id": {
+          "attr": "ApplicationId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "directory_id": {
+          "attr": "DirectoryId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "domain": {
+          "attr": "Domain",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "email_autodiscover": {
+          "attr": "EmailAutodiscover",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "files": {
+          "attr": "Files",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "folder_path": {
+          "attr": "FolderPath",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "resource_attachments": {
+          "attr": "ResourceAttachments",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "server": {
+          "attr": "Server",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "attr": "TimeoutMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "user": {
+          "attr": "User",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "AuthenticationMode": "UserNameAndPassword",
+        "ExchangeVersion": "Exchange2007_SP1"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Save all attachments from an Exchange MailMessage to a folder on disk.",
+      "use_when": "User wants to extract attachments from an Exchange message. For other providers use SaveMailAttachmentsX.",
+      "_routing_review_needed": false,
+      "tags": [
+        "exchange",
+        "attachments",
+        "save"
+      ]
+    },
+    "SaveMail": {
+      "gen_function": "gen_save_mail",
+      "element_tag": "ui:SaveMail",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "email": {
+          "attr": "Email",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "file_path": {
+          "attr": "FilePath",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Save a MailMessage to disk as an .eml/.msg file.",
+      "use_when": "User wants to persist an email for archival or later re-import. For attachments only use SaveMailAttachmentsX; to re-load use GetMailMessageFromFile.",
+      "_routing_review_needed": false,
+      "tags": [
+        "save",
+        "file"
+      ]
+    },
+    "SaveMailAttachmentsX": {
+      "gen_function": "gen_save_mail_attachments_x",
+      "element_tag": "umab:SaveMailAttachmentsX",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "attachments": {
+          "attr": "Attachments",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "folder_path": {
+          "attr": "FolderPath",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "message": {
+          "attr": "Message",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "ExcludeInlineAttachments": "True",
+        "OverwriteExisting": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "StudioX activity that saves all attachments of the current email to a folder.",
+      "use_when": "User wants the StudioX 'Save Attachments' button equivalent. For Exchange specifically use SaveExchangeAttachements.",
+      "_routing_review_needed": false,
+      "tags": [
+        "attachments",
+        "save",
+        "studiox"
+      ]
+    },
+    "SaveMailX": {
+      "gen_function": "gen_save_mail_x",
+      "element_tag": "umab:SaveMailX",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "file_name": {
+          "attr": "FileName",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "folder_path": {
+          "attr": "FolderPath",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "StudioX 'Save Email' activity that writes the current email to disk.",
+      "use_when": "User wants the StudioX save-email button equivalent. For provider-agnostic saving use SaveMail.",
+      "_routing_review_needed": false,
+      "tags": [
+        "save",
+        "studiox"
+      ]
+    },
+    "SaveOutlookMailMessage": {
+      "gen_function": "gen_save_outlook_mail_message",
+      "element_tag": "ui:SaveOutlookMailMessage",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "file_name": {
+          "attr": "FileName",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "folder": {
+          "attr": "Folder",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "ReplaceExisting": "False",
+        "SaveAsType": "OutlookMessageFormatUnicode"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Save a desktop Outlook MailMessage to disk as a .msg file.",
+      "use_when": "User wants to persist an Outlook message in native .msg format. For provider-agnostic .eml use SaveMail.",
+      "_routing_review_needed": false,
+      "tags": [
+        "outlook",
+        "save"
+      ]
+    },
+    "SendCalendarInviteX": {
+      "gen_function": "gen_send_calendar_invite_x",
+      "element_tag": "umab:SendCalendarInviteX",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "account": {
+          "attr": "Account",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "description": {
+          "attr": "Description",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "end_date": {
+          "attr": "EndDate",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "location": {
+          "attr": "Location",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "optional_attendees": {
+          "attr": "OptionalAttendees",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "required_attendees": {
+          "attr": "RequiredAttendees",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "start_date": {
+          "attr": "StartDate",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "start_time": {
+          "attr": "StartTime",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "subject": {
+          "attr": "Subject",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "AlertInterval": "00:15:00",
+        "AllDayEvent": "False",
+        "BusyStatus": "Busy",
+        "DailyRecurrenceStep": "1",
+        "DailyRecurrenceType": "EveryWeekDay",
+        "Duration": "00:30:00",
+        "IsRecurring": "False",
+        "MaxBodyDocumentSizeMB": "2",
+        "MonthlyRecurrenceDay": "Day",
+        "MonthlyRecurrenceDayIndex": "1",
+        "MonthlyRecurrenceStep": "1",
+        "MonthlyRecurrenceType": "EveryNthDayOnEveryXthMonth",
+        "MonthlyRecurrenceWeek": "First",
+        "RecurrenceEndType": "NoEndDate",
+        "RecurrencePatternType": "Daily",
+        "RecurrenceTotalOccurrences": "1",
+        "SaveWithoutSending": "True",
+        "WeeklyRecurrenceDays": "None",
+        "WeeklyRecurrenceStep": "1",
+        "YearlyRecurrenceDay": "Day",
+        "YearlyRecurrenceDayIndex": "1",
+        "YearlyRecurrenceMonth": "January",
+        "YearlyRecurrenceStep": "1",
+        "YearlyRecurrenceType": "EveryNthDayOfMonth",
+        "YearlyRecurrenceWeek": "First"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "StudioX activity that sends a calendar invitation through the active mail account.",
+      "use_when": "User wants to send a meeting invite, not a plain email. For ordinary mail use SendOutlookMail / SendMailX.",
+      "_routing_review_needed": false,
+      "tags": [
+        "calendar",
+        "invite",
+        "studiox"
+      ]
+    },
+    "SendExchangeMail": {
+      "gen_function": "gen_send_exchange_mail",
+      "element_tag": "ui:SendExchangeMail",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "application_id": {
+          "attr": "ApplicationId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "bcc": {
+          "attr": "Bcc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "body": {
+          "attr": "Body",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "cc": {
+          "attr": "Cc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "directory_id": {
+          "attr": "DirectoryId",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "domain": {
+          "attr": "Domain",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "email_autodiscover": {
+          "attr": "EmailAutodiscover",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "from": {
+          "attr": "From",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "name": {
+          "attr": "Name",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "resource_attachment_list": {
+          "attr": "ResourceAttachmentList",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "resource_attachments": {
+          "attr": "ResourceAttachments",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "server": {
+          "attr": "Server",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "subject": {
+          "attr": "Subject",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "attr": "TimeoutMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "to": {
+          "attr": "To",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "user": {
+          "attr": "User",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "AttachmentInputMode": "FilePaths",
+        "AuthenticationMode": "UserNameAndPassword",
+        "ExchangeVersion": "Exchange2007_SP1",
+        "IsBodyHtml": "False",
+        "IsDraft": "False",
+        "SaveCopy": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Send an email through Exchange Web Services (EWS) inside an ExchangeScope.",
+      "use_when": "User wants to send via EWS. For desktop Outlook use SendOutlookMail; for SMTP use SendMailX.",
+      "alternatives": [
+        {
+          "activity": "SendOutlookMail",
+          "use_instead_when": "There is a logged-in Outlook desktop client; let it deliver the mail so it follows local Outlook rules."
+        },
+        {
+          "activity": "SendMail",
+          "use_instead_when": "You do not have Exchange credentials and only need to push through a generic SMTP relay."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "exchange",
+        "send"
+      ]
+    },
+    "SendLotusNotesMailMessage": {
+      "gen_function": "gen_send_lotus_notes_mail_message",
+      "element_tag": "umla:SendLotusNotesMailMessage",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "bcc": {
+          "attr": "Bcc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "body": {
+          "attr": "Body",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "cc": {
+          "attr": "Cc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "continue_on_error": {
+          "attr": "ContinueOnError",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "password": {
+          "attr": "Password",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "secure_password": {
+          "attr": "SecurePassword",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "subject": {
+          "attr": "Subject",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "timeout_ms": {
+          "attr": "TimeoutMS",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "to": {
+          "attr": "To",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "use_rich_text_editor": {
+          "attr": "UseRichTextEditor",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "ConnectionMode": "Undefined",
+        "IsBodyHtml": "False",
+        "UseISConnection": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Send an email through an IBM/HCL Lotus Notes session.",
+      "use_when": "User automates Lotus Notes outbound mail.",
+      "_routing_review_needed": false,
+      "tags": [
+        "lotus-notes",
+        "send"
+      ]
+    },
+    "SendMailX": {
+      "gen_function": "gen_send_mail_x",
+      "element_tag": "umab:SendMailX",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "account": {
+          "attr": "Account",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "bcc": {
+          "attr": "Bcc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "body": {
+          "attr": "Body",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "cc": {
+          "attr": "Cc",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "html_body_from_text": {
+          "attr": "HtmlBodyFromText",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "reply_to": {
+          "attr": "ReplyTo",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "subject": {
+          "attr": "Subject",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "to": {
+          "attr": "To",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {
+        "Importance": "Normal",
+        "MaxBodyDocumentSizeMB": "2",
+        "Sensitivity": "Normal",
+        "UseDocumentAsBody": "False"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Send an email via SMTP (configurable host/port/credentials).",
+      "use_when": "User wants to send through a generic SMTP server (Gmail SMTP, custom relay). For Outlook use SendOutlookMail; for Exchange use SendExchangeMail.",
+      "_routing_review_needed": false,
+      "tags": [
+        "smtp",
+        "send"
+      ]
+    },
+    "SetOutlookMailCategories": {
+      "gen_function": "gen_set_outlook_mail_categories",
+      "element_tag": "ui:SetOutlookMailCategories",
+      "params": {
+        "display_name": {
+          "attr": "DisplayName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "scope_id": {
+          "attr": "ScopeIdentifier",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "scope_id"
+        },
+        "categories": {
+          "attr": "Categories",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "mail_message": {
+          "attr": "MailMessage",
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "obj_repo": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "obj_repo_param"
+        }
+      },
+      "fixed_attrs": {},
+      "child_elements": {},
+      "conditional_attrs": {},
+      "_review_needed": true,
+      "category": "mail",
+      "description": "Apply or replace one or more Outlook category labels on a desktop Outlook MailMessage.",
+      "use_when": "User wants to tag an Outlook message with category colours/labels.",
+      "_routing_review_needed": false,
+      "tags": [
+        "outlook",
+        "categories"
+      ]
     }
   }
 }

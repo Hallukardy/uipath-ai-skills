@@ -70,7 +70,26 @@
           "content": "Sequence DisplayName='Else' with else_content (only when else_content is non-empty)"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "control_flow",
+      "description": "Branch execution based on a single Boolean condition with a Then branch and an optional Else branch.",
+      "use_when": "User needs a binary decision on a Boolean expression. For three or more mutually-exclusive cases use IfElseIfV2 or Switch; for value-based dispatch use Switch.",
+      "alternatives": [
+        {
+          "activity": "Switch",
+          "use_instead_when": "You are branching on a single value across three or more discrete cases (use Switch for n-way dispatch)."
+        },
+        {
+          "activity": "IfElseIfV2",
+          "use_instead_when": "You have a chain of mutually exclusive boolean conditions and want explicit else-if branches rather than nested If activities."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "branching",
+        "conditional",
+        "two-way"
+      ]
     },
     "IfElseIfV2": {
       "gen_function": "gen_if_else_if",
@@ -131,7 +150,26 @@
           "content": "Sequence DisplayName='Else' (only when else_content is non-empty)"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "control_flow",
+      "description": "Chain multiple Boolean conditions evaluated in order, with a Then branch per condition and an optional final Else.",
+      "use_when": "User has three or more mutually-exclusive conditional branches keyed on Boolean expressions. For exactly two outcomes use If; for value-equality dispatch use Switch.",
+      "alternatives": [
+        {
+          "activity": "If",
+          "use_instead_when": "You only have one boolean branch (with optional else); the chained form is unnecessary."
+        },
+        {
+          "activity": "Switch",
+          "use_instead_when": "Every branch tests the same value against a constant; Switch is clearer for n-way dispatch on one expression."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "branching",
+        "conditional",
+        "multi-way"
+      ]
     },
     "Switch": {
       "gen_function": "gen_switch",
@@ -215,7 +253,26 @@
           "content": "Each case is a Sequence with x:Key attribute for the case label"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "control_flow",
+      "description": "Dispatch on the value of an expression to one of N labelled case sequences plus an optional default.",
+      "use_when": "User wants to choose a branch by the value of a single expression (string, integer, enum). For Boolean conditions use If or IfElseIfV2.",
+      "alternatives": [
+        {
+          "activity": "If",
+          "use_instead_when": "You only need a binary true/false branch on a boolean expression."
+        },
+        {
+          "activity": "IfElseIfV2",
+          "use_instead_when": "The branches depend on different boolean expressions (not values of one expression) and you want labeled else-if clauses."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "branching",
+        "dispatch",
+        "multi-way"
+      ]
     },
     "ForEach": {
       "gen_function": "gen_foreach",
@@ -297,7 +354,29 @@
           "content": "ActivityAction with DelegateInArgument and inner Sequence"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "control_flow",
+      "description": "Iterate over an in-memory collection (IEnumerable) running the body once per item with a typed loop variable.",
+      "use_when": "User wants to loop over a list/array/IEnumerable. For DataTable rows use ForEachRow; for files in a folder use ForEachFileX; for parallel iteration use ParallelForEach.",
+      "alternatives": [
+        {
+          "activity": "ForEachRow",
+          "use_instead_when": "You are iterating the rows of a DataTable; ForEachRow exposes the row item directly without indexing."
+        },
+        {
+          "activity": "NForEachUiElement",
+          "use_instead_when": "You are iterating a live collection of UI elements found on screen rather than a generic collection."
+        },
+        {
+          "activity": "ForEachFileX",
+          "use_instead_when": "You are iterating files (or folders) under a path; ForEachFileX handles enumeration, filtering, and recursion natively."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "loop",
+        "collection"
+      ]
     },
     "ForEachRow": {
       "gen_function": "gen_foreach_row",
@@ -370,7 +449,29 @@
           "arg_name": "CurrentRow"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "control_flow",
+      "description": "Iterate over the rows of a DataTable, exposing each row as a DataRow loop variable.",
+      "use_when": "User wants to walk every row of a DataTable. For arbitrary collections use ForEach; for files use ForEachFileX.",
+      "alternatives": [
+        {
+          "activity": "ForEach",
+          "use_instead_when": "The collection is a generic IEnumerable (List, Array) rather than a DataTable."
+        },
+        {
+          "activity": "ForEachFileX",
+          "use_instead_when": "You are walking files on disk rather than rows of an in-memory table."
+        },
+        {
+          "activity": "NForEachUiElement",
+          "use_instead_when": "You are iterating UI elements on screen rather than tabular data."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "loop",
+        "datatable"
+      ]
     },
     "ForEachFileX": {
       "gen_function": "gen_foreach_file",
@@ -456,7 +557,26 @@
           "content": "ActivityAction x:TypeArguments='si:FileInfo, x:Int32' with Argument1 (CurrentFile) and Argument2 (CurrentIndex) DelegateInArguments"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "control_flow",
+      "description": "Iterate over files in a folder (StudioX FileInfo iterator) with optional recursion and ordering.",
+      "use_when": "User wants to process every file in a directory. For folders use ForEachFolderX (data ops); for arbitrary collections use ForEach.",
+      "alternatives": [
+        {
+          "activity": "ForEach",
+          "use_instead_when": "You already have an in-memory collection of file paths; do not re-enumerate the filesystem."
+        },
+        {
+          "activity": "ForEachRow",
+          "use_instead_when": "You are iterating rows of a DataTable, not files on disk."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "loop",
+        "files",
+        "studiox"
+      ]
     },
     "While": {
       "gen_function": "gen_while",
@@ -517,7 +637,15 @@
           "content": "Sequence DisplayName='Body' with body_content"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "control_flow",
+      "description": "Repeat a body sequence while a Boolean condition stays true, evaluating the condition before each iteration.",
+      "use_when": "User wants a pre-test loop that may run zero times. For at-least-once execution use DoWhile; for cancel-aware loops use InterruptibleWhile.",
+      "_routing_review_needed": false,
+      "tags": [
+        "loop",
+        "conditional"
+      ]
     },
     "DoWhile": {
       "gen_function": "gen_do_while",
@@ -578,7 +706,15 @@
           "content": "Sequence DisplayName='Body' with body_content"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "control_flow",
+      "description": "Run a body sequence at least once, then repeat while a Boolean condition stays true.",
+      "use_when": "User wants a post-test loop that always executes at least one pass. For zero-or-more iterations use While; for cancel-aware loops use InterruptibleDoWhile.",
+      "_routing_review_needed": false,
+      "tags": [
+        "loop",
+        "conditional"
+      ]
     },
     "Flowchart": {
       "gen_function": "gen_flowchart",
@@ -663,7 +799,21 @@
           "content": "FlowDecision x:Name with VisualBasicValue condition, True/False x:Reference branches"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "control_flow",
+      "description": "Author a flowchart container with FlowSteps, FlowDecisions, branching connectors, and a designated start node.",
+      "use_when": "User wants an explicit graph-style workflow with multiple entry/exit paths and back-edges. For straight-line work use Sequence; for state-driven graphs use StateMachine.",
+      "alternatives": [
+        {
+          "activity": "StateMachine",
+          "use_instead_when": "The graph has long-lived states with entry/exit actions and explicit triggers; StateMachine models that better than free-form arrows."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "composite",
+        "flowchart"
+      ]
     },
     "StateMachine": {
       "gen_function": "gen_state_machine",
@@ -719,7 +869,22 @@
           "content": "State (or FinalState) elements with Entry and Transitions"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "control_flow",
+      "description": "Author a state-machine container with named states, transitions, entry actions, and a designated initial state.",
+      "use_when": "User wants explicit named states with guarded transitions (e.g. REFramework). For free-form graphs use Flowchart; for linear control flow use Sequence.",
+      "alternatives": [
+        {
+          "activity": "Flowchart",
+          "use_instead_when": "The graph is a one-shot decision tree with no persistent states; Flowchart is lighter weight than a state machine."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "composite",
+        "state-machine",
+        "reframework"
+      ]
     },
     "Parallel": {
       "gen_function": "gen_parallel",
@@ -770,7 +935,15 @@
         "CompletionCondition": {
           "omit_when": ""
         }
-      }
+      },
+      "category": "control_flow",
+      "description": "Run two or more branches concurrently, with an optional CompletionCondition that ends the activity once truthy.",
+      "use_when": "User wants to fan out N independent pre-built branches and join them. For parallel iteration over a collection use ParallelForEach.",
+      "_routing_review_needed": false,
+      "tags": [
+        "concurrency",
+        "parallel"
+      ]
     },
     "ParallelForEach": {
       "gen_function": "gen_parallel_foreach",
@@ -840,10 +1013,19 @@
           "content": "ActivityAction with DelegateInArgument and body_xml"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "control_flow",
+      "description": "Iterate over a collection in parallel, running the body concurrently for each item.",
+      "use_when": "User wants concurrent iteration over a collection. For sequential iteration use ForEach; for fan-out of distinct branches use Parallel.",
+      "_routing_review_needed": false,
+      "tags": [
+        "concurrency",
+        "loop",
+        "parallel"
+      ]
     },
     "Delay": {
-      "gen_function": "gen_delay",
+      "gen_function": null,
       "element_tag": "sa:Delay",
       "hint_size_key": "Delay",
       "params": {
@@ -879,7 +1061,21 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Pauses workflow execution for the specified duration. Lint 109 warns against using Delay — prefer ShouldStop + loop pattern."
+      "note": "Self-closing tag. Pauses workflow execution for the specified duration. Lint 109 warns against using Delay — prefer ShouldStop + loop pattern. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "control_flow",
+      "description": "Pause workflow execution for a TimeSpan duration before continuing.",
+      "use_when": "User explicitly asks for a fixed pause/sleep. Avoid in production loops (lint 109 flags it) - prefer ShouldStop checks or a retry-with-backoff pattern.",
+      "alternatives": [
+        {
+          "activity": "RetryScope",
+          "use_instead_when": "You actually need to wait for a condition to succeed (with retry/backoff) rather than burn a fixed amount of time."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "timing",
+        "pause"
+      ]
     }
   }
 }

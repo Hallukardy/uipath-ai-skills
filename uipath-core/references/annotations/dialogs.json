@@ -84,7 +84,23 @@
           "content": "<OutArgument x:TypeArguments=\"x:String\">[{result_variable}]</OutArgument>"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "dialogs",
+      "description": "Show an interactive prompt that asks the user for a string (or one of a fixed set of options) and returns the response.",
+      "use_when": "An attended workflow needs a value supplied by the human at runtime (free text, password, or a dropdown choice). Use MessageBox when you only need to display information without collecting input; use orchestrator forms / Action Center when input must come from a non-attended user.",
+      "alternatives": [
+        {
+          "activity": "MessageBox",
+          "use_instead_when": "You only need to show information or get an OK acknowledgement, not collect typed input."
+        }
+      ],
+      "tags": [
+        "dialog",
+        "input",
+        "attended",
+        "prompt"
+      ],
+      "_routing_review_needed": false
     },
     "MessageBox": {
       "gen_function": "gen_message_box",
@@ -127,7 +143,27 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag."
+      "note": "Self-closing tag.",
+      "category": "dialogs",
+      "description": "Display a modal message box to the attended user and block the workflow until they dismiss it.",
+      "use_when": "An attended workflow needs to surface information or pause for confirmation. Prefer LogMessage for unattended logging that should not interrupt execution; use InputDialog when you actually need a typed response back.",
+      "alternatives": [
+        {
+          "activity": "InputDialog",
+          "use_instead_when": "You need to read a value typed by the user, not just show information."
+        },
+        {
+          "activity": "LogMessage",
+          "use_instead_when": "The workflow is unattended or you only want a log entry rather than a blocking UI prompt."
+        }
+      ],
+      "tags": [
+        "dialog",
+        "message",
+        "attended",
+        "modal"
+      ],
+      "_routing_review_needed": false
     }
   }
 }

@@ -3,7 +3,7 @@
   "module": "testing",
   "activities": {
     "VerifyExpression": {
-      "gen_function": "gen_verify_expression",
+      "gen_function": null,
       "element_tag": "uta:VerifyExpression",
       "hint_size_key": "VerifyExpression",
       "params": {
@@ -63,10 +63,19 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Verifies a Boolean expression is true."
+      "note": "Self-closing tag. Verifies a Boolean expression is true. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Asserts that a boolean expression evaluates to True; fails the test step otherwise.",
+      "use_when": "User wants a simple True/False assertion; for comparator-based assertions (eq/lt/gt/contains) use VerifyExpressionWithOperator; for numeric-range checks use VerifyRange.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "assertion",
+        "verify"
+      ]
     },
     "VerifyExpressionWithOperator": {
-      "gen_function": "gen_verify_expression_with_operator",
+      "gen_function": null,
       "element_tag": "uta:VerifyExpressionWithOperator",
       "hint_size_key": "VerifyExpressionWithOperator",
       "params": {
@@ -92,7 +101,17 @@
           "attr": "Operator",
           "required": false,
           "default": "Equality",
-          "enum": ["Equality", "Inequality", "GreaterThan", "LessThan", "GreaterThanOrEqual", "LessThanOrEqual", "Contains", "StartsWith", "EndsWith"],
+          "enum": [
+            "Equality",
+            "Inequality",
+            "GreaterThan",
+            "LessThan",
+            "GreaterThanOrEqual",
+            "LessThanOrEqual",
+            "Contains",
+            "StartsWith",
+            "EndsWith"
+          ],
           "escape": null,
           "bracket_wrap": false,
           "type": "string"
@@ -144,10 +163,19 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Compares two expressions with a specified operator."
+      "note": "Self-closing tag. Compares two expressions with a specified operator. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Asserts that two expressions satisfy a comparator (Equals, NotEquals, GreaterThan, LessThan, Contains).",
+      "use_when": "User wants a typed comparator assertion; for raw boolean expressions use VerifyExpression; for numeric ranges use VerifyRange.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "assertion",
+        "comparator"
+      ]
     },
     "VerifyRange": {
-      "gen_function": "gen_verify_range",
+      "gen_function": null,
       "element_tag": "uta:VerifyRange",
       "hint_size_key": "VerifyRange",
       "params": {
@@ -218,7 +246,10 @@
           "attr": "VerificationType",
           "required": false,
           "default": "is within",
-          "enum": ["is within", "is not within"],
+          "enum": [
+            "is within",
+            "is not within"
+          ],
           "escape": "xml",
           "bracket_wrap": false,
           "type": "string"
@@ -234,10 +265,19 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Verifies a numeric expression falls within a range."
+      "note": "Self-closing tag. Verifies a numeric expression falls within a range. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Asserts that a numeric value falls within an inclusive [min, max] range.",
+      "use_when": "User wants to verify a number is between two bounds; for equality / comparator checks use VerifyExpressionWithOperator.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "assertion",
+        "range"
+      ]
     },
     "ComparePdfDocuments": {
-      "gen_function": "gen_compare_pdf_documents",
+      "gen_function": null,
       "element_tag": "uta:ComparePdfDocuments",
       "hint_size_key": "ComparePdfDocuments",
       "params": {
@@ -299,7 +339,11 @@
           "attr": "ComparisonType",
           "required": false,
           "default": "Line",
-          "enum": ["Line", "Word", "Character"],
+          "enum": [
+            "Line",
+            "Word",
+            "Character"
+          ],
           "escape": null,
           "bracket_wrap": false,
           "type": "string"
@@ -325,10 +369,19 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Compares two PDF documents for differences."
+      "note": "Self-closing tag. Compares two PDF documents for differences. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Compares two PDF documents and reports per-page differences using a comparison rule.",
+      "use_when": "User wants to verify that a generated PDF matches a baseline; for plain text comparison use CompareText.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "pdf",
+        "compare"
+      ]
     },
     "CompareText": {
-      "gen_function": "gen_compare_text",
+      "gen_function": null,
       "element_tag": "uta:CompareText",
       "hint_size_key": "CompareText",
       "params": {
@@ -390,7 +443,11 @@
           "attr": "ComparisonType",
           "required": false,
           "default": "Line",
-          "enum": ["Line", "Word", "Character"],
+          "enum": [
+            "Line",
+            "Word",
+            "Character"
+          ],
           "escape": null,
           "bracket_wrap": false,
           "type": "string"
@@ -414,10 +471,19 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Compares two text strings for differences."
+      "note": "Self-closing tag. Compares two text strings for differences. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Compares two strings using a comparison rule (case-insensitive, whitespace-normalized, regex-aware).",
+      "use_when": "User wants to assert string equivalence with normalization options; for raw equality use VerifyExpressionWithOperator with the Equals operator.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "text",
+        "compare"
+      ]
     },
     "CreateComparisonRule": {
-      "gen_function": "gen_create_comparison_rule",
+      "gen_function": null,
       "element_tag": "uta:CreateComparisonRule",
       "hint_size_key": "CreateComparisonRule",
       "params": {
@@ -470,7 +536,11 @@
           "attr": "ComparisonRuleType",
           "required": false,
           "default": "RegexRule",
-          "enum": ["RegexRule", "IgnoreRule", "ReplaceRule"],
+          "enum": [
+            "RegexRule",
+            "IgnoreRule",
+            "ReplaceRule"
+          ],
           "escape": null,
           "bracket_wrap": false,
           "type": "string"
@@ -482,10 +552,19 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Creates a comparison rule for document comparison."
+      "note": "Self-closing tag. Creates a comparison rule for document comparison. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Builds a reusable comparison rule object for ComparePdfDocuments / CompareText.",
+      "use_when": "User wants to share a normalization configuration (ignore whitespace, case-insensitive, regex masks) across multiple comparisons.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "rule",
+        "comparison"
+      ]
     },
     "GetTestDataQueueItem": {
-      "gen_function": "gen_get_test_data_queue_item",
+      "gen_function": null,
       "element_tag": "uta:GetTestDataQueueItem",
       "hint_size_key": "GetTestDataQueueItem",
       "params": {
@@ -549,10 +628,19 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Retrieves an item from a test data queue."
+      "note": "Self-closing tag. Retrieves an item from a test data queue. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Pops one test data row from a Test Data Queue and binds its fields to local variables.",
+      "use_when": "User wants the next row of test data in a data-driven test; for many rows in one call use GetTestDataQueueItems.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "data-queue",
+        "single"
+      ]
     },
     "GetTestDataQueueItems": {
-      "gen_function": "gen_get_test_data_queue_items",
+      "gen_function": null,
       "element_tag": "uta:GetTestDataQueueItems",
       "hint_size_key": "GetTestDataQueueItems",
       "params": {
@@ -596,7 +684,11 @@
           "attr": "TestDataQueueItemStatus",
           "required": false,
           "default": "All",
-          "enum": ["All", "Unconsumed", "Consumed"],
+          "enum": [
+            "All",
+            "Unconsumed",
+            "Consumed"
+          ],
           "escape": null,
           "bracket_wrap": false,
           "type": "string"
@@ -627,10 +719,19 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Retrieves multiple items from a test data queue."
+      "note": "Self-closing tag. Retrieves multiple items from a test data queue. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Returns a batch of test data rows from a Test Data Queue as a list.",
+      "use_when": "User wants several rows in one call (faster than looping GetTestDataQueueItem); for a single row use GetTestDataQueueItem.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "data-queue",
+        "batch"
+      ]
     },
     "BulkAddTestDataQueue": {
-      "gen_function": "gen_bulk_add_test_data_queue",
+      "gen_function": null,
       "element_tag": "uta:BulkAddTestDataQueue",
       "hint_size_key": "BulkAddTestDataQueue",
       "params": {
@@ -685,10 +786,20 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Bulk-adds rows from a DataTable to a test data queue."
+      "note": "Self-closing tag. Bulk-adds rows from a DataTable to a test data queue. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Inserts many rows into a Test Data Queue from a DataTable in a single Orchestrator request.",
+      "use_when": "User wants to seed a Test Data Queue from an Excel sheet; for one row at a time use NewAddTestDataQueueItem.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "data-queue",
+        "bulk",
+        "seed"
+      ]
     },
     "DeleteTestDataQueueItems": {
-      "gen_function": "gen_delete_test_data_queue_items",
+      "gen_function": null,
       "element_tag": "uta:DeleteTestDataQueueItems",
       "hint_size_key": "DeleteTestDataQueueItems",
       "params": {
@@ -734,10 +845,19 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Deletes items from a test data queue."
+      "note": "Self-closing tag. Deletes items from a test data queue. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Deletes test data items from a Test Data Queue by ID list or filter.",
+      "use_when": "User wants to clear a queue between test runs; pair with BulkAddTestDataQueue to refresh test data.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "data-queue",
+        "cleanup"
+      ]
     },
     "AttachDocument": {
-      "gen_function": "gen_attach_document",
+      "gen_function": null,
       "element_tag": "uta:AttachDocument",
       "hint_size_key": "AttachDocument",
       "params": {
@@ -783,10 +903,19 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Attaches a document to the current test case result."
+      "note": "Self-closing tag. Attaches a document to the current test case result. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Attaches a file artifact (screenshot, log, evidence) to the current test result.",
+      "use_when": "User wants to include evidence in a Test Manager run; for inline log messages use LogMessage; for screenshots specifically use TakeScreenshotAndSave first.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "evidence",
+        "attachment"
+      ]
     },
     "RandomString": {
-      "gen_function": "gen_random_string",
+      "gen_function": null,
       "element_tag": "utat:RandomString",
       "hint_size_key": "RandomString",
       "params": {
@@ -830,7 +959,11 @@
           "attr": "Case",
           "required": false,
           "default": "LowerCase",
-          "enum": ["LowerCase", "UpperCase", "MixedCase"],
+          "enum": [
+            "LowerCase",
+            "UpperCase",
+            "MixedCase"
+          ],
           "escape": null,
           "bracket_wrap": false,
           "type": "string"
@@ -839,10 +972,20 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Generates a random string of specified length."
+      "note": "Self-closing tag. Generates a random string of specified length. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Generates a random string of given length and character class for test data.",
+      "use_when": "User wants synthetic string input for a test; for numbers use RandomNumber; for human-shaped values (names, addresses) use GivenName / LastName / Address.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "random",
+        "string",
+        "synthetic"
+      ]
     },
     "RandomNumber": {
-      "gen_function": "gen_random_number",
+      "gen_function": null,
       "element_tag": "utat:RandomNumber",
       "hint_size_key": "RandomNumber",
       "params": {
@@ -904,10 +1047,20 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Generates a random number within the specified range."
+      "note": "Self-closing tag. Generates a random number within the specified range. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Generates a random integer or decimal within a specified range for test data.",
+      "use_when": "User wants synthetic numeric input; for a value drawn from an enum-like set use RandomValue.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "random",
+        "number",
+        "synthetic"
+      ]
     },
     "RandomDate": {
-      "gen_function": "gen_random_date",
+      "gen_function": null,
       "element_tag": "utat:RandomDate",
       "hint_size_key": "RandomDate",
       "params": {
@@ -960,10 +1113,20 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Generates a random date within the specified range."
+      "note": "Self-closing tag. Generates a random date within the specified range. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Generates a random DateTime within a specified [from, to] range.",
+      "use_when": "User wants synthetic date input; for a calendar-aware business-day variant authoring is custom.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "random",
+        "date",
+        "synthetic"
+      ]
     },
     "RandomValue": {
-      "gen_function": "gen_random_value",
+      "gen_function": null,
       "element_tag": "utat:RandomValue",
       "hint_size_key": "RandomValue",
       "params": {
@@ -1007,10 +1170,20 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Picks a random value from a list or file."
+      "note": "Self-closing tag. Picks a random value from a list or file. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Returns a random element from a supplied list of candidate values.",
+      "use_when": "User wants a value picked from a fixed set (e.g. a category enum); for free-form strings use RandomString.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "random",
+        "enum",
+        "synthetic"
+      ]
     },
     "GivenName": {
-      "gen_function": "gen_given_name",
+      "gen_function": null,
       "element_tag": "utat:GivenName",
       "hint_size_key": "GivenName",
       "params": {
@@ -1045,10 +1218,20 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Generates a random given/first name."
+      "note": "Self-closing tag. Generates a random given/first name. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Returns a random plausible given (first) name from a built-in dataset for test data.",
+      "use_when": "User wants realistic first-name input; pair with LastName + Address for a synthetic person record.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "random",
+        "name",
+        "synthetic"
+      ]
     },
     "LastName": {
-      "gen_function": "gen_last_name",
+      "gen_function": null,
       "element_tag": "utat:LastName",
       "hint_size_key": "LastName",
       "params": {
@@ -1083,10 +1266,20 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Generates a random last/family name."
+      "note": "Self-closing tag. Generates a random last/family name. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Returns a random plausible family (last) name from a built-in dataset for test data.",
+      "use_when": "User wants realistic last-name input; pair with GivenName + Address for a synthetic person record.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "random",
+        "name",
+        "synthetic"
+      ]
     },
     "Address": {
-      "gen_function": "gen_address",
+      "gen_function": null,
       "element_tag": "utat:Address",
       "hint_size_key": "Address",
       "params": {
@@ -1139,22 +1332,60 @@
       "fixed_attrs": {},
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag. Generates a random address."
+      "note": "Self-closing tag. Generates a random address. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "category": "testing",
+      "description": "Returns a random plausible street address from a built-in dataset for test data.",
+      "use_when": "User wants realistic address input; pair with GivenName / LastName for a synthetic person record.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "random",
+        "address",
+        "synthetic"
+      ]
     },
     "VerifyControlAttribute": {
       "_unsupported_reason": "wizard-only",
       "_review_needed": false,
-      "note": "VerifyControlAttribute wraps an ActivityAction+ActivityFunc pair; requires Studio wizard to configure the target activity."
+      "note": "VerifyControlAttribute wraps an ActivityAction+ActivityFunc pair; requires Studio wizard to configure the target activity.",
+      "category": "testing",
+      "description": "Asserts that a UI element's attribute (Text, Enabled, Visible, etc.) matches an expected value.",
+      "use_when": "User wants a UI-bound assertion in a test; for non-UI value assertions use VerifyExpression.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "assertion",
+        "ui"
+      ]
     },
     "MockActivity": {
       "_unsupported_reason": "wizard-only",
       "_review_needed": false,
-      "note": "MockActivity wraps a Sequence child to replace a mocked activity; requires Studio configuration."
+      "note": "MockActivity wraps a Sequence child to replace a mocked activity; requires Studio configuration.",
+      "category": "testing",
+      "description": "Substitutes a mocked implementation for a wrapped activity at test time, returning a canned output.",
+      "use_when": "User wants to isolate code-under-test from a slow / flaky / external dependency; production specs should never include MockActivity.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "mock",
+        "isolation"
+      ]
     },
     "NewAddTestDataQueueItem": {
       "_unsupported_reason": "wizard-only",
       "_review_needed": false,
-      "note": "NewAddTestDataQueueItem uses an ItemInformation dictionary child that requires Studio wizard configuration."
+      "note": "NewAddTestDataQueueItem uses an ItemInformation dictionary child that requires Studio wizard configuration.",
+      "category": "testing",
+      "description": "Inserts a single row into a Test Data Queue with the given field values.",
+      "use_when": "User wants to add one test data row interactively; for batch loads from a DataTable use BulkAddTestDataQueue.",
+      "_routing_review_needed": false,
+      "tags": [
+        "test",
+        "data-queue",
+        "single",
+        "seed"
+      ]
     }
   }
 }

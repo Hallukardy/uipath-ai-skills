@@ -60,7 +60,11 @@
           "attr": "Priority",
           "required": false,
           "default": "Normal",
-          "enum": ["Normal", "High", "Low"],
+          "enum": [
+            "Normal",
+            "High",
+            "Low"
+          ],
           "escape": null,
           "bracket_wrap": false,
           "type": "string"
@@ -95,13 +99,28 @@
           "content": "Bare InArgument x:TypeArguments='x:String' elements with x:Key (NO Dictionary wrapper)"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "orchestrator",
+      "description": "Enqueues a single transaction item into an Orchestrator queue, optionally with reference, deadline, priority, and SpecificContent.",
+      "use_when": "User wants to push one item to a queue from a dispatcher; for many items in a batch use BulkAddQueueItems to avoid per-item HTTP overhead.",
+      "alternatives": [
+        {
+          "activity": "BulkAddQueueItems",
+          "use_instead_when": "You have many items to enqueue at once; bulk uploads are dramatically faster than a per-item loop."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "orchestrator",
+        "queue",
+        "dispatcher"
+      ]
     },
     "BulkAddQueueItems": {
       "gen_function": "gen_bulk_add_queue_items",
       "element_tag": "ui:BulkAddQueueItems",
       "hint_size_key": "BulkAddQueueItems",
-      "note": "Wrapped in RetryScope automatically",
+      "note": "Self-closing tag inside RetryScope.",
       "params": {
         "queue_name": {
           "attr": "QueueName",
@@ -155,7 +174,22 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag inside RetryScope."
+      "category": "orchestrator",
+      "description": "Enqueues multiple transaction items in a single Orchestrator request from a list of SpecificContent dictionaries.",
+      "use_when": "User wants to push many items at once (faster than looping AddQueueItem); for a single item use AddQueueItem.",
+      "alternatives": [
+        {
+          "activity": "AddQueueItem",
+          "use_instead_when": "You only have a single item to enqueue; the bulk path is overkill."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "orchestrator",
+        "queue",
+        "bulk",
+        "dispatcher"
+      ]
     },
     "GetQueueItem": {
       "gen_function": "gen_get_queue_item",
@@ -233,7 +267,16 @@
           "content": "<InArgument x:TypeArguments=\"x:Int32\" />"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "orchestrator",
+      "description": "Pops the next available queue item from an Orchestrator queue and assigns it to a QueueItem variable.",
+      "use_when": "User wants the next transaction in a Performer; for adding items use AddQueueItem; in REFramework use the built-in Get Transaction Data state instead of calling this directly.",
+      "_routing_review_needed": false,
+      "tags": [
+        "orchestrator",
+        "queue",
+        "performer"
+      ]
     },
     "GetRobotCredential": {
       "gen_function": "gen_getrobotcredential",
@@ -292,7 +335,23 @@
       },
       "child_elements": {},
       "conditional_attrs": {},
-      "note": "Self-closing tag."
+      "note": "Self-closing tag.",
+      "category": "orchestrator",
+      "description": "Reads a credential asset from Orchestrator and outputs username + secure password into local variables.",
+      "use_when": "User wants to retrieve a credential by asset name; for non-credential assets (text/int/bool/json) use GetRobotAsset.",
+      "alternatives": [
+        {
+          "activity": "GetRobotAsset",
+          "use_instead_when": "The asset is a non-credential value (text, integer, bool, JSON) rather than a username/password pair."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "orchestrator",
+        "credential",
+        "asset",
+        "secure"
+      ]
     },
     "GetRobotAsset": {
       "gen_function": "gen_get_robot_asset",
@@ -344,7 +403,11 @@
           "attr": "CacheStrategy",
           "required": false,
           "default": "None",
-          "enum": ["None", "PerRobot", "Global"],
+          "enum": [
+            "None",
+            "PerRobot",
+            "Global"
+          ],
           "escape": null,
           "bracket_wrap": false,
           "type": "string"
@@ -378,7 +441,22 @@
           "content": "<OutArgument x:TypeArguments=\"{output_type}\">[{output_variable}]</OutArgument>"
         }
       },
-      "conditional_attrs": {}
+      "conditional_attrs": {},
+      "category": "orchestrator",
+      "description": "Reads a typed asset (text, integer, boolean, json) from Orchestrator and assigns its value to a local variable.",
+      "use_when": "User wants a configuration value held centrally in Orchestrator; for username+password pairs use GetRobotCredential.",
+      "alternatives": [
+        {
+          "activity": "GetRobotCredential",
+          "use_instead_when": "The asset is a Credential type and you need both username and password (as SecureString) returned."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "orchestrator",
+        "asset",
+        "configuration"
+      ]
     }
   }
 }
