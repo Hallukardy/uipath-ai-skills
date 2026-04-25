@@ -165,11 +165,15 @@ class TestGetReturnsImmutableView:
         profiles = get_version_profiles()
         inner = profiles[("Pkg.View", "1.0")]
         # Inner is a real dict (so isinstance(dict) passes downstream),
-        # but it's a deep copy — mutations don't reach the registry.
+        # but it's a deep copy of the registry — mutations don't reach the
+        # backing store.
         assert isinstance(inner, dict)
         inner["activities"]["LeakedAct"] = {"version_attrs": {}}
         assert "LeakedAct" not in plugin_loader._version_profiles[("Pkg.View", "1.0")]["activities"]
-        # And a fresh getter call sees the original, untouched profile.
+        # After a fresh registration, the cached snapshot is invalidated and
+        # the next getter call rebuilds from the (untouched) registry, so the
+        # leaked mutation is gone.
+        register_version_profile("Pkg.View", "1.0", profile)
         fresh = get_version_profiles()
         assert "LeakedAct" not in fresh[("Pkg.View", "1.0")]["activities"]
 

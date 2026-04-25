@@ -14,9 +14,12 @@ validation) import from here. No version data is duplicated elsewhere.
 
 import dataclasses
 import json
+import logging
 import re
 import types
 from pathlib import Path
+
+_LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -155,12 +158,20 @@ class ProjectVersion:
             return None
         m = _RANGE_PREFIX_RE.match(ver)
         if not m:
+            _LOG.debug(
+                "band_for: could not extract leading band integer from %s=%r",
+                package, ver,
+            )
             return None
         band = m.group(1)
         try:
             validate_band(band)
             return band
         except ValueError:
+            _LOG.debug(
+                "band_for: extracted band %r from %s=%r failed validate_band",
+                band, package, ver,
+            )
             return None
 
     def is_supported(self, package: str) -> bool | None:

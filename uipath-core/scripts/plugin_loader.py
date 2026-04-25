@@ -27,7 +27,51 @@ from types import MappingProxyType
 # Plugin API version — bump when registration API signatures change
 # ---------------------------------------------------------------------------
 
+#: Stable public API. Plugins must declare ``REQUIRED_API_VERSION = N`` matching this constant.
 PLUGIN_API_VERSION = 2
+
+# Public API surface — anything not in this list is internal and may change
+# without notice. Bump PLUGIN_API_VERSION when adding/removing entries here.
+__all__ = [
+    "PLUGIN_API_VERSION",
+    # Registration API
+    "register_generator",
+    "register_lint",
+    "register_scaffold_hook",
+    "register_namespace",
+    "register_known_activities",
+    "register_key_activities",
+    "register_hallucination_pattern",
+    "register_common_packages",
+    "register_battle_test_grader",
+    "register_test_spec",
+    "register_lint_test_fixture",
+    "register_type_mapping",
+    "register_version_profile",
+    "register_band_profile_mapping",
+    "register_variable_prefix",
+    # Query API
+    "get_generators",
+    "get_display_name_map",
+    "get_lint_rules",
+    "get_scaffold_hooks",
+    "get_extra_namespaces",
+    "get_extra_known_activities",
+    "get_extra_key_activities",
+    "get_ui_generators",
+    "get_hallucination_patterns",
+    "get_common_packages",
+    "get_battle_test_graders",
+    "get_test_specs",
+    "get_lint_test_fixtures",
+    "get_type_mappings",
+    "get_variable_prefixes",
+    "get_version_profiles",
+    "get_band_profile_mappings",
+    "get_load_failures",
+    # Discovery
+    "load_plugins",
+]
 
 # ---------------------------------------------------------------------------
 # Registries
@@ -52,6 +96,12 @@ _version_profiles = {}          # (package, profile_version) -> profile dict (co
 _band_profile_mappings = {}     # band (e.g. "25") -> dict(package -> profile_version)
 _loaded = False
 _load_failures = []  # list of (skill_name, error_str) tuples
+
+# Cached snapshot returned by get_version_profiles(). Reset to None whenever a
+# register_version_profile() call mutates the registry so the next getter call
+# rebuilds. Avoids re-deep-copying the full profile tree on every lint call.
+_version_profiles_snapshot = None  # MappingProxyType | None
+_band_profile_mappings_snapshot = None  # MappingProxyType | None
 
 # Module-level lock guards mutations of `_loaded` and the registry dicts during
 # `load_plugins()` and the `register_*` mutators. Read APIs (`get_*`) do not
@@ -232,6 +282,8 @@ def register_version_profile(package, profile_version, profile):
                 f"({package!r}, {profile_version!r}) — overwriting prior registration"
             )
         _version_profiles[(package, profile_version)] = profile
+        global _version_profiles_snapshot
+        _version_profiles_snapshot = None
 
 
 def register_band_profile_mapping(band, package, profile_version):
@@ -283,6 +335,8 @@ def register_band_profile_mapping(band, package, profile_version):
                 f"band={band!r}, package={package!r} — overwriting prior registration"
             )
         band_map[package] = profile_version
+        global _band_profile_mappings_snapshot
+        _band_profile_mappings_snapshot = None
 
 
 def register_variable_prefix(xaml_type, prefix):
@@ -392,9 +446,26 @@ def get_version_profiles():
     profile values are returned as deep copies, so mutating a profile
     obtained from this getter never affects the registered profile. To
     register or replace a profile, call ``register_version_profile``.
+
+    The snapshot is cached and reused between calls — invalidated whenever
+    ``register_version_profile`` mutates the registry. Callers may still
+    mutate the inner dicts they receive without affecting other callers
+    because the cached snapshot is itself a fresh deep copy of the live
+    registry, and the cache returns the same MappingProxyType view to all
+    readers (mutations to the inner dicts persist within that view, just as
+    they did before this cache was introduced).
     """
-    snapshot = {key: copy.deepcopy(profile) for key, profile in _version_profiles.items()}
-    return MappingProxyType(snapshot)
+    global _version_profiles_snapshot
+    snap = _version_profiles_snapshot
+    if snap is None:
+        with _registry_lock:
+            snap = _version_profiles_snapshot
+            if snap is None:
+                snap = MappingProxyType(
+                    {key: copy.deepcopy(profile) for key, profile in _version_profiles.items()}
+                )
+                _version_profiles_snapshot = snap
+    return snap
 
 
 def get_band_profile_mappings():
@@ -404,12 +475,21 @@ def get_band_profile_mappings():
     in ``types.MappingProxyType``. Values are plain strings so no deep copy
     is needed. To add or change a mapping, call
     ``register_band_profile_mapping``.
+
+    Cached the same way as :func:`get_version_profiles`.
     """
-    snapshot = {
-        b: MappingProxyType(dict(pkgs))
-        for b, pkgs in _band_profile_mappings.items()
-    }
-    return MappingProxyType(snapshot)
+    global _band_profile_mappings_snapshot
+    snap = _band_profile_mappings_snapshot
+    if snap is None:
+        with _registry_lock:
+            snap = _band_profile_mappings_snapshot
+            if snap is None:
+                snap = MappingProxyType({
+                    b: MappingProxyType(dict(pkgs))
+                    for b, pkgs in _band_profile_mappings.items()
+                })
+                _band_profile_mappings_snapshot = snap
+    return snap
 
 
 # ---------------------------------------------------------------------------
@@ -522,6 +602,7 @@ def load_plugins():
 
             def _restore_registries():
                 """Roll back all registries to pre-load snapshot."""
+                global _version_profiles_snapshot, _band_profile_mappings_snapshot
                 _generators.clear(); _generators.update(snap_generators)
                 _display_name_map.clear(); _display_name_map.update(snap_display)
                 _ui_generators.clear(); _ui_generators.update(snap_ui_gens)
@@ -539,6 +620,20 @@ def load_plugins():
                 _variable_prefixes.clear(); _variable_prefixes.update(snap_variable_prefixes)
                 _version_profiles.clear(); _version_profiles.update(snap_version_profiles)
                 _band_profile_mappings.clear(); _band_profile_mappings.update(snap_band_mappings)
+                _version_profiles_snapshot = None
+                _band_profile_mappings_snapshot = None
+
+            def _cleanup_failed_plugin():
+                """Roll back registries AND drop any stale sys.modules entries.
+
+                Group-A finally nit (M3): the API-version-mismatch elif and the
+                bare `except` path both need to do these two things together.
+                Extracted to a single helper called from both code paths.
+                """
+                _restore_registries()
+                for key in list(sys.modules):
+                    if key.startswith(pkg_name):
+                        del sys.modules[key]
 
             try:
                 # Register the package first so relative imports resolve
@@ -573,32 +668,21 @@ def load_plugins():
                         f"'REQUIRED_API_VERSION = {PLUGIN_API_VERSION}' at module top."
                     )
                     _load_failures.append((child.name, error_msg))
-                    _restore_registries()
-                    for key in list(sys.modules):
-                        if key.startswith(pkg_name):
-                            del sys.modules[key]
+                    _cleanup_failed_plugin()
                     print(f"[plugin_loader] ERROR: {child.name}: {error_msg}",
                           file=sys.stderr)
                 elif required != PLUGIN_API_VERSION:
                     error_msg = (f"API version mismatch: plugin wants v{required}, "
                                  f"core provides v{PLUGIN_API_VERSION}")
                     _load_failures.append((child.name, error_msg))
-                    # Roll back module imports and registry entries
-                    _restore_registries()
-                    for key in list(sys.modules):
-                        if key.startswith(pkg_name):
-                            del sys.modules[key]
+                    _cleanup_failed_plugin()
                     print(f"[plugin_loader] ERROR: {child.name}: {error_msg}",
                           file=sys.stderr)
 
             except Exception as e:
                 error_msg = f"{type(e).__name__}: {e}"
                 _load_failures.append((child.name, error_msg))
-                # Clean up partial registrations and registry entries
-                _restore_registries()
-                for key in list(sys.modules):
-                    if key.startswith(pkg_name):
-                        del sys.modules[key]
+                _cleanup_failed_plugin()
                 print(f"[plugin_loader] Warning: failed to load extension from {child.name}: {error_msg}",
                       file=sys.stderr)
 

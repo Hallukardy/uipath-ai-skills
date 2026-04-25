@@ -434,14 +434,17 @@ def scaffold_project(name: str, description: str, output_dir: str,
     if extra_deps:
         pj["dependencies"].update(extra_deps)
 
+    # Stamp versionBand BEFORE running plugin hooks so any future hook can
+    # read pj["versionBand"] when deciding what to register. Today no hook
+    # reads it, but flipping the order is purely defensive (L1).
+    if version_band:
+        pj["versionBand"] = version_band
+
     # Run plugin scaffold hooks (e.g. Tasks persistence support)
     from plugin_loader import load_plugins, get_scaffold_hooks
     load_plugins()
     for hook in get_scaffold_hooks():
         hook(pj)
-
-    if version_band:
-        pj["versionBand"] = version_band
 
     pj["runtimeOptions"]["isAttended"] = attended
     pj["expressionLanguage"] = expression_lang
@@ -554,6 +557,11 @@ if __name__ == "__main__":
     parser.add_argument("--band", metavar="NN", default=None,
                         help="Target version band (e.g., 25 or 26). Stamps versionBand into "
                              "project.json and resolves baseline dependencies within the band.")
+    parser.add_argument("--force-band", action="store_true",
+                        help="Allow --band to disagree with the deps-derived band. Without "
+                             "this flag, a mismatch between --band and the year-based "
+                             "dependencies is a hard error (avoids stamping a band that "
+                             "downstream lints will reject).")
     parser.add_argument("--overwrite", action="store_true",
                         help="Delete and replace existing output directory. Without this flag, "
                              "scaffolding into an existing directory fails safely.")
@@ -610,22 +618,43 @@ if __name__ == "__main__":
                   f"versionBand will be omitted.", file=sys.stderr)
     elif effective_band is not None and merged_deps:
         # --band was explicit. Defensively derive from deps too: if the
-        # year-based deps point at a different band, surface the disagreement
-        # to stderr (explicit user input still wins — no hard error). This
-        # closes the silent skew between project.json's stamped versionBand
-        # and the actual pinned activity packages.
+        # year-based deps point at a different band, refuse to stamp a band
+        # that downstream lints will reject (M2). The user can override with
+        # --force-band, restoring the old "warn and proceed" behavior, but the
+        # default is now a hard failure to surface the skew loudly.
         try:
             from version_band import derive_band_from_deps, UnsupportedBandError
             derived = derive_band_from_deps(merged_deps)
             if derived is not None and derived != effective_band:
-                print(
-                    f"Warning: --band {effective_band} disagrees with "
-                    f"deps-derived band {derived}; using --band as authoritative",
-                    file=sys.stderr,
-                )
+                if args.force_band:
+                    print(
+                        f"Warning: --band {effective_band} disagrees with "
+                        f"deps-derived band {derived}; --force-band set, "
+                        f"using --band as authoritative",
+                        file=sys.stderr,
+                    )
+                else:
+                    print(
+                        f"ERROR: --band {effective_band} disagrees with "
+                        f"deps-derived band {derived}. The pinned year-based "
+                        f"dependencies imply band {derived}, but --band was "
+                        f"set to {effective_band}. Either align --band with "
+                        f"the deps, or pass --force-band to stamp "
+                        f"{effective_band} anyway (downstream lints "
+                        f"120/121/122 may reject the mismatch).",
+                        file=sys.stderr,
+                    )
+                    sys.exit(2)
         except UnsupportedBandError as e:
-            print(f"Warning: deps imply unsupported band ({e}); "
-                  f"using --band {effective_band} as authoritative", file=sys.stderr)
+            if args.force_band:
+                print(f"Warning: deps imply unsupported band ({e}); "
+                      f"--force-band set, using --band {effective_band} "
+                      f"as authoritative", file=sys.stderr)
+            else:
+                print(f"ERROR: deps imply an unsupported band ({e}). "
+                      f"--band {effective_band} cannot be reconciled. "
+                      f"Pass --force-band to override.", file=sys.stderr)
+                sys.exit(2)
         except (ImportError, ValueError):
             # Best-effort cross-check; never block scaffolding on a derive failure.
             pass

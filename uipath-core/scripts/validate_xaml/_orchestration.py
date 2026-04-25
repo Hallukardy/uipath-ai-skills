@@ -36,6 +36,13 @@ def _read_version_band(project_dir: str | None) -> str | None:
     with ``"versionBand": 25`` (int) is silently coerced to ``"25"`` so lint
     122's string-keyed lookup works. A one-line stderr nudge surfaces the
     schema deviation. Other JSON types collapse to ``None``. (R2b M1.)
+
+    After int→str coercion, the coerced value is validated via
+    ``validate_band(...)``. An int that doesn't round-trip to a real band
+    raises ``ValueError`` instead of silently propagating into lints that
+    would then no-op on the unknown band. String inputs are passed through
+    unchanged so the SILENT no-op contract for malformed bands at lint time
+    (R2a H2) still holds. (M4.)
     """
     if not project_dir:
         return None
@@ -52,12 +59,22 @@ def _read_version_band(project_dir: str | None) -> str | None:
     if isinstance(value, str):
         return value
     if isinstance(value, int) and not isinstance(value, bool):
+        coerced = str(value)
+        # Deferred import to avoid cycles between version_band and validate_xaml.
+        from version_band import validate_band
+        try:
+            validate_band(coerced)
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid versionBand {value!r} in {pj_path}: {e}. "
+                f"Use a two-digit band string like \"25\" or \"26\"."
+            ) from e
         print(
             f"warning: project.json versionBand is an int ({value!r}); "
-            f"schema expects a string. Coerced to {str(value)!r}.",
+            f"schema expects a string. Coerced to {coerced!r}.",
             file=sys.stderr,
         )
-        return str(value)
+        return coerced
     return None
 
 

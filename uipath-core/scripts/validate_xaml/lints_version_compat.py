@@ -11,8 +11,8 @@ ProjectVersion.unsupported_packages(), not by these file-level lints.
 
 import json
 import logging
+import os
 import re
-import sys
 from pathlib import Path
 
 from ._registry import lint_rule
@@ -25,18 +25,19 @@ _PROFILES_DIR = Path(__file__).resolve().parents[2] / "references" / "version-pr
 
 _MAX_JSON_SIZE = 10_000_000  # 10 MB cap for profile/cache JSON files
 
-# Import-safety flag: if version_band can't be imported, lints 120/121/122
-# degrade to silent no-ops so the rest of the validator keeps working.
+# Fail loud on missing version_band: re-raise unless OMC_VERSION_COMPAT_OFF=1 is set.
+# (Old behavior of silently degrading to no-op masked packaging slips — see H1.)
 try:
     from version_band import BAND_PROFILE_VERSIONS as _BAND_PROFILE_VERSIONS
     _VERSION_BAND_AVAILABLE = True
 except ImportError:
+    if os.environ.get("OMC_VERSION_COMPAT_OFF") != "1":
+        raise
     _BAND_PROFILE_VERSIONS = {}
     _VERSION_BAND_AVAILABLE = False
-    print(
-        "warning: version_band module not importable; "
-        "version-compat lints 120/121/122 disabled.",
-        file=sys.stderr,
+    _LOG.warning(
+        "version_band module not importable and OMC_VERSION_COMPAT_OFF=1 is set; "
+        "version-compat lints 120/121/122 disabled."
     )
 
 
@@ -44,10 +45,19 @@ def _safe_read_json(path):
     if not path.is_file():
         return None
     if path.stat().st_size > _MAX_JSON_SIZE:
+        _LOG.warning(
+            "lints_version_compat: profile %s exceeds %d-byte cap; ignoring.",
+            path, _MAX_JSON_SIZE,
+        )
         return None
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError) as exc:
+        _LOG.warning(
+            "lints_version_compat: failed to load profile %s (%s: %s); "
+            "lint will fall back to default behavior.",
+            path, type(exc).__name__, exc,
+        )
         return None
 
 
@@ -105,6 +115,11 @@ _FALLBACK_VERSION_SENSITIVE = {
     "NGoToUrl", "NExtractDataGeneric",
     "NHover", "NMouseScroll", "NGetUrl",  # NOTE: lint 122 is blind to these until profile version_attrs is populated; lint 120 still fires (catches V5+ below band 25)
 }
+assert _FALLBACK_VERSION_SENSITIVE, (
+    "lints_version_compat: _FALLBACK_VERSION_SENSITIVE must not be empty — "
+    "lints 120/121 silently disable when this set is empty and no profile "
+    "data is available."
+)
 
 
 def _detect_version_sensitive_activities() -> set[str]:
