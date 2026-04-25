@@ -8,13 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.2.2] - 2026-04-26
 
-Closes 21 findings from a multi-agent deep review of the v1.2.1 surface
-(commits `fd6a6d7`, `c4abc45`, `46bb988` on `feature/version-compatibility-v2`).
+Bundles two streams of work landing together on `feature/version-compatibility-v2`:
+**(1)** the `feature/full-coverage-routing-v1` merge (commit `58081f6`) — full
+activity coverage (157/460 → 442/460), the new LLM routing index, annotation
+backfill across 463 entries, three new uipath-tasks generators, and the xmlns
+binding fix for the data-driven generator; and **(2)** 21 findings closed by a
+multi-agent deep review of the v1.2.1 surface (commits `fd6a6d7`, `c4abc45`,
+`46bb988`).
+
 Tests: 242/242 pytest + 102/102 lints + 13/13 auto-fix + 21/21 regression
 + 10/10 cross-plugin + 16/16 snapshots + 16/16 gen-lint integration.
 
 ### Added
 
+**Full activity coverage + LLM routing index** (merge `58081f6`)
+- `references/routing-index.md` (730 lines) — generated from the annotation corpus by `scripts/generate_routing_index.py`. Single source of truth for LLM activity routing; `SKILL.md` and `references/cheat-sheet.md` now point at it.
+- `scripts/populate_routing_metadata.py` — seeded routing metadata (`use_when`, `tags`, `alternatives`, `_routing_review_needed`) across all 463 annotation entries; the post-merge follow-ups refined the wording on every entry, taking review-pending from 463/463 to 0/463
+- Annotation corpus expanded **from 202 to 463 entries** across 17 category files. 269 uncovered activities backfilled (commit `d84c70b`), nulling out 91 stale `gen_function` references that now correctly fall through to `gen_from_annotation`. Coverage manifest + `coverage-baseline.json` introduced as regression substrate (`scripts/audit_coverage.py`).
+- `scripts/validate_annotations.py` — strict validator for the corpus; `references/annotations/SCHEMA.md` documents the contract
+- `uipath-tasks/extensions` — new task generators registered for **`ForwardTask`**, **`GetAppTasks`**, and **`WaitForUserActionAndResume`** (commit `964feac`); brings the Persistence Activities 1.4 coverage in line with the Studio profile
+- `scripts/harvest_all_supported.py` and `scripts/import_wizard_xaml.py` (commit `018f44f`) — bulk Studio-harvest orchestrator + the wizard-XAML import pipeline that closed the 16-activity wizard intervention (11 imported + 5 demoted)
+
+**Review-followup additions** (commits `fd6a6d7` / `c4abc45` / `46bb988`)
 - `harvest_studio_xaml.py` and `harvest_all_supported.py` — `--deterministic` flag (also honors `CI=1` env var) drops `harvested_at` / `started_at` / `finished_at` from emitted JSON so re-runs no longer churn the ground-truth corpus
 - `scaffold_project.py` — `--force-band` flag re-enables the legacy "warn and stamp anyway" behavior when `--band` disagrees with deps (default is now hard error; see Fixed below)
 - `harvest_studio_xaml.py` — 10s `uip --version` reachability probe at the top of `main()` (skipped in `--scrub-only` mode); fails fast with rc=3 on missing Studio install instead of failing 5+ minutes into a scaffolding run
@@ -24,6 +39,12 @@ Tests: 242/242 pytest + 102/102 lints + 13/13 auto-fix + 21/21 regression
 
 ### Fixed
 
+**Coverage / routing merge fixes**
+- `scripts/generate_activities/_data_driven.py` — emits inline `xmlns` bindings for non-standard prefixes (commit `932e821`). Battle-test went from 388/437 to 434/437 well-formed XAML; full dispatch now passes 437/437.
+- 91 stale `gen_function` annotation references nulled out (commit `04a8bbd`) so the dispatcher correctly routes those activities through `gen_from_annotation` instead of failing with `Unknown generator`
+- Pre-existing `test_auto_fix` and `golden-templates` gaps closed (commit `c3b1be4`) — these had been asymptomatic on `main` but blocked the new coverage assertions
+
+**Review-followup correctness fixes**
 - **lints_version_compat now fails loud on `version_band` ImportError** — previously a silent stderr print left lints 120/121/122 as no-ops for the rest of the process. A packaging slip-up (rename, sys.path quirk, partial-edit syntax error) could quietly ship validate_xaml without version-band enforcement. Escape hatch: set `OMC_VERSION_COMPAT_OFF=1` to keep the soft-disable behavior; failures are then logged via the module logger (not stderr print).
 - **`scaffold_project --band` disagreeing with deps is now a hard error** — previously printed a warning and stamped the explicit band anyway, creating a project that would fail downstream lints. Use `--force-band` to restore the old behavior.
 - **`_orchestration._read_version_band` validates int→str coerced versionBand** — previously coerced `"versionBand": <int>` to a string and passed it through with only a warning, so out-of-range ints reached lint dispatch silently. Now calls `validate_band()` after coercion and raises `ValueError` on failure.
@@ -36,6 +57,13 @@ Tests: 242/242 pytest + 102/102 lints + 13/13 auto-fix + 21/21 regression
 
 ### Internal
 
+**Coverage / routing merge metrics**
+- Coverage manifest: 157/460 → **442/460** (96 %; remaining 18 are wizard-only and tracked separately)
+- Routing review-pending: 463/463 → **0/463** — every annotation entry has hand-curated `use_when` / `tags` / alternatives
+- Battle-test (full dispatch + XML well-formed): 149/437 → **437/437**
+- `regression_test.py`: 17/19 → **21/21**; the `test_all` aggregator: 5/7 → **7/7** sub-suites green
+
+**Review-followup hygiene**
 - **`plugin_loader.get_version_profiles()` and `get_band_profile_mappings()` cache MappingProxyType snapshots** — previously deep-copied the entire profile tree on every call (lints invoke this repeatedly). Cache invalidated on `register_version_profile` / `register_band_profile_mapping` and on `_restore_registries()` rollback.
 - **`plugin_loader._cleanup_failed_plugin()` helper extracted** — `_restore_registries()` and `sys.modules[pkg_name*]` cleanup now always run together. Previously the API-version-mismatch elif branch only called the registry restore; the `sys.modules` cleanup happened in the `except` block, so two consecutive API-mismatch loads could leave sub-modules cached.
 - `plugin_loader.py` — added `__all__` listing the public API (`PLUGIN_API_VERSION`, register / get / discover functions) and a one-line marker declaring `PLUGIN_API_VERSION` as stable public surface
