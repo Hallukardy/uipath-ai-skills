@@ -6,6 +6,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.2.2] - 2026-04-26
+
+Closes 21 findings from a multi-agent deep review of the v1.2.1 surface
+(commits `fd6a6d7`, `c4abc45`, `46bb988` on `feature/version-compatibility-v2`).
+Tests: 242/242 pytest + 102/102 lints + 13/13 auto-fix + 21/21 regression
++ 10/10 cross-plugin + 16/16 snapshots + 16/16 gen-lint integration.
+
+### Added
+
+- `harvest_studio_xaml.py` and `harvest_all_supported.py` — `--deterministic` flag (also honors `CI=1` env var) drops `harvested_at` / `started_at` / `finished_at` from emitted JSON so re-runs no longer churn the ground-truth corpus
+- `scaffold_project.py` — `--force-band` flag re-enables the legacy "warn and stamp anyway" behavior when `--band` disagrees with deps (default is now hard error; see Fixed below)
+- `harvest_studio_xaml.py` — 10s `uip --version` reachability probe at the top of `main()` (skipped in `--scrub-only` mode); fails fast with rc=3 on missing Studio install instead of failing 5+ minutes into a scaffolding run
+- `harvest_all_supported.py` — final stdout summary line `OK: N, ERROR: N, UNRESOLVED: N, TIMEOUT: N` so users see status without parsing `_bulk_summary.json`
+- Golden-template fixture pairs added under `assets/lint-test-cases/` for lint rules **9** (hardcoded `idx > 2`), **14** (selector `matching:X` without `fuzzylevel`), **18** (OCREngine `sd:Image` bound to `System.Drawing.Primitives`), and **24** (deprecated-assemblies placeholder). Rules 40, 87, 89, 90, 93, 95, 99, 110 already had coverage via `test_auto_fix` and `run_lint_tests`. New `tests/test_golden_templates.py` exercises the new pairs.
+- `SKILL.md` — new "Battle-test scripts (manual-only)" subsection documenting that `battle_test_studio.py` and `battle_test_activities.py` are not run by CI, have side effects (Studio invocation, temp project creation), and when to invoke them
+
+### Fixed
+
+- **lints_version_compat now fails loud on `version_band` ImportError** — previously a silent stderr print left lints 120/121/122 as no-ops for the rest of the process. A packaging slip-up (rename, sys.path quirk, partial-edit syntax error) could quietly ship validate_xaml without version-band enforcement. Escape hatch: set `OMC_VERSION_COMPAT_OFF=1` to keep the soft-disable behavior; failures are then logged via the module logger (not stderr print).
+- **`scaffold_project --band` disagreeing with deps is now a hard error** — previously printed a warning and stamped the explicit band anyway, creating a project that would fail downstream lints. Use `--force-band` to restore the old behavior.
+- **`_orchestration._read_version_band` validates int→str coerced versionBand** — previously coerced `"versionBand": <int>` to a string and passed it through with only a warning, so out-of-range ints reached lint dispatch silently. Now calls `validate_band()` after coercion and raises `ValueError` on failure.
+- **`lints_version_compat._safe_read_json` logs WARNING on profile read failure** — previously swallowed `OSError` / `JSONDecodeError` and returned None silently; truncated or corrupt profile JSONs during dev would silently degrade lint behavior
+- **`_data_driven.py` `list` child-element type assertion** — previously coerced any item via `str(item)`, so a dict-valued list item would silently produce `{'k': 'v'}` strings in emitted XAML. Now raises `TypeError` naming activity, child key, item index, type, and repr if any item is not `(str, int, float, bool)`.
+- **`import_wizard_xaml.py` preflight assertion** — `_preflight_assert_keys_resolve()` now runs after argument parsing and asserts every `(package, version, elem)` triple in `DEFAULT_MATCHES` and `DEMOTE_NOT_AVAILABLE` resolves in the loaded index. Previously a typo or stale entry would silently no-op, quietly reverting the closed wizard intervention. All 16 currently-listed keys (11 imports + 5 demotes) verified to resolve cleanly.
+- `scaffold_project.py` — `versionBand` is now stamped **before** plugin scaffold hooks, so future hooks can read it. No behavior change today; defensive ordering.
+- `generate_workflow.py` — replaced bare `except ImportError` with `except ModuleNotFoundError` in the data-driven fallback path so syntax/load errors inside `_data_driven.py` surface their real message instead of being masked as `Unknown generator`
+- `import_wizard_xaml.py` — `ET.fromstring` failures now increment a parse-error counter and log at WARNING with the file path; final summary includes the count (was silent swallow)
+
+### Internal
+
+- **`plugin_loader.get_version_profiles()` and `get_band_profile_mappings()` cache MappingProxyType snapshots** — previously deep-copied the entire profile tree on every call (lints invoke this repeatedly). Cache invalidated on `register_version_profile` / `register_band_profile_mapping` and on `_restore_registries()` rollback.
+- **`plugin_loader._cleanup_failed_plugin()` helper extracted** — `_restore_registries()` and `sys.modules[pkg_name*]` cleanup now always run together. Previously the API-version-mismatch elif branch only called the registry restore; the `sys.modules` cleanup happened in the `except` block, so two consecutive API-mismatch loads could leave sub-modules cached.
+- `plugin_loader.py` — added `__all__` listing the public API (`PLUGIN_API_VERSION`, register / get / discover functions) and a one-line marker declaring `PLUGIN_API_VERSION` as stable public surface
+- `version_band.band_for()` — debug logging on regex-extract failure and `validate_band` failure, naming the package and version string
+- `lints_version_compat` — module-import-time `assert _FALLBACK_VERSION_SENSITIVE` so the fallback set drift is caught loudly instead of silently producing empty lint coverage
+- `populate_routing_metadata.py` — expanded inline comment on `system_extended.json → data_operations` mapping documenting heterogeneity rationale and TODO to subcategorize. JSON file unchanged (no recognized `_meta` key in current schema).
+- `generate_routing_index.py` — review-pending marker now emits both the emoji glyph and a textual fallback `[REVIEW]` for environments that strip emoji
+- `audit_coverage.py` — removed dead local `has_dispatchable_annotation`; left load-bearing `gen_function_resolves` field in place with a comment clarifying which flag drives `classify()`'s broken-annotation verdict
+- `tests/test_plugin_version_profiles.py` — `test_get_version_profiles_inner_mutation_does_not_leak` rewritten to assert the new caching contract: cache invalidated on re-register, registry isolation preserved (replaces the per-call deepcopy assertion)
+
+---
+
 ## [1.2.1] - 2026-04-25
 
 ### Added
