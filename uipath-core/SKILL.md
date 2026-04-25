@@ -161,6 +161,10 @@ Before generating ANY XAML, determine project context:
 | `scripts/regression_test.py` | Regression tests — validates templates, scaffolding, naming conventions, line count accuracy, skill integrity |
 | `scripts/run_lint_tests.py` | Lint regression: verifies bad XAML test cases trigger expected lints. Run after modifying lint rules. |
 
+#### Battle-test scripts (manual-only)
+
+`scripts/battle_test_studio.py` and `scripts/battle_test_activities.py` are **NOT run by CI** and have side-effects: they shell out to `uip rpa create-project`, scaffold real UiPath Studio Desktop projects under the system temp dir, and invoke Studio via IPC. Run them manually after generator changes (to confirm Studio still accepts the produced XAML) and before cutting a release. Requirements: UiPath Studio Desktop installed locally, `@uipath/cli` (`npm i -g @uipath/cli`) on PATH, and a free Studio editor process available for IPC. Pair with `scripts/grade_battle_test.py` to score the resulting projects.
+
 ## Key Architecture Rules
 
 > Full definitions: `references/rules.md` § Architecture Rules (A-1 through A-12).

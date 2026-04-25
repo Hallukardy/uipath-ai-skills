@@ -30,6 +30,7 @@ Output:
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -154,7 +155,7 @@ def _kill_studio_editor() -> int:
 
 
 def _harvest_one(
-    pkg: str, ver: str, *, no_start_studio: bool
+    pkg: str, ver: str, *, no_start_studio: bool, deterministic: bool
 ) -> tuple[int, str]:
     argv = [
         sys.executable,
@@ -165,6 +166,8 @@ def _harvest_one(
     ]
     if no_start_studio:
         argv.append("--no-start-studio")
+    if deterministic:
+        argv.append("--deterministic")
     try:
         proc = subprocess.run(
             argv,
@@ -203,7 +206,16 @@ def main() -> int:
                              "supervisor that brings Studio back up after the kill.")
     parser.add_argument("--summary-out", default=str(DEFAULT_SUMMARY_PATH),
                         help=f"Where to write the run summary (default: {DEFAULT_SUMMARY_PATH})")
+    parser.add_argument("--deterministic", action="store_true",
+                        help="Suppress non-deterministic fields (e.g. started_at / "
+                             "finished_at timestamps) from the bulk summary, and "
+                             "propagate --deterministic to each worker invocation. "
+                             "Also enabled when the CI=1 environment variable is set.")
     args = parser.parse_args()
+
+    # CI=1 acts as an alias for --deterministic so harvests run from CI
+    # don't churn timestamps on every re-run.
+    deterministic = bool(args.deterministic or os.environ.get("CI") == "1")
 
     band_filter = (
         {b.strip() for b in args.bands.split(",") if b.strip()}
@@ -237,12 +249,17 @@ def main() -> int:
 
     summary_path = Path(args.summary_out).resolve()
     summary: dict = {
-        "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "finished_at": None,
         "total_pairs": len(pairs),
         "succeeded": [],
         "failed": [],
     }
+    if not deterministic:
+        # Timestamps churn on every re-run; suppress under --deterministic / CI=1.
+        summary = {
+            "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "finished_at": None,
+            **summary,
+        }
     interrupted = False
 
     restart_between = args.restart_between_pairs and not args.no_start_studio
@@ -254,7 +271,11 @@ def main() -> int:
                 print(f"\n[restart] killed {killed} Studio editor process(es); "
                       f"worker will re-launch")
             print(f"\n[{n}/{len(pairs)}] {pkg}@{ver} (bands {','.join(bands)})")
-            rc, tail = _harvest_one(pkg, ver, no_start_studio=args.no_start_studio)
+            rc, tail = _harvest_one(
+                pkg, ver,
+                no_start_studio=args.no_start_studio,
+                deterministic=deterministic,
+            )
             if rc == 0:
                 idx = _read_index(pkg, ver) or {}
                 concrete = idx.get("concrete_version")
@@ -282,13 +303,32 @@ def main() -> int:
         interrupted = True
         print("\n[KeyboardInterrupt] Flushing partial summary...", file=sys.stderr)
     finally:
-        summary["finished_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        if not deterministic:
+            summary["finished_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
         if interrupted:
             summary["interrupted"] = True
         _write_summary(summary, summary_path)
         print(f"\nSummary written: {summary_path}")
         print(f"  succeeded: {len(summary['succeeded'])}")
         print(f"  failed:    {len(summary['failed'])}")
+
+        # L9 — print a parse-free one-line status to stdout so users (and CI
+        # log scrapers) don't have to crack open _bulk_summary.json.
+        ok_count = len(summary["succeeded"])
+        err_count = sum(
+            1 for f in summary["failed"]
+            if isinstance(f.get("exit_code"), int) and f["exit_code"] not in (3, 124)
+        )
+        unresolved_count = sum(
+            1 for f in summary["failed"] if f.get("exit_code") == 3
+        )
+        timeout_count = sum(
+            1 for f in summary["failed"] if f.get("exit_code") == 124
+        )
+        print(
+            f"OK: {ok_count}, ERROR: {err_count}, "
+            f"UNRESOLVED: {unresolved_count}, TIMEOUT: {timeout_count}"
+        )
 
     if interrupted:
         return 130

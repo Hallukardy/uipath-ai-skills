@@ -29,6 +29,7 @@ Output: uipath-core/references/studio-ground-truth/<package>/<version>/{*.xaml, 
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -340,12 +341,52 @@ def main() -> int:
     parser.add_argument("--scrub-only", action="store_true",
                         help="Apply WF4-builtin scrub to the existing on-disk index.json "
                              "for --package/--version and exit. Skips Studio entirely.")
+    parser.add_argument("--deterministic", action="store_true",
+                        help="Suppress non-deterministic fields (e.g. harvested_at "
+                             "timestamps) from emitted JSON. Also enabled when the "
+                             "CI=1 environment variable is set.")
     args = parser.parse_args()
+
+    # CI=1 acts as an alias for --deterministic so harvests run from CI
+    # don't churn timestamps on every re-run.
+    deterministic = bool(args.deterministic or os.environ.get("CI") == "1")
 
     if not _PKG_RE.fullmatch(args.package):
         parser.error(f"--package must match {_PKG_RE.pattern}, got {args.package!r}")
     if not _VER_RE.fullmatch(args.version):
         parser.error(f"--version must match {_VER_RE.pattern}, got {args.version!r}")
+
+    # --- Early reachability probe (skip in scrub-only mode — that path
+    # never invokes Studio). Fail fast with a clear error if `uip` isn't on
+    # PATH or doesn't respond, so users don't burn 5 min of scaffolding
+    # before discovering Studio is missing.
+    if not args.scrub_only:
+        if not (shutil.which("uip") or shutil.which("uip.cmd")):
+            print(
+                "ERROR: `uip` (uipath CLI) not found on PATH. "
+                "Install it with `npm i -g @uipath/cli` and ensure UiPath "
+                "Studio Desktop is installed before harvesting.",
+                file=sys.stderr,
+            )
+            return 3
+        try:
+            # `uip --version` is the cheapest CLI probe (no project required).
+            # If it hangs past 10 seconds, the install is broken.
+            subprocess.run(
+                [UIP, "--version"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                encoding="utf-8",
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as e:
+            print(
+                f"ERROR: `uip --version` reachability probe failed: {e}. "
+                f"Confirm UiPath Studio Desktop is installed and `uip` "
+                f"resolves to a working CLI shim.",
+                file=sys.stderr,
+            )
+            return 3
 
     if args.scrub_only:
         scrub_dir = GROUND_TRUTH_DIR / args.package / args.version
@@ -488,9 +529,17 @@ def main() -> int:
         "package": args.package,
         "version": args.version,
         "concrete_version": concrete,
-        "harvested_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "activities": dict(existing_activities),
     }
+    if not deterministic:
+        # Insert before `activities` to preserve the historical ordering.
+        index = {
+            "package": index["package"],
+            "version": index["version"],
+            "concrete_version": index["concrete_version"],
+            "harvested_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "activities": index["activities"],
+        }
     pre_scrubbed = _scrub_wf4_entries(index["activities"])
     if pre_scrubbed:
         print(f"Pre-scrubbed {pre_scrubbed} WF4-builtin entry(ies) from existing index.")

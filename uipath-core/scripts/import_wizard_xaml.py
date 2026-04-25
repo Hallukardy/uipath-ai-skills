@@ -21,12 +21,23 @@ Usage:
 
 import argparse
 import json
+import logging
 import re
 import sys
 import xml.etree.ElementTree as ET
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Module-level logger — emits parse errors at WARNING via the standard
+# logging machinery so they survive into CI logs uniformly.
+_logger = logging.getLogger("import_wizard_xaml")
+if not _logger.handlers:
+    # Avoid duplicate handlers if the module is reloaded (e.g. via pytest).
+    _handler = logging.StreamHandler(sys.stderr)
+    _handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
+    _logger.addHandler(_handler)
+    _logger.setLevel(logging.WARNING)
 
 try:
     from defusedxml.ElementTree import fromstring as _safe_fromstring
@@ -260,12 +271,25 @@ def _process_xaml(
     xaml_path: Path,
     matches_by_elem: dict[str, dict],
     dry_run: bool,
+    parse_error_counter: list[int] | None = None,
 ) -> list[tuple[dict, str]]:
-    """Return list of (match_row, written_file_basename) for each capture."""
+    """Return list of (match_row, written_file_basename) for each capture.
+
+    *parse_error_counter*: a single-element list used as a mutable counter so
+    callers can sum parse failures across files. We log at WARNING with the
+    file path + exception so a malformed XAML file (Studio crash dump,
+    truncated copy, encoding glitch) is visible — silently swallowing them
+    masks data loss.
+    """
     raw = xaml_path.read_text(encoding="utf-8")
     try:
         root = _safe_fromstring(raw)
     except ET.ParseError as e:
+        _logger.warning("XML parse error in %s: %s", xaml_path, e)
+        if parse_error_counter is not None:
+            parse_error_counter[0] += 1
+        # Keep the original stderr line for backwards compat with shell
+        # consumers grep'ing for "ERROR parsing".
         print(f"  ERROR parsing {xaml_path}: {e}", file=sys.stderr)
         return []
     prefix_map = _build_prefix_map(root)
@@ -380,6 +404,67 @@ def _demote_not_available(dry_run: bool) -> int:
     return total
 
 
+def _preflight_assert_keys_resolve() -> None:
+    """Assert every (pkg, ver, elem/key) triple in DEFAULT_MATCHES and
+    DEMOTE_NOT_AVAILABLE resolves to an actual entry in the corresponding
+    on-disk index.json under GROUND_TRUTH_DIR.
+
+    The 11 + 5 = 16 invariant from the closed wizard intervention is silently
+    brittle without this check: a typo or a renamed activity key would let the
+    import succeed with zero mutations. Raises KeyError naming the missing
+    keys so a real bug fails loudly instead of silently no-op'ing.
+    """
+    missing: list[str] = []
+    # Cache loaded indexes so we read each file at most once.
+    index_cache: dict[tuple[str, str], dict] = {}
+
+    def _load(pkg: str, ver: str) -> dict:
+        cached = index_cache.get((pkg, ver))
+        if cached is not None:
+            return cached
+        idx_path = GROUND_TRUTH_DIR / pkg / ver / "index.json"
+        if not idx_path.exists():
+            index_cache[(pkg, ver)] = {}
+            return {}
+        try:
+            data = json.loads(idx_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as e:
+            missing.append(
+                f"index.json unreadable at {idx_path}: {e}"
+            )
+            index_cache[(pkg, ver)] = {}
+            return {}
+        index_cache[(pkg, ver)] = data
+        return data
+
+    for row in DEFAULT_MATCHES:
+        pkg, ver, key = row["pkg"], row["ver"], row["key"]
+        idx = _load(pkg, ver)
+        activities = (idx or {}).get("activities") or {}
+        if key not in activities:
+            missing.append(
+                f"DEFAULT_MATCHES: {pkg}@{ver} has no entry for key={key!r} "
+                f"(elem={row['elem']!r})"
+            )
+
+    for row in DEMOTE_NOT_AVAILABLE:
+        pkg, ver, key = row["pkg"], row["ver"], row["key"]
+        idx = _load(pkg, ver)
+        activities = (idx or {}).get("activities") or {}
+        if key not in activities:
+            missing.append(
+                f"DEMOTE_NOT_AVAILABLE: {pkg}@{ver} has no entry for key={key!r}"
+            )
+
+    if missing:
+        raise KeyError(
+            "Pre-flight check failed — wizard import tables reference keys "
+            "that don't exist in the loaded ground-truth index(es). Either a "
+            "typo was introduced or the index was regenerated and dropped these "
+            "keys. Missing entries:\n  - " + "\n  - ".join(missing)
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--project-dir", required=True,
@@ -393,6 +478,11 @@ def main() -> int:
     project_dir = Path(args.project_dir).resolve()
     if not project_dir.is_dir():
         parser.error(f"--project-dir does not exist or is not a directory: {project_dir}")
+
+    # Pre-flight: every key in DEFAULT_MATCHES + DEMOTE_NOT_AVAILABLE must
+    # exist in the loaded index. Catches silent-no-op regressions in the
+    # 11 + 5 = 16 invariant.
+    _preflight_assert_keys_resolve()
 
     matches_by_elem = {row["elem"]: row for row in DEFAULT_MATCHES}
 
@@ -409,10 +499,14 @@ def main() -> int:
 
     all_captures: dict[tuple[str, str], list[dict]] = {}  # (pkg,ver) -> list of match rows
     source_files: dict[tuple[str, str, str], str] = {}    # (pkg,ver,key) -> source basename
+    parse_error_counter = [0]
 
     for xaml_path in xaml_files:
         print(f"\n  {xaml_path.name}:")
-        written = _process_xaml(xaml_path, matches_by_elem, args.dry_run)
+        written = _process_xaml(
+            xaml_path, matches_by_elem, args.dry_run,
+            parse_error_counter=parse_error_counter,
+        )
         if not written:
             print(f"    (no intervention activities matched)")
         for match, _basename in written:
@@ -445,6 +539,7 @@ def main() -> int:
     print(f"=== TOTALS ===")
     print(f"  ok captures:    {total_ok}")
     print(f"  demoted:        {total_demote}")
+    print(f"  parse errors:   {parse_error_counter[0]}")
     return 0
 
 
