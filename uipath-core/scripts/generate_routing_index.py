@@ -153,7 +153,10 @@ def render() -> str:
             gen = _generator_label(e, name)
             desc = _short(e.get("description"))
             uw = _short(e.get("use_when"))
-            review = " 🛈" if e.get("_routing_review_needed") else ""
+            # Emit both the emoji and a text marker — some downstream
+            # LLM/web contexts strip emoji, so a plain "[REVIEW]" tag is
+            # the load-bearing signal; the emoji is decoration.
+            review = " 🛈 [REVIEW]" if e.get("_routing_review_needed") else ""
             lines.append(f"| `{name}`{review} | {gen} | {_esc(desc)} | {_esc(uw)} |")
         lines.append("")
 

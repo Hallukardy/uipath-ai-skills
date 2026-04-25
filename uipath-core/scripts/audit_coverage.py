@@ -198,11 +198,9 @@ def build_rows(
         ann_entry = ann[1] if ann else {}
         gen_function = ann_entry.get("gen_function") if ann else None
         # gen_from_annotation fallback: an annotation entry without gen_function
-        # but with element_tag is still dispatchable.
-        has_dispatchable_annotation = bool(ann_entry) and (
-            (gen_function and gen_function in hand_written)
-            or (ann_entry.get("element_tag") and not ann_entry.get("_unsupported_reason"))
-        )
+        # but with element_tag is still dispatchable. This is the single
+        # source of truth used by classify() — `covered` vs `broken-annotation`
+        # hangs off this flag.
         gen_function_resolves = bool(
             (gen_function and gen_function in hand_written)
             or (

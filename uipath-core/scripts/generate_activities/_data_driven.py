@@ -447,6 +447,19 @@ def gen_from_annotation(
             empty_content = child_meta.get("empty_content")
             if items:
                 item_tag = child_meta.get("item_tag", "x:String")
+                # Items must be scalars — anything else (dict, list, custom obj)
+                # would silently stringify to e.g. "{'k': 'v'}" inside the XAML
+                # and corrupt the activity element. Fail loudly with a message
+                # the dispatcher's error path can surface to the human caller.
+                for idx, item in enumerate(items):
+                    if not isinstance(item, (str, int, float, bool)):
+                        raise TypeError(
+                            f"_data_driven: list child '{child_key}' on "
+                            f"activity '{activity_name}' got non-scalar item "
+                            f"at index {idx} (type={type(item).__name__}). "
+                            f"Each list item must be a str, int, float, or "
+                            f"bool — repr={item!r}."
+                        )
                 item_lines = "\n".join(
                     f"{i3}<{item_tag}>{_escape_xml_attr(str(item))}</{item_tag}>"
                     for item in items

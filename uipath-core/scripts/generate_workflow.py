@@ -814,12 +814,20 @@ def _generate_activity(spec: dict, scope_id: str, counter: _IdRefCounter,
     #     recover. Let it propagate.
     #   - ReviewNeededError: wrap as ValueError so the CLI message is uniform
     #     ("Cannot generate ...: ...") for activities awaiting human review.
+    # Edge case: a SyntaxError or other load-time failure inside
+    # _data_driven.py surfaces here as ImportError (Python wraps module
+    # load errors). The bare except below would then mask the real error
+    # behind the generic "Unknown generator" message, which is misleading
+    # during local development. We split the catch: ModuleNotFoundError
+    # genuinely means "data-driven not installed" — fall back as before.
+    # Any other ImportError (including syntax/load failures in the module
+    # itself) is re-raised so the caller sees the underlying cause.
     try:
         from generate_activities._data_driven import (
             gen_from_annotation,
             ReviewNeededError,
         )
-    except ImportError:
+    except ModuleNotFoundError:
         raise ValueError(f"Unknown generator: {gen}")
 
     try:

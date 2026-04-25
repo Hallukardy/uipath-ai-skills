@@ -45,7 +45,18 @@ FILE_TO_CATEGORY = {
     "navigation.json": "navigation",
     "orchestrator.json": "orchestrator",
     "persistence_extended.json": "persistence",
-    "system_extended.json": "data_operations",  # heterogeneous; default to broadest bucket
+    # system_extended.json is the historical "everything else" bucket: it
+    # holds date/string helpers (AddOrSubtractFromDate, FormatValue), generic
+    # workflow plumbing (Trigger, RetryScope variants), and assorted system
+    # primitives that don't fit cleanly into a single category. We map it to
+    # `data_operations` because that is the broadest bucket that subsumes the
+    # bulk of its entries (data manipulation, formatting, generic helpers)
+    # without misclassifying the minority (e.g. file or UI activities).
+    # TODO: split system_extended.json into per-domain annotation files and
+    # subcategorize this mapping (e.g. date_helpers, string_helpers, plumbing)
+    # so the routing index can present them more accurately. Out of scope for
+    # the review-fix pass — see review report (M9).
+    "system_extended.json": "data_operations",
     "testing.json": "testing",
     "ui_automation.json": "ui_automation",
 }
