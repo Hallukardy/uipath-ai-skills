@@ -8,7 +8,7 @@ def gen_ntypeinto(display_name, selector, text_variable, id_ref, scope_id,
                   obj_repo=None, indent="            "):
     if not (empty_field_mode in ("SingleLine", "MultiLine", "None")):
         raise ValueError(f"Invalid EmptyFieldMode '{empty_field_mode}'")
-    text_attr = f'SecureText="[{text_variable}]"' if is_secure else f'Text="[{text_variable}]"'
+    text_attr = f'SecureText="[{_escape_vb_expr(text_variable)}]"' if is_secure else f'Text="[{_escape_vb_expr(text_variable)}]"'
     target = _selector_xml(selector, obj_repo=obj_repo)
     hs = _hs("NTypeInto")
     dn = _escape_xml_attr(display_name)

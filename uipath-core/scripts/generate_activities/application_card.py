@@ -31,7 +31,7 @@ def gen_napplicationcard_open(display_name, url_variable, out_ui_element, scope_
 {body}
 {ocr}
 {i2}<uix:NApplicationCard.TargetApp>
-{i3}<uix:TargetApp Area="0, 0, 0, 0"{bt_attr}{obj_repo_app_attrs} Selector="{esc_sel}" Url="[{url_variable}]" Version="V2">
+{i3}<uix:TargetApp Area="0, 0, 0, 0"{bt_attr}{obj_repo_app_attrs} Selector="{esc_sel}" Url="[{_escape_vb_expr(url_variable)}]" Version="V2">
 {i4}<uix:TargetApp.Arguments>
 {i5}<InArgument x:TypeArguments="x:String" />
 {i4}</uix:TargetApp.Arguments>
