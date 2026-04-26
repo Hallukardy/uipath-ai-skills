@@ -15,6 +15,73 @@ description: >
 
 Generate production-quality UiPath automation artifacts using real Studio-exported templates and comprehensive reference documentation. Template baseline: Studio 24.10 Windows.
 
+## Planning Workflow (read this BEFORE drafting any plan)
+
+When the user hands you a PDD, requirements doc, or "build a UiPath project that does X" — STOP before drafting architecture. Read this section first; it overrides any plan you would have produced from training memory. The full text of every gate below lives in `references/scaffolding.md` § "Generating a Full Project" — this is the planner-side hoist.
+
+### PLAN SELF-CHECK — answer BEFORE presenting your plan to the user
+
+- [ ] For EACH workflow in my plan: does it implement the PDD's specified approach, or did I substitute a "better" alternative? (e.g., InvokeCode SHA1 instead of browser automation of sha1-online.com)
+  → If ANY substitution exists: REMOVE it and implement the PDD way. Propose the alternative AFTER.
+- [ ] Does my plan include an explicit inspection step for EVERY target app?
+  → Browser apps: "Inspect [app] with Playwright" (if Playwright MCP available)
+  → Desktop apps: "Inspect [app] with PowerShell" (if PowerShell available on Windows)
+  → If ANY app lacks an inspection step and the tool is available: ADD it now.
+
+If you cannot answer YES to all checks, revise your plan before presenting it.
+
+**Echo-back requirement:** the produced plan MUST contain a `PLAN SELF-CHECK:` block (in Phase 0 or as Phase 0.5) with two `✓` lines, one per box, naming the specifics — for example:
+
+```
+PLAN SELF-CHECK:
+  ✓ No PDD substitutions — SHA1 computed via sha1-online.com browser flow as PDD specifies
+  ✓ Phase 2 includes inspection for every target app: System1 + SHA1Online
+```
+
+For a single-app or non-UI process, the second line still appears — e.g. `✓ Phase 2 explicitly notes no UI inspection required (no browser/desktop apps in scope)`. A plan without this echo-back block is incomplete; revise before presenting.
+
+### PLAN OUTPUT FORMAT — present your plan using this structure
+
+```
+Phase 0:  Architecture decision — Sequence vs Dispatcher+Performer (P-2); A-1 wiring
+Phase 1:  Workflows + arguments — one entry per .xaml with In/Out/InOut signatures
+Phase 2:  EACH app to inspect — one bullet per target app, e.g. "Inspect acme-test.com with Playwright"
+Phase 2b: Write selectors.json (apps → screens → elements with taxonomy_type)
+Phase 2c: generate_object_repository.py --from-selectors selectors.json --project-dir <each project>
+Phase 2d: Pass --project-dir to every generate_workflow.py call (auto-wires obj_repo refs)
+Phase 3:  Generate sub-workflows ONE AT A TIME — validate_xaml --lint after EACH file
+Phase 3b: modify_framework.py wire-uielement <project> <AppName> for EACH app with UI
+Phase 3c: (Dispatcher only) wire SCAFFOLD.DISPATCHER_GET_ITEM marker — generate snippet first (G-3)
+Phase 4:  Wire Main.xaml — orchestration only, log bookends (A-7)
+Phase 5:  Project-level validation — validate_xaml <project_folder> --lint
+Phase 6:  Output Config.xlsx required keys grouped by sheet — validate_xaml --config-keys <project>
+```
+
+**If Phase 2 is empty or missing, you are violating the skill rules.** Even when no UI inspection is needed (no browser/desktop apps), state that explicitly: `Phase 2: no UI inspection required (no browser/desktop apps in scope)`.
+
+### Per-phase reference anchors
+
+| Phase | Read before completing |
+|---|---|
+| 0 | `scaffolding.md` → CRITICAL: Architecture Selection for PDDs (P-2) |
+| 1 | `decomposition.md` → Universal Rules 1–8, naming + arguments (Rule 8 = credentials) |
+| 2 | `ui-inspection.md` → Playwright MCP workflow + Login Gate (I-2); `ui-inspection-reference.md` for desktop |
+| 2b | `cheat-sheet.md` → `selectors.json` schema |
+| 2c | `scripts/generate_object_repository.py` (Lint 94 is ERROR if skipped) |
+| 2d | `generation.md` → Wiring Object Repository References |
+| 3 | `cheat-sheet.md` → JSON spec patterns; `scripts/generate_workflow.py` (Rules G-1, G-2) |
+| 3b | `scripts/modify_framework.py wire-uielement`; `decomposition.md` § UiElement chain |
+| 3c | `scripts/modify_framework.py replace-marker SCAFFOLD.DISPATCHER_GET_ITEM` (Rule G-3) |
+| 4 | `decomposition.md` § Login/Launch + REFramework wiring; A-7 log bookends |
+| 5 | `scripts/validate_xaml <project> --lint` |
+| 6 | `scripts/validate_xaml --config-keys <project>`; `config-sample.md` |
+
+**Compat-v2 (version-band) requirement:** pass `--band <studio_band>` to `scaffold_project.py` so `versionBand` is stamped into `project.json` (lints 120–123 enforce this). **Default for new projects: the most recent STABLE band** — never target a prerelease band. Run `scripts/resolve_nuget.py` for every dependency — never guess versions (G-5).
+
+### Final gate
+
+If you are about to present an architectural plan and have NOT produced a `Phase 2:` inspection list with one entry per target app (or an explicit "no UI in scope" line), you are violating skill rules — go back and add Phase 2 first.
+
 ## When To Read Which Reference
 
 **Start here.** Match the user's task to the right file, then read only what's needed. For files > 200 lines, use `grep` or line-range reads — never read entire large files or XAML assets.
@@ -25,7 +92,7 @@ Generate production-quality UiPath automation artifacts using real Studio-export
 |---|---|
 | Generate a XAML workflow (any kind) | `cheat-sheet.md` → JSON spec patterns → `scripts/generate_workflow.py` **(G-1)** |
 | Scaffold a project | `scaffolding.md` → Template Selection → run `scripts/scaffold_project.py` |
-| Generate a full project (checklist) | `scaffolding.md` → "Generating a Full Project" checklist |
+| **Plan a new project (PDD → architecture)** | `scaffolding.md` → PLAN SELF-CHECK & Phase 0–6 (**READ BEFORE PLANNING**) |
 | Inspect a web app (selectors) | `ui-inspection.md` → Playwright MCP workflow → `playwright-selectors.md` |
 | Validate XAML | Run `scripts/validate_xaml <project> --lint` |
 | Fix a specific lint warning | `lint-reference.md` → search by lint number |
