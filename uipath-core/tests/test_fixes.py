@@ -14,6 +14,11 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from validate_xaml._fixes import auto_fix_file
+from generate_activities.ui_automation import gen_ntypeinto
+from generate_activities.application_card import (
+    gen_napplicationcard_open,
+    gen_napplicationcard_desktop_open,
+)
 
 
 def _write_xaml(tmp_path: Path, content: str) -> Path:
@@ -101,3 +106,83 @@ class TestLint99FqdnBoundary:
         auto_fix_file(str(p))
         out = p.read_text(encoding="utf-8")
         assert 'x:TypeArguments="sd:DataTable"' in out
+
+
+class TestVbExprQuoteEscaping:
+    """Generators that emit `[expr]` from a VB-expression argument must escape
+    embedded `"` to `&quot;` so the XML attribute parser does not close at the
+    first inner quote. The regression: literal-with-quotes input produced
+    `Text="["Hello"]"` which Studio compiled but executed as DynamicActivity
+    with Implementation=null.
+    """
+
+    def test_ntypeinto_text_literal_with_quotes(self):
+        out = gen_ntypeinto(
+            display_name="Type",
+            selector="<webctrl tag='INPUT' />",
+            text_variable='"Hello"',
+            id_ref="abc",
+            scope_id="scope-1",
+        )
+        assert 'Text="[&quot;Hello&quot;]"' in out
+        assert 'Text="["Hello"]"' not in out
+
+    def test_ntypeinto_securetext_literal_with_quotes(self):
+        out = gen_ntypeinto(
+            display_name="Type Secret",
+            selector="<webctrl tag='INPUT' />",
+            text_variable='"Secret"',
+            id_ref="abc",
+            scope_id="scope-1",
+            is_secure=True,
+        )
+        assert 'SecureText="[&quot;Secret&quot;]"' in out
+        assert 'SecureText="["Secret"]"' not in out
+
+    def test_ntypeinto_variable_name_unchanged(self):
+        out = gen_ntypeinto(
+            display_name="Type",
+            selector="<webctrl tag='INPUT' />",
+            text_variable="strFoo",
+            id_ref="abc",
+            scope_id="scope-1",
+        )
+        assert 'Text="[strFoo]"' in out
+
+    def test_napplicationcard_open_url_literal_with_quotes_and_amp(self):
+        out = gen_napplicationcard_open(
+            display_name="Open Browser",
+            url_variable='"https://x.example/?a=1&b=2"',
+            out_ui_element="uiBrowser",
+            scope_guid="guid-1",
+            id_ref="card-1",
+            body_content="",
+            body_sequence_idref="seq-1",
+        )
+        assert 'Url="[&quot;https://x.example/?a=1&amp;b=2&quot;]"' in out
+        assert '&amp;quot;' not in out  # no double-escape
+
+    def test_napplicationcard_desktop_open_filepath_literal_with_quotes(self):
+        out = gen_napplicationcard_desktop_open(
+            display_name="Open App",
+            file_path_variable='"C:\\Tools\\my app.exe"',
+            out_ui_element="uiApp",
+            scope_guid="guid-1",
+            id_ref="card-1",
+            body_content="",
+            body_sequence_idref="seq-1",
+        )
+        assert 'FilePath="[&quot;C:\\Tools\\my app.exe&quot;]"' in out
+        assert '&amp;quot;' not in out  # no double-escape from outer _escape_xml_attr
+
+    def test_napplicationcard_desktop_open_filepath_variable_unchanged(self):
+        out = gen_napplicationcard_desktop_open(
+            display_name="Open App",
+            file_path_variable="strExePath",
+            out_ui_element="uiApp",
+            scope_guid="guid-1",
+            id_ref="card-1",
+            body_content="",
+            body_sequence_idref="seq-1",
+        )
+        assert 'FilePath="[strExePath]"' in out
