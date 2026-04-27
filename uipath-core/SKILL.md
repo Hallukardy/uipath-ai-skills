@@ -76,7 +76,7 @@ Phase 6:  Output Config.xlsx required keys grouped by sheet — validate_xaml --
 | 5 | `scripts/validate_xaml <project> --lint` |
 | 6 | `scripts/validate_xaml --config-keys <project>`; `config-sample.md` |
 
-**Compat-v2 (version-band) requirement:** pass `--band <studio_band>` to `scaffold_project.py` so `versionBand` is stamped into `project.json` (lints 120–123 enforce this). **Default for new projects: the most recent STABLE band** — never target a prerelease band. Run `scripts/resolve_nuget.py` for every dependency — never guess versions (G-5).
+**Compat-v2 (version-band) requirement:** pass `--band <studio_band>` to `scaffold_project.py` so `versionBand` is stamped into `project.json` (lints 120–122 enforce this). **Default for new projects: the most recent STABLE band** — never target a prerelease band. Run `scripts/resolve_nuget.py` for every dependency — never guess versions (G-5).
 
 ### Final gate
 
@@ -201,7 +201,7 @@ Before generating ANY XAML, determine project context:
 | `references/generation.md` | Object Repository, Workflow Generation CLI (JSON spec format, 95 core generators + plugin extensions), Activity Generators (usage pattern, what model provides vs what generators lock down) |
 | `references/ui-inspection.md` | Playwright MCP workflow (login gate, 5-step process, element mapping), Desktop inspection (PowerShell, inspect-ui-tree.ps1, framework detection) |
 | `references/skill-guide.md` | **Index + examples.** Routes to scaffolding/decomposition/generation/ui-inspection. Contains 7 worked examples + anti-example |
-| `references/lint-reference.md` | **80 lint rules** by severity, searchable by lint number (core rules; plugins add more) |
+| `references/lint-reference.md` | **80 lint rules** by severity, searchable by lint number (core rules; plugins add more — `uipath-tasks` registers AC-26..AC-34) |
 | `references/playwright-selectors.md` | Playwright MCP → UiPath selector mapping |
 | `references/config-sample.md` | Config.xlsx three-sheet reference (Settings, Constants, Assets), key naming conventions, sheet placement decision flowchart, required keys output format |
 | `references/cheat-sheet.md` | JSON spec patterns (multiple_assign, if, try_catch, foreach_row, pick_login_validation, filter_data_table, add_queue_item, selectors.json), modify_framework.py CLI+Python API, valid enum values, naming, quick rules |

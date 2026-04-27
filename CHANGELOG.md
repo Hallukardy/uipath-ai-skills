@@ -80,7 +80,7 @@ Tests: 242/242 pytest + 102/102 lints + 13/13 auto-fix + 21/21 regression
 
 ### Added
 
-**uipath-core — version-band-aware lints and scaffolding** (branch `feature/version-compatibility-v2`)
+**uipath-core — version-band-aware lints and scaffolding** (originated on `feature/version-compatibility-v2`; also carried by `feature/full-coverage-routing-v1` for the routing release)
 - `version_band.py` single-source versioning model — `ProjectVersion`, band parsing, year-based vs independent package classification, band-to-profile-version mapping
 - Lint 120 (error): Version="V5"+ attributes on UiX activities are invalid below band 25
 - Lint 121 (error): HealingAgentBehavior / ClipboardMode attributes don't exist below band 25 (introduced in 25.10+)
