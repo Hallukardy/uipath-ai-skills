@@ -71,6 +71,36 @@ _WRAPPER_NS = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Determinism: scrub random Studio-minted UUIDs from xaml_template values.
+#
+# Studio mints a fresh ``ScopeGuid`` per call to ``get-default-activity-xaml``,
+# so every re-harvest churns the profile JSON even when the template itself is
+# semantically unchanged. Replacing the UUIDs with a stable sentinel keeps the
+# corpus reproducible. The sentinel value matches generate_workflow's
+# ``ROOT_SCOPE_SENTINEL`` so any consumer that reads xaml_template back out
+# can treat the field as a "no real scope here" marker. Closes review
+# finding E-MAJOR-1.
+# ---------------------------------------------------------------------------
+_SCOPE_GUID_SENTINEL = "00000000-0000-0000-0000-000000000000"
+_SCOPE_GUID_RE = re.compile(
+    r'(ScopeGuid=)"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+    r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"'
+)
+
+
+def scrub_scope_guids(xaml_template: str) -> str:
+    """Replace random ``ScopeGuid="UUID"`` values with the root-scope sentinel.
+
+    Idempotent — applying twice yields the same output as applying once.
+    The sentinel UUID is itself valid hex, so already-scrubbed input passes
+    through unchanged.
+    """
+    if not xaml_template:
+        return xaml_template
+    return _SCOPE_GUID_RE.sub(rf'\1"{_SCOPE_GUID_SENTINEL}"', xaml_template)
+
+
 def _extract_inner_snippet(xaml_text: str) -> str:
     """Extract the activity element from inside the <Activity> wrapper.
 
@@ -304,7 +334,7 @@ def _build_stub_entry(
         "harvestable": True,
         "namespace_prefix": ns_prefix,
         "child_elements": children,
-        "xaml_template": snippet,
+        "xaml_template": scrub_scope_guids(snippet),
     }
 
 
