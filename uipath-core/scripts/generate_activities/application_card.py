@@ -144,13 +144,11 @@ def gen_napplicationcard_desktop_open(display_name, file_path_variable, out_ui_e
             obj_repo_app_attrs += f' ContentHash="{obj_repo_app["content_hash"]}"'
         if obj_repo_app.get("reference"):
             obj_repo_app_attrs += f' Reference="{obj_repo_app["reference"]}"'
-    fp_expr = _escape_xml_attr(f"[{_escape_vb_expr(file_path_variable)}]")
-
     return f"""{i}<uix:NApplicationCard AttachMode="ByInstance" CloseMode="Never" DisplayName="{dn}" HealingAgentBehavior="Job" {hs} sap2010:WorkflowViewState.IdRef="{id_ref}" OpenMode="Always" OutUiElement="[{out_ui_element}]" ScopeGuid="{scope_guid}" Version="V2">
 {body}
 {ocr}
 {i2}<uix:NApplicationCard.TargetApp>
-{i3}<uix:TargetApp Area="0, 0, 0, 0" FilePath="{fp_expr}"{obj_repo_app_attrs} Selector="{esc_sel}" Version="V2">
+{i3}<uix:TargetApp Area="0, 0, 0, 0" FilePath="[{_escape_vb_expr(file_path_variable)}]"{obj_repo_app_attrs} Selector="{esc_sel}" Version="V2">
 {i4}<uix:TargetApp.Arguments>
 {i5}<InArgument x:TypeArguments="x:String" />
 {i4}</uix:TargetApp.Arguments>
