@@ -17,8 +17,10 @@ def gen_read_range(workbook_path_variable, sheet_name, output_variable, id_ref,
     dn = _escape_xml_attr(display_name)
     i = indent
     range_attr = f'Range="{range_str}"' if range_str else 'Range="{x:Null}"'
-    # Sheet can be literal or expression
-    sheet = f'[{sheet_name}]' if not sheet_name.startswith('"') else f'[{sheet_name}]'
+    # Sheet can be a literal (caller passes "Sheet1" with quotes) or a variable
+    # (caller passes strSheet). Both forms are valid VB expressions inside [...]
+    # so the wrapping is identical.
+    sheet = f'[{sheet_name}]'
 
     return (
         f'{i}<ui:ReadRange {range_attr} WorkbookPathResource="{{x:Null}}" '
@@ -400,7 +402,7 @@ def gen_execute_query(sql, output_variable, id_ref, connection_variable="",
         param_lines = []
         for key, (ptype, pvar) in parameters.items():
             param_lines.append(
-                f'{i3}<InArgument x:TypeArguments="{ptype}" x:Key="{key}">[{pvar}]</InArgument>'
+                f'{i3}<InArgument x:TypeArguments="{ptype}" x:Key="{_escape_xml_attr(key)}">[{_escape_vb_expr(pvar)}]</InArgument>'
             )
         params_xml = "\n".join(param_lines)
         return f"""{i}<ui:ExecuteQuery ContinueOnError="{{x:Null}}" {conn} TimeoutMS="{{x:Null}}" DataTable="[{_escape_vb_expr(output_variable)}]" DisplayName="{dn}" ProviderName="{provider}" Sql="{sql_esc}" sap2010:WorkflowViewState.IdRef="ExecuteQuery_{id_ref}">
@@ -447,7 +449,7 @@ def gen_execute_non_query(sql, id_ref, connection_variable="",
         param_lines = []
         for key, (ptype, pvar) in parameters.items():
             param_lines.append(
-                f'{i3}<InArgument x:TypeArguments="{ptype}" x:Key="{key}">[{pvar}]</InArgument>'
+                f'{i3}<InArgument x:TypeArguments="{ptype}" x:Key="{_escape_xml_attr(key)}">[{_escape_vb_expr(pvar)}]</InArgument>'
             )
         params_xml = "\n".join(param_lines)
         return f"""{i}<ui:ExecuteNonQuery {affected} ContinueOnError="{{x:Null}}" TimeoutMS="{{x:Null}}" DisplayName="{dn}" {conn} Sql="{sql_esc}" sap2010:WorkflowViewState.IdRef="ExecuteNonQuery_{id_ref}">

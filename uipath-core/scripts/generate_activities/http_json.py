@@ -72,8 +72,8 @@ def gen_net_http_request(method, request_url_variable, result_variable, id_ref,
 
     # Conditional attributes
     oauth = f'OAuthToken="[{_escape_vb_expr(oauth_token_variable)}]"' if auth_type == "OAuthToken" else 'OAuthToken="{x:Null}"'
-    headers = f'Headers="[{_escape_xml_attr(headers_expr)}]"' if headers_expr else 'Headers="{x:Null}"'
-    params = f'Parameters="[{_escape_xml_attr(parameters_expr)}]"' if parameters_expr else 'Parameters="{x:Null}"'
+    headers = f'Headers="[{_escape_vb_expr(headers_expr)}]"' if headers_expr else 'Headers="{x:Null}"'
+    params = f'Parameters="[{_escape_vb_expr(parameters_expr)}]"' if parameters_expr else 'Parameters="{x:Null}"'
     payload = f'TextPayload="[{_escape_vb_expr(text_payload_variable)}]"' if text_payload_variable else 'TextPayload=""'
 
     form_data_parts = ('FormDataParts="[New List (Of FormDataPart) From _'
