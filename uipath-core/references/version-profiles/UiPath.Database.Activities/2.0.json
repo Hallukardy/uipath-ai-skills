@@ -1,0 +1,48 @@
+{
+  "$schema_version": "1.0",
+  "package": "UiPath.Database.Activities",
+  "version": "2.0",
+  "note": "All 8 activities are dispatched through annotations/integrations.json (data-driven gen_from_annotation). Profile exists so audit_coverage.py iterates the package and so future hand-written gens have a place to register harvestable=false flags.",
+  "activities": {
+    "BulkInsert": {
+      "class_name": "UiPath.Database.Activities.BulkInsert",
+      "clr_namespace": "UiPath.Database.Activities",
+      "harvestable": true
+    },
+    "BulkUpdate": {
+      "class_name": "UiPath.Database.Activities.BulkUpdate",
+      "clr_namespace": "UiPath.Database.Activities",
+      "harvestable": true
+    },
+    "DatabaseConnect": {
+      "class_name": "UiPath.Database.Activities.DatabaseConnect",
+      "clr_namespace": "UiPath.Database.Activities",
+      "harvestable": true
+    },
+    "DatabaseDisconnect": {
+      "class_name": "UiPath.Database.Activities.DatabaseDisconnect",
+      "clr_namespace": "UiPath.Database.Activities",
+      "harvestable": true
+    },
+    "DatabaseTransaction": {
+      "class_name": "UiPath.Database.Activities.DatabaseTransaction",
+      "clr_namespace": "UiPath.Database.Activities",
+      "harvestable": true
+    },
+    "ExecuteNonQuery": {
+      "class_name": "UiPath.Database.Activities.ExecuteNonQuery",
+      "clr_namespace": "UiPath.Database.Activities",
+      "harvestable": true
+    },
+    "ExecuteQuery": {
+      "class_name": "UiPath.Database.Activities.ExecuteQuery",
+      "clr_namespace": "UiPath.Database.Activities",
+      "harvestable": true
+    },
+    "InsertDataTable": {
+      "class_name": "UiPath.Database.Activities.InsertDataTable",
+      "clr_namespace": "UiPath.Database.Activities",
+      "harvestable": true
+    }
+  }
+}

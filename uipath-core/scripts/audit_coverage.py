@@ -349,6 +349,25 @@ def manifest_summary_for_check(payload: dict) -> dict:
     return {"totals": payload.get("totals"), "per_package": payload.get("per_package")}
 
 
+def find_unprofiled_ground_truth(
+    profiles: list[tuple[str, str, str, dict]],
+    gt_index: dict[tuple[str, str], set[str]],
+) -> list[tuple[str, str, int]]:
+    """Return ground-truth (pkg, ver) dirs that have no matching version-profile.
+
+    Without this guard, harvested XAMLs in unprofiled packages are silently
+    dropped from the manifest because build_rows() iterates the profile list,
+    not the ground-truth index. Returns a list of (package, version, xaml_count)
+    so callers can surface the gap.
+    """
+    profiled: set[tuple[str, str]] = {(pkg, ver) for pkg, ver, _, _ in profiles}
+    missing: list[tuple[str, str, int]] = []
+    for (pkg, ver), names in sorted(gt_index.items()):
+        if (pkg, ver) not in profiled and names:
+            missing.append((pkg, ver, len(names)))
+    return missing
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="compare to baseline; exit 1 on drift")
@@ -359,6 +378,23 @@ def main() -> int:
     annotations = collect_annotations()
     hand_written = collect_hand_written_gens()
     gt_index = collect_ground_truth_index()
+
+    unprofiled = find_unprofiled_ground_truth(profiles, gt_index)
+    if unprofiled:
+        print(
+            "ERROR: ground-truth directories without a matching version-profile:",
+            file=sys.stderr,
+        )
+        for pkg, ver, count in unprofiled:
+            print(f"  {pkg}/{ver}  ({count} harvested XAMLs)", file=sys.stderr)
+        print(
+            "These harvested activities would be silently excluded from coverage.\n"
+            "Add a version-profile under uipath-core/references/version-profiles/<pkg>/<ver>.json,\n"
+            "or remove the ground-truth directory.",
+            file=sys.stderr,
+        )
+        return 3
+
     rows = build_rows(profiles, annotations, hand_written, gt_index)
 
     write_manifest(rows, MANIFEST_PATH)

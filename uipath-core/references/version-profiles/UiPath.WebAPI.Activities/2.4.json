@@ -1,0 +1,58 @@
+{
+  "$schema_version": "1.0",
+  "package": "UiPath.WebAPI.Activities",
+  "version": "2.4",
+  "note": "10 activities dispatched via annotations/http_json.json (data-driven). The DeserializeJson`1 entry covers the generic-arity-tagged variant; rendered XAML element is <ui:DeserializeJson x:TypeArguments=...>.",
+  "activities": {
+    "DeserializeJson`1": {
+      "class_name": "UiPath.Web.Activities.DeserializeJson`1",
+      "clr_namespace": "UiPath.Web.Activities",
+      "harvestable": true
+    },
+    "DeserializeJsonArray": {
+      "class_name": "UiPath.Web.Activities.DeserializeJsonArray",
+      "clr_namespace": "UiPath.Web.Activities",
+      "harvestable": true
+    },
+    "DeserializeXml": {
+      "class_name": "UiPath.Web.Activities.DeserializeXml",
+      "clr_namespace": "UiPath.Web.Activities",
+      "harvestable": true
+    },
+    "ExecuteXPath": {
+      "class_name": "UiPath.Web.Activities.ExecuteXPath",
+      "clr_namespace": "UiPath.Web.Activities",
+      "harvestable": true
+    },
+    "GetNodes": {
+      "class_name": "UiPath.Web.Activities.GetNodes",
+      "clr_namespace": "UiPath.Web.Activities",
+      "harvestable": true
+    },
+    "GetXMLNodeAttributes": {
+      "class_name": "UiPath.Web.Activities.GetXMLNodeAttributes",
+      "clr_namespace": "UiPath.Web.Activities",
+      "harvestable": true
+    },
+    "GetXMLNodes": {
+      "class_name": "UiPath.Web.Activities.GetXMLNodes",
+      "clr_namespace": "UiPath.Web.Activities",
+      "harvestable": true
+    },
+    "HttpClient": {
+      "class_name": "UiPath.Web.Activities.HttpClient",
+      "clr_namespace": "UiPath.Web.Activities",
+      "harvestable": true
+    },
+    "NetHttpRequest": {
+      "class_name": "UiPath.Web.Activities.Http.NetHttpRequest",
+      "clr_namespace": "UiPath.Web.Activities.Http",
+      "harvestable": true
+    },
+    "SerializeJson": {
+      "class_name": "UiPath.Web.Activities.JSON.SerializeJson",
+      "clr_namespace": "UiPath.Web.Activities.JSON",
+      "harvestable": true
+    }
+  }
+}
