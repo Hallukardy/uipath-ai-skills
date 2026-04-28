@@ -122,6 +122,13 @@ _DISPLAY_NAME_SUFFIX = re.compile(r"\s+'.*'\s*$")
 
 # Common Studio xmlns block — wraps cleaned snippets so they parse standalone
 # (mirrors the format produced by harvest_studio_xaml.py).
+#
+# Closes review finding E-MAJOR-2: an earlier version of this template
+# included a Studio-minted ``xmlns:uuadsfb=…assembly=fdNNNN.HASH`` declaration
+# (clr-namespace ending in ``Design.SWEntities.fd1135674040.Bundle``). That
+# hash is per-machine and per-Studio-project; the wizard XAML body never
+# references the prefix. Including it bound the corpus to a single user's
+# Studio install and produced a phantom diff on re-import. Dropped here.
 _OUTER_XMLNS = (
     'xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" '
     'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" '
@@ -137,12 +144,32 @@ _OUTER_XMLNS = (
     'assembly=UiPath.Persistence.Activities" '
     'xmlns:uuat="clr-namespace:UiPath.UIAutomationNext.Activities.Triggers;'
     'assembly=UiPath.UIAutomationNext.Activities" '
-    'xmlns:uuadsfb="clr-namespace:UiPath.UIAutomationNext.Activities.Design.SWEntities.fd1135674040.Bundle;'
-    'assembly=fd1135674040.qPNHG3TSMPM1ZMTPy3t2VOM1" '
     'xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" '
     'xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib" '
     'xmlns:sd2="clr-namespace:System.Data;assembly=System.Data.Common"'
 )
+
+
+# ---------------------------------------------------------------------------
+# Defensive scrubber — removes any per-machine Studio-minted xmlns that
+# leaked into existing wizard XAML files before the _OUTER_XMLNS template
+# was sanitised. Pattern: assembly=fd<digits>.<alphanumeric-hash>. Safe to
+# apply unconditionally because no wizard XAML body in the corpus references
+# such prefixes (audited 2026-04-27 across all 12 wizard files).
+# ---------------------------------------------------------------------------
+_DYNAMIC_ASSEMBLY_XMLNS_RE = re.compile(
+    r'\s+xmlns:[A-Za-z_][\w]*="[^"]*assembly=fd\d+\.[A-Za-z0-9]+"'
+)
+
+
+def scrub_dynamic_assembly_xmlns(xaml: str) -> str:
+    """Strip ``xmlns:NAME="…assembly=fdNNNN.HASH"`` declarations.
+
+    Idempotent — repeated application is a no-op once the hash is gone.
+    """
+    if not xaml:
+        return xaml
+    return _DYNAMIC_ASSEMBLY_XMLNS_RE.sub("", xaml)
 
 
 def _local(tag: str) -> str:
@@ -305,7 +332,7 @@ def _process_xaml(
     for match, el in captures:
         cleaned = _clean_element(deepcopy(el))
         snippet = _serialize(cleaned, prefix_map)
-        wrapped = _wrap(snippet, x_class=match["key"])
+        wrapped = scrub_dynamic_assembly_xmlns(_wrap(snippet, x_class=match["key"]))
         out_dir = GROUND_TRUTH_DIR / match["pkg"] / match["ver"]
         out_path = out_dir / f"{match['key']}.xaml"
         # Path-traversal jail guard — mirrors harvest_studio_xaml.py:471-474.

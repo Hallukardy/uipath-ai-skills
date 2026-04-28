@@ -93,10 +93,22 @@ def _scaffold_temp_project(package: str, version: str) -> Path:
     return Path(proj_dir.replace("\\", "/")).resolve()
 
 
-def _resolve_concrete_version(package: str, version_prefix: str, project_dir: Path) -> str:
+def _resolve_concrete_version(
+    package: str,
+    version_prefix: str,
+    project_dir: Path,
+    *,
+    include_prerelease: bool = False,
+) -> str:
     """Map a profile version label (e.g. "26.3") to a concrete NuGet version
     (e.g. "26.3.5") by querying Studio's configured feeds via get-versions.
     Returns the highest stable version whose major.minor matches version_prefix.
+
+    When ``include_prerelease`` is True, prerelease builds (versions containing
+    "-", e.g. "26.3.0-beta1") are allowed to satisfy the match. This violates
+    the stable-only harvest policy and exists only as an explicit escape
+    hatch — callers must opt in via the ``--include-prerelease`` CLI flag,
+    which prints a loud stderr warning before proceeding.
 
     IMPORTANT: The project_dir must already have the target package installed
     (or at least accessible in its configured NuGet feeds) at the requested
@@ -124,22 +136,31 @@ def _resolve_concrete_version(package: str, version_prefix: str, project_dir: Pa
             ver = v.get("Version") or v.get("version")
             if ver:
                 flat.append((ver, bool(v.get("IsPrerelease") or v.get("isPrerelease") or "-" in ver)))
-    matches = [v for v, pre in flat if not pre and (v == version_prefix or v.startswith(version_prefix + "."))]
+    if include_prerelease:
+        matches = [
+            v for v, _pre in flat
+            if v == version_prefix or v.startswith(version_prefix + ".")
+        ]
+    else:
+        matches = [
+            v for v, pre in flat
+            if not pre and (v == version_prefix or v.startswith(version_prefix + "."))
+        ]
     if not matches:
         # Distinguish "prerelease only" from "absent entirely" so callers can tell
         # whether the profile was authored before the band was stable-promoted.
         pre_matches = [v for v, pre in flat if pre and (v == version_prefix or v.startswith(version_prefix + "."))]
         sample = ", ".join(v for v, _ in flat[:8])
-        if pre_matches:
+        if pre_matches and not include_prerelease:
             raise RuntimeError(
                 f"no STABLE version matching '{version_prefix}' for {package} — "
                 f"found prerelease-only: {pre_matches}. "
                 f"Either the profile was authored before stable release or the band "
                 f"is prerelease-only on this feed. To accept prerelease builds, "
-                f"pass --include-prerelease (not yet implemented)."
+                f"pass --include-prerelease (violates stable-only policy)."
             )
         raise RuntimeError(
-            f"no stable version matching '{version_prefix}' in {package} "
+            f"no version matching '{version_prefix}' in {package} "
             f"(saw: {sample}). "
             f"This usually means the project at {project_dir} is pinned to a "
             f"different band. Scaffold a fresh project without --project-dir."
@@ -345,7 +366,22 @@ def main() -> int:
                         help="Suppress non-deterministic fields (e.g. harvested_at "
                              "timestamps) from emitted JSON. Also enabled when the "
                              "CI=1 environment variable is set.")
+    parser.add_argument("--include-prerelease", action="store_true",
+                        help="VIOLATES stable-only harvest policy. Allow prerelease "
+                             "(beta/rc/preview) NuGet versions to satisfy the band "
+                             "match in --version. Use only when a band has not yet "
+                             "been stable-promoted and you need an interim profile. "
+                             "Prints a loud stderr warning before proceeding.")
     args = parser.parse_args()
+
+    if args.include_prerelease:
+        print(
+            "WARNING: --include-prerelease is set. This violates the stable-only "
+            "harvest policy. Profile JSONs derived from prerelease packages may "
+            "drift on next stable release and should NOT be committed to the "
+            "version-profiles corpus without explicit review.",
+            file=sys.stderr,
+        )
 
     # CI=1 acts as an alias for --deterministic so harvests run from CI
     # don't churn timestamps on every re-run.
@@ -463,7 +499,12 @@ def main() -> int:
     if not args.project_dir:
         print(f"Resolving concrete version for {args.package} matching '{args.version}'...")
         try:
-            concrete = _resolve_concrete_version(args.package, args.version, project_dir)
+            concrete = _resolve_concrete_version(
+                args.package,
+                args.version,
+                project_dir,
+                include_prerelease=args.include_prerelease,
+            )
             print(f"  -> {concrete}")
         except (RuntimeError, subprocess.TimeoutExpired) as e:
             print(f"ERROR: version resolution failed: {e}", file=sys.stderr)
