@@ -332,7 +332,7 @@ def _process_xaml(
     for match, el in captures:
         cleaned = _clean_element(deepcopy(el))
         snippet = _serialize(cleaned, prefix_map)
-        wrapped = _wrap(snippet, x_class=match["key"])
+        wrapped = scrub_dynamic_assembly_xmlns(_wrap(snippet, x_class=match["key"]))
         out_dir = GROUND_TRUTH_DIR / match["pkg"] / match["ver"]
         out_path = out_dir / f"{match['key']}.xaml"
         # Path-traversal jail guard — mirrors harvest_studio_xaml.py:471-474.

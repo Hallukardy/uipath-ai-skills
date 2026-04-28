@@ -441,7 +441,7 @@ def _backfill_one(
             activity_meta["namespace_prefix"] = ns_prefix
         if not activity_meta.get("child_elements"):
             activity_meta["child_elements"] = child_els
-        activity_meta["xaml_template"] = snippet
+        activity_meta["xaml_template"] = scrub_scope_guids(snippet)
 
         stats["filled"] += 1
         changed = True
