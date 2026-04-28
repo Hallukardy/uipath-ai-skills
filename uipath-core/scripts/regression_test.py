@@ -619,7 +619,7 @@ def test_lint_test_cases() -> TestResult:
         "bad_throw_csharp.xaml": "C# syntax",
         "bad_extract_datatable.xaml": "lint 17",
         "bad_enum_namespace.xaml": "lint 40",
-        "bad_hallucinated_ui_props.xaml": "lint 23",
+        "bad_hallucinated_ui_props.xaml": "lint 116",
     }
 
     missing = []
