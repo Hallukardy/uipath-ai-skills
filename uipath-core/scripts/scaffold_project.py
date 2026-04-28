@@ -148,19 +148,45 @@ def _replace_gtd_body_for_dispatcher(gtd_path: Path, transaction_type: str,
 
     For DataRow: If in_TransactionNumber <= Rows.Count → get row, else Nothing.
     For other types: Insert a placeholder comment (no GetQueueItem).
+
+    Distinguishes between "already-applied" (the dispatcher Comment marker is
+    present, so this is a re-run on already-modified output — silent skip is
+    correct) and "anchor-missing" (the performer RetryScope is gone AND the
+    dispatcher marker is missing — template drift, raise to surface the
+    failure rather than silently writing nothing).
     """
     content = gtd_path.read_text(encoding="utf-8")
 
-    # Locate the RetryScope block containing GetQueueItem
+    # Idempotency: already-applied detection via dispatcher-specific markers
+    already_applied = (
+        "SCAFFOLD.DISPATCHER_LOAD_DATA" in content
+        or "SCAFFOLD.DISPATCHER_GET_ITEM" in content
+    )
+
+    # Locate the RetryScope block containing GetQueueItem (performer anchor)
     retry_start = content.find('<ui:RetryScope DisplayName="Retry Get transaction item"')
     if retry_start == -1:
-        return  # Already modified or different template
+        if already_applied:
+            print(
+                f"  . {gtd_path.name}: dispatcher body already applied — skipping "
+                f"(re-run is idempotent)"
+            )
+            return
+        raise RuntimeError(
+            f"_replace_gtd_body_for_dispatcher: {gtd_path} has no "
+            f"'<ui:RetryScope DisplayName=\"Retry Get transaction item\">' anchor "
+            f"and no SCAFFOLD.DISPATCHER_* marker — template has drifted from "
+            f"the expected REFramework shape and cannot be transformed safely."
+        )
 
     # Find the closing tag of this RetryScope
     # Walk through nested tags to find matching close
     retry_end = content.find('</ui:RetryScope>', retry_start)
     if retry_end == -1:
-        return
+        raise RuntimeError(
+            f"_replace_gtd_body_for_dispatcher: {gtd_path} has the RetryScope "
+            f"opening tag but no '</ui:RetryScope>' closing tag — file is malformed."
+        )
     retry_end = content.find('\n', retry_end)  # include the line break
     if retry_end == -1:
         retry_end = len(content)
