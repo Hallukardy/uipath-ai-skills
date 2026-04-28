@@ -5,6 +5,54 @@ XAML for activities that do not have hand-written gen_* functions.
 
 Hand-written functions always take priority; this module is only invoked as
 a fallback when no matching entry exists in generate_workflow._REGISTRY.
+
+Scope (read this before adding annotation features):
+    This dispatcher emits both flat self-closing activities AND activities
+    with a fixed set of child-element shapes. Attribute-shaping features
+    (escape, default, enum, bracket_wrap, type-arg normalization,
+    _unsupported_reason) live here. So do these structural shapes, all
+    driven by the entry's `child_elements` map (see the dispatch loop in
+    `gen_from_annotation`):
+
+        - selector       → <Tag.Target>{selector_xml}</Tag.Target>
+                           (e.g. NTypeInto.TargetAnchorable, ~44 entries)
+        - static_block   → <Tag>{verbatim XML content}</Tag>
+                           (e.g. trigger conditions, ~42 entries)
+        - activity_action→ <Tag><ActivityAction x:TypeArguments=...>
+                              <ActivityAction.Argument>
+                                <DelegateInArgument .../></ActivityAction.Argument>
+                              <Sequence DisplayName="Do" /></ActivityAction></Tag>
+                           (~27 entries)
+        - sequence       → <Tag><Sequence DisplayName="Do" .../></Tag>
+                           empty body placeholder for If.Then/Else,
+                           ForEach.Body, TryCatch.Try, NApplicationCard.Body,
+                           etc. (~20 entries)
+        - list           → <Tag><x:String>...</x:String>...</Tag>
+                           or any item_tag override (~18 entries)
+        - hint_size      → no-op (the size hint is rendered as an attribute
+                           on the parent activity by _hs(); the child entry
+                           is just a marker so the lint that checks for
+                           HintSize coverage still finds it)
+        - literal        → alias for static_block
+
+    What does NOT live here: anything that needs string-template control
+    beyond the child types above (e.g. building a real body of activities
+    inside a Sequence, threading id_ref through nested scopes, RetryScope
+    surrounds, computed attribute interpolation that requires Python). For
+    those, write a hand-written gen module under generate_activities/*.py
+    and register it in generate_workflow._REGISTRY.
+
+    Decision rule for a new activity: harvest the XAML, then look at it.
+    If its surface is a fixed set of attributes plus zero or more of the
+    child shapes above, it can be an annotation entry. If the body needs
+    real content, write a hand-written gen.
+
+    Adding a *new* child_type (extending the dispatch loop with another
+    shape — e.g. `wrap_in`, `body_sequence_xaml`) is a bigger commitment
+    than adding an annotation entry. Before you add one, check whether the
+    activity is better served by a hand-written gen — the existing six
+    types cover 151 corpus entries spanning UI, control flow, queue,
+    application card, etc., so net-new structural shapes are uncommon.
 """
 from __future__ import annotations
 
