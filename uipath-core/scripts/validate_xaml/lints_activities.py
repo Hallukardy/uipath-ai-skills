@@ -1039,7 +1039,7 @@ def lint_argument_type_mismatch(ctx: FileContext, result: ValidationResult,
 
 @lint_rule(109)
 def lint_delay_activity(ctx: FileContext, result: ValidationResult):
-    """Lint 109: Delay activity should not be used — use NCheckState/NCheckAppState."""
+    """Lint 109: Delay activity should not be used — use NCheckState."""
     try:
         content = ctx.active_content
     except Exception:
@@ -1048,6 +1048,6 @@ def lint_delay_activity(ctx: FileContext, result: ValidationResult):
     if delay_hits:
         result.warn(
             f"[lint 109] Workflow contains {len(delay_hits)} Delay activit{'y' if len(delay_hits) == 1 else 'ies'}. "
-            f"Use NCheckState/NCheckAppState for synchronization instead of Delay."
+            f"Use NCheckState for synchronization instead of Delay."
         )
 
