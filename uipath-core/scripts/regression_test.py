@@ -67,17 +67,20 @@ def test_golden_templates() -> TestResult:
     # Collect XAML dirs that are NOT lint-test-cases
     golden_dirs = [d for d in ASSETS_DIR.iterdir()
                    if d.is_dir() and d.name not in ("lint-test-cases", "stripped", "generator-snapshots")]
-    
+
     all_passed = 0
     all_total = 0
     all_errors = 0
     all_warnings = 0
     error_lines = []
-    
+    matched_dirs = 0
+    unmatched_dirs = []
+
     for d in golden_dirs:
         rc, stdout, stderr = run_validator(str(d), "--lint", "--golden")
         m = re.search(r"SUMMARY: (\d+)/(\d+) files passed, (\d+) errors, (\d+) warnings", stdout)
         if m:
+            matched_dirs += 1
             all_passed += int(m.group(1))
             all_total += int(m.group(2))
             all_errors += int(m.group(3))
@@ -85,6 +88,29 @@ def test_golden_templates() -> TestResult:
             for line in stdout.splitlines():
                 if "[ERROR]" in line:
                     error_lines.append(line.strip())
+        else:
+            # SUMMARY line missing — validator wording drifted or runner crashed.
+            # Without this guard, an empty match would yield all_total == 0 and the
+            # assertion at the end would silently pass.
+            unmatched_dirs.append(d.name)
+
+    # Guard against silent-pass on regex/wording drift: every directory must yield
+    # a parseable SUMMARY line, AND we must have actually scored at least one file.
+    if not golden_dirs:
+        t.fail("No golden template directories found under assets/")
+        return t
+    if unmatched_dirs:
+        t.fail(
+            f"validator SUMMARY line not parsed for {len(unmatched_dirs)} dir(s): "
+            f"{', '.join(unmatched_dirs[:5])} — wording drift or runner crash"
+        )
+        return t
+    if all_total == 0:
+        t.fail(
+            f"SUMMARY parsed for {matched_dirs} dir(s) but 0 files scored — "
+            f"empty asset trees or validator skipped every file"
+        )
+        return t
 
     if all_errors > 0:
         t.fail(f"{all_errors} errors found (expected 0)")
