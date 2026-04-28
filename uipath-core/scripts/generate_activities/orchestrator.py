@@ -38,9 +38,9 @@ def gen_add_queue_item(queue_name_config, id_ref, item_fields=None,
     ii2 = ii + "  "
     ii3 = ii + "    "
 
-    folder = f'FolderPath="[{_escape_xml_attr(folder_path_config)}]"' if folder_path_config else 'FolderPath="{x:Null}"'
+    folder = f'FolderPath="[{_escape_vb_expr(folder_path_config)}]"' if folder_path_config else 'FolderPath="{x:Null}"'
     ref = f'Reference="[{_escape_vb_expr(reference_variable)}]"' if reference_variable else ""
-    queue = f'QueueType="[{_escape_xml_attr(queue_name_config)}]"'
+    queue = f'QueueType="[{_escape_vb_expr(queue_name_config)}]"'
 
     # ItemInformation children — bare InArgument elements, NO Dictionary wrapper
     # Defensive: accept both dict and list-of-tuples/lists
@@ -149,8 +149,8 @@ def gen_get_queue_item(queue_name_config, transaction_item_variable, id_ref,
     ii2 = ii + "  "
     ii3 = ii + "    "
 
-    folder = f'FolderPath="[{_escape_xml_attr(folder_path_config)}]"' if folder_path_config else 'FolderPath="{x:Null}"'
-    queue = f'QueueType="[{_escape_xml_attr(queue_name_config)}]"'
+    folder = f'FolderPath="[{_escape_vb_expr(folder_path_config)}]"' if folder_path_config else 'FolderPath="{x:Null}"'
+    queue = f'QueueType="[{_escape_vb_expr(queue_name_config)}]"'
 
     get_xml = f"""{ii}<ui:GetQueueItem ContinueOnError="{{x:Null}}" DisplayName="{dn}" {folder} {_hs("GetQueueItem")} sap2010:WorkflowViewState.IdRef="GetQueueItem_{id_ref}" {queue} TransactionItem="[{_escape_vb_expr(transaction_item_variable)}]">
 {ii2}<ui:GetQueueItem.Reference>
@@ -207,7 +207,7 @@ def gen_get_robot_asset(asset_name, output_variable, id_ref,
 
     asset_xml = f"""{ii}<ui:GetRobotAsset TimeoutMS="{{x:Null}}" AssetName="{an}" CacheStrategy="{cache_strategy}" DisplayName="{dn}" sap2010:WorkflowViewState.IdRef="GetRobotAsset_{id_ref}">
 {ii2}<ui:GetRobotAsset.Value>
-{ii3}<OutArgument x:TypeArguments="{output_type}">[{output_variable}]</OutArgument>
+{ii3}<OutArgument x:TypeArguments="{output_type}">[{_escape_vb_expr(output_variable)}]</OutArgument>
 {ii2}</ui:GetRobotAsset.Value>
 {ii}</ui:GetRobotAsset>"""
 

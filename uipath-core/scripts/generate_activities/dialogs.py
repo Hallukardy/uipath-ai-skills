@@ -28,7 +28,7 @@ def gen_input_dialog(label, title, result_variable, id_ref,
 
     return f"""{i}<ui:InputDialog Options="{{x:Null}}" {opts_attr} DisplayName="{dn}" sap2010:WorkflowViewState.IdRef="InputDialog_{id_ref}" IsPassword="{is_password}" Label="{lbl}" Title="{ttl}" TopMost="False">
 {i2}<ui:InputDialog.Result>
-{i3}<OutArgument x:TypeArguments="x:String">[{result_variable}]</OutArgument>
+{i3}<OutArgument x:TypeArguments="x:String">[{_escape_vb_expr(result_variable)}]</OutArgument>
 {i2}</ui:InputDialog.Result>
 {i}</ui:InputDialog>"""
 

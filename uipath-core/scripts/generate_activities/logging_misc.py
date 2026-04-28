@@ -95,7 +95,7 @@ def gen_terminate_workflow(reason_expression, id_ref, display_name="Terminate Wo
     return f"""{indent}<TerminateWorkflow DisplayName="{_escape_xml_attr(display_name)}" {_hs("TerminateWorkflow")} sap2010:WorkflowViewState.IdRef="{id_ref}">
 {indent}  {_viewstate_block(id_ref)}
 {indent}  <TerminateWorkflow.Exception>
-{indent}    <InArgument x:TypeArguments="s:Exception">[{reason_expression}]</InArgument>
+{indent}    <InArgument x:TypeArguments="s:Exception">[{_escape_vb_expr(reason_expression)}]</InArgument>
 {indent}  </TerminateWorkflow.Exception>
 {indent}</TerminateWorkflow>"""
 
