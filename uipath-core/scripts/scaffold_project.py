@@ -458,11 +458,22 @@ def scaffold_project(name: str, description: str, output_dir: str,
     if extra_deps:
         pj["dependencies"].update(extra_deps)
 
-    # Run plugin scaffold hooks (e.g. Tasks persistence support)
+    # Run plugin scaffold hooks (e.g. Tasks persistence support).
+    # Mirror validate_xaml/_registry.py: each plugin hook is wrapped so a
+    # buggy plugin warns but does not abort the scaffold (which still has
+    # to write project.json, Config.xlsx, and the workflow files below).
     from plugin_loader import load_plugins, get_scaffold_hooks
     load_plugins()
     for hook in get_scaffold_hooks():
-        hook(pj)
+        try:
+            hook(pj)
+        except Exception as e:
+            hook_name = getattr(hook, "__name__", repr(hook))
+            print(
+                f"[scaffold] WARN: plugin scaffold hook '{hook_name}' failed: {e} — "
+                f"continuing without its mutations",
+                file=sys.stderr,
+            )
 
     pj["runtimeOptions"]["isAttended"] = attended
     pj["expressionLanguage"] = expression_lang
