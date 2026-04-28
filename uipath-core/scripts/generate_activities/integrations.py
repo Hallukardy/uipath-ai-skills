@@ -18,16 +18,17 @@ def gen_read_range(workbook_path_variable, sheet_name, output_variable, id_ref,
     i = indent
     range_attr = f'Range="{range_str}"' if range_str else 'Range="{x:Null}"'
     # Sheet can be a literal (caller passes "Sheet1" with quotes) or a variable
-    # (caller passes strSheet). Both forms are valid VB expressions inside [...]
-    # so the wrapping is identical.
-    sheet = f'[{sheet_name}]'
+    # (caller passes strSheet). Both forms are valid VB expressions inside [...].
+    # _escape_vb_expr is normalize-then-escape (idempotent); the bracket-wrapped
+    # output is already XML-safe, so no outer _escape_xml_attr wrap on SheetName.
+    sheet = f'[{_escape_vb_expr(sheet_name)}]'
 
     return (
         f'{i}<ui:ReadRange {range_attr} WorkbookPathResource="{{x:Null}}" '
         f'AddHeaders="{add_headers}" DataTable="[{_escape_vb_expr(output_variable)}]" '
         f'DisplayName="{dn}" '
         f'sap2010:WorkflowViewState.IdRef="ReadRange_{id_ref}" '
-        f'SheetName="{_escape_xml_attr(sheet)}" WorkbookPath="[{_escape_vb_expr(workbook_path_variable)}]" />'
+        f'SheetName="{sheet}" WorkbookPath="[{_escape_vb_expr(workbook_path_variable)}]" />'
     )
 
 

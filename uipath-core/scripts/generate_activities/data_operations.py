@@ -381,9 +381,9 @@ def gen_filter_data_table(datatable_variable, filters, id_ref,
         else:
             # String operands: ["value"], non-string: [value]
             if operand_type == "x:String":
-                operand_expr = f'["{_escape_xml_attr(str(operand))}"]'
+                operand_expr = f'["{_escape_vb_expr(str(operand))}"]'
             else:
-                operand_expr = f'[{_escape_xml_attr(str(operand))}]'
+                operand_expr = f'[{_escape_vb_expr(str(operand))}]'
             filter_entries.append(f"""{i4}<ui:FilterOperationArgument BooleanOperator="{bool_op}" Operator="{op}">
 {i5}<ui:FilterOperationArgument.Column>
 {i5}  <InArgument x:TypeArguments="x:String">["{_escape_xml_attr(col)}"]</InArgument>
