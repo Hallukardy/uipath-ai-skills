@@ -241,7 +241,7 @@ def lint_tab_click_no_sync(ctx: FileContext, result: ValidationResult):
 
     WinForms tab switching may have rendering latency. If NClick targets a tab
     control (SysTabControl, TabItem) and the very next activity is NTypeInto,
-    add a Delay or NCheckAppState between them.
+    add a Delay or NCheckState between them.
     """
     content = ctx.active_content
     tab_patterns = [r"SysTabControl", r"TabItem", r"aaname='[^']*[Tt]ab[^']*'"]
@@ -257,7 +257,7 @@ def lint_tab_click_no_sync(ctx: FileContext, result: ValidationResult):
         result.warn(
             f"[lint 105] NClick on tab control immediately followed by NTypeInto "
             f"({len(hits)}x) — WinForms tab switching may have rendering latency. "
-            f"Add NCheckAppState between the tab click and the first TypeInto "
+            f"Add NCheckState between the tab click and the first TypeInto "
             f"to ensure the target tab is fully rendered."
         )
 
