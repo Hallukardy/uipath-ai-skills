@@ -20,9 +20,9 @@ _PLACEHOLDER_FILEPATH_PATTERNS = [
 ]
 
 
-@lint_rule(17)
+@lint_rule(115)
 def lint_desktop_app_card(ctx: FileContext, result: ValidationResult):
-    """Lint 17: NApplicationCard for desktop apps must have FilePath in TargetApp."""
+    """Lint 115: NApplicationCard for desktop apps must have FilePath in TargetApp."""
     try:
         content = ctx.active_content
     except Exception:
@@ -37,7 +37,7 @@ def lint_desktop_app_card(ctx: FileContext, result: ValidationResult):
             match = re.search(r'FilePath="([^"]*)"', content)
             path_val = match.group(1) if match else "?"
             result.error(
-                f"NApplicationCard has placeholder FilePath='{path_val}' — "
+                f"[lint 115] NApplicationCard has placeholder FilePath='{path_val}' — "
                 f"replace with the actual executable path before running"
             )
             break
@@ -70,7 +70,7 @@ def lint_desktop_app_card(ctx: FileContext, result: ValidationResult):
             ))
             if not has_filepath_attr and not has_filepath_elem:
                 result.error(
-                    "NApplicationCard targets a desktop app (wnd selector) with "
+                    "[lint 115] NApplicationCard targets a desktop app (wnd selector) with "
                     "OpenMode='IfNotOpen' or 'Always' but TargetApp is missing "
                     "FilePath — UiPath cannot launch the app without it"
                 )
@@ -81,7 +81,7 @@ def lint_desktop_app_card(ctx: FileContext, result: ValidationResult):
             )
             if not has_url:
                 result.warn(
-                    "NApplicationCard targets a browser with "
+                    "[lint 115] NApplicationCard targets a browser with "
                     "OpenMode='IfNotOpen' or 'Always' but TargetApp has no Url — "
                     "consider adding Url so UiPath can navigate to the correct page"
                 )
@@ -92,7 +92,7 @@ def lint_desktop_app_card(ctx: FileContext, result: ValidationResult):
         if is_desktop:
             if 'InteractionMode="DebuggerApi"' in content:
                 result.warn(
-                    "NApplicationCard uses InteractionMode='DebuggerApi' for a desktop app — "
+                    "[lint 115] NApplicationCard uses InteractionMode='DebuggerApi' for a desktop app — "
                     "this is browser-only. Use 'HardwareEvents', 'Simulate', or 'WindowMessages'"
                 )
 
@@ -117,18 +117,18 @@ def lint_unresolved_activity(ctx: FileContext, result: ValidationResult):
             r'<ui:UnresolvedActivity[^>]*DisplayName="([^"]*)"', content
         )
         name_info = f" ({', '.join(names)})" if names else ""
-        result.errors.append(
-            f"{len(matches)} UnresolvedActivity element(s){name_info} — "
+        result.error(
+            f"[lint 23] {len(matches)} UnresolvedActivity element(s){name_info} — "
             f"Studio could not resolve the activity type. This means a "
             f"non-existent activity name was used. Check xaml-data.md or "
             f"xaml-*.md for the correct activity element name."
         )
 
 
-@lint_rule(23)
+@lint_rule(116)
 def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult):
-    """Lint 23: Detect hallucinated property names on UiPath activities.
-    
+    """Lint 116: Detect hallucinated property names on UiPath activities.
+
     Maps known wrong property names to correct ones. Extensible — add entries
     as new hallucination patterns are discovered in battle tests.
     """
@@ -175,7 +175,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
     if ta_child:
         activities = set(re.findall(r'<(uix:N\w+)\.TargetAnchorable>', content))
         result.error(
-            f"[lint 23] {len(ta_child)} use(s) of '.TargetAnchorable>' child element — "
+            f"[lint 116] {len(ta_child)} use(s) of '.TargetAnchorable>' child element — "
             f"property does NOT exist on {', '.join(activities)}. "
             f"The child element is '.Target>' (the TYPE inside it is TargetAnchorable). "
             f"Example: <uix:NClick.Target> not <uix:NClick.TargetAnchorable>"
@@ -184,7 +184,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
     # NApplicationCard: Url= is hallucinated — URL belongs in TargetApp child element
     if re.search(r'<uix:NApplicationCard\b[^>]*\sUrl="', content):
         result.error(
-            "[lint 23] NApplicationCard has 'Url' attribute — this property does NOT exist "
+            "[lint 116] NApplicationCard has 'Url' attribute — this property does NOT exist "
             "on NApplicationCard. URL belongs in the <uix:TargetApp Url=\"...\"> child element. "
             "See golden sample WebAppName_Launch.xaml."
         )
@@ -199,7 +199,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
             cleaned = re.sub(r'(Full|Scope|Fuzzy)SelectorArgument="[^"]*"', '', line)
             if re.search(r'\bSelector="', cleaned):
                 result.error(
-                    "[lint 23] TargetAnchorable has bare 'Selector' attribute — "
+                    "[lint 116] TargetAnchorable has bare 'Selector' attribute — "
                     "property does NOT exist. Use FullSelectorArgument=\"...\" for "
                     "the element selector and ScopeSelectorArgument=\"...\" for app scope."
                 )
@@ -208,7 +208,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
     # AnchorSelector= on TargetAnchorable — doesn't exist
     if re.search(r'<uix:TargetAnchorable\b[^>]*\sAnchorSelector="', content):
         result.error(
-            "[lint 23] TargetAnchorable has 'AnchorSelector' attribute — property does NOT exist. "
+            "[lint 116] TargetAnchorable has 'AnchorSelector' attribute — property does NOT exist. "
             "Anchor-based targeting uses a separate <uix:TargetAnchorable> element "
             "inside an <ActivityAction> anchor delegate. See xaml-ui-automation.md Anchor-Based Targeting."
         )
@@ -216,7 +216,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
     # uix:Selector element — doesn't exist as a type
     if "<uix:Selector " in content or "<uix:Selector>" in content:
         result.error(
-            "[lint 23] <uix:Selector> element does NOT exist. "
+            "[lint 116] <uix:Selector> element does NOT exist. "
             "Selectors are defined as attributes on <uix:TargetAnchorable> elements "
             "(FullSelectorArgument, ScopeSelectorArgument). "
             "If you need a Check App State, use <uix:NCheckState> with .Target child."
@@ -225,7 +225,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
     # NCheckState: Appears= is hallucinated — use IfExists/IfNotExists child elements
     if re.search(r'<uix:NCheckState\b[^>]*\sAppears="', content):
         result.error(
-            "[lint 23] NCheckState has 'Appears' attribute — property does NOT exist. "
+            "[lint 116] NCheckState has 'Appears' attribute — property does NOT exist. "
             "NCheckState uses <uix:NCheckState.IfExists> and <uix:NCheckState.IfNotExists> "
             "child Sequence elements. Mode=\"Appears\" exists only on VerifyExecutionOptions "
             "(NClick/NTypeInto verification), NOT on NCheckState."
@@ -234,7 +234,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
     # GetRobotAsset: Result= is hallucinated — correct property is .Value (element syntax)
     for match in re.finditer(r'<ui:GetRobotAsset\b[^>]*\bResult=', content):
         result.error(
-            "[lint 23] GetRobotAsset has 'Result' — this property does NOT exist. "
+            "[lint 116] GetRobotAsset has 'Result' — this property does NOT exist. "
             "Use element syntax: <ui:GetRobotAsset.Value>"
             "<OutArgument x:TypeArguments=\"x:String\">[var]</OutArgument>"
             "</ui:GetRobotAsset.Value>"
@@ -243,7 +243,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
     # GetRobotCredential: Result= is hallucinated — use Password= and Username= outputs
     for match in re.finditer(r'<ui:GetRobotCredential\b[^>]*\bResult=', content):
         result.error(
-            "[lint 23] GetRobotCredential has 'Result' — this property does NOT exist. "
+            "[lint 116] GetRobotCredential has 'Result' — this property does NOT exist. "
             "Use Password=\"[secstrPassword]\" and Username=\"[strUsername]\" attributes. "
             "Password outputs SecureString, Username outputs String."
         )
@@ -261,7 +261,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
             )
             if string_decl:
                 result.error(
-                    f"[lint 23] GetRobotCredential Password bound to '{var_name}' "
+                    f"[lint 116] GetRobotCredential Password bound to '{var_name}' "
                     f"which is declared as x:String — Password outputs SecureString. "
                     f"Change variable type to ss:SecureString and use SecureText= "
                     f"(not Text=) on NTypeInto for password fields."
@@ -277,7 +277,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
         asset = re.search(r'AssetName="([^"]*)"', match.group())
         name = asset.group(1) if asset else "unknown"
         result.error(
-            f"[lint 23] GetRobotAsset used for credential-like asset '{name}' — "
+            f"[lint 116] GetRobotAsset used for credential-like asset '{name}' — "
             "use GetRobotCredential instead. It stores secrets as SecureString "
             "and returns username + password from a single Credential asset type."
         )
@@ -287,7 +287,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
     # ItemInformation is the XAML property for WRITING queue items
     if re.search(r'AddQueueItem\.SpecificContent|SpecificContent>', content):
         result.error(
-            "[lint 23] AddQueueItem uses 'SpecificContent' — this property does NOT exist in XAML. "
+            "[lint 116] AddQueueItem uses 'SpecificContent' — this property does NOT exist in XAML. "
             "SpecificContent is a RUNTIME property for READING queue items "
             "(TransactionItem.SpecificContent(\"Key\")). "
             "For WRITING, use <ui:AddQueueItem.ItemInformation> with "
@@ -299,7 +299,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
     # Model invents .DictionaryCollection with scg:Dictionary(String, Argument) wrapper
     if re.search(r'AddQueueItem\.DictionaryCollection|DictionaryCollection>', content):
         result.error(
-            "[lint 23] AddQueueItem uses hallucinated 'DictionaryCollection' — "
+            "[lint 116] AddQueueItem uses hallucinated 'DictionaryCollection' — "
             "this member does NOT exist. Correct property is <ui:AddQueueItem.ItemInformation>. "
             "ItemInformation takes bare <InArgument> children directly — NO Dictionary wrapper needed. "
             "Use gen_add_queue_item() from scripts/generate_activities.py."
@@ -316,7 +316,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
     for block in item_info_blocks:
         if re.search(r'Dictionary.*String.*Argument|scg:Dictionary', block):
             result.error(
-                "[lint 23] AddQueueItem.ItemInformation wrapped in Dictionary(String,Argument) — "
+                "[lint 116] AddQueueItem.ItemInformation wrapped in Dictionary(String,Argument) — "
                 "hallucinated structure. ItemInformation takes bare <InArgument> children directly, "
                 "with NO scg:Dictionary wrapper. Also: 'ui:Argument' doesn't exist as a type. "
                 "Use gen_add_queue_item() from scripts/generate_activities.py."
@@ -327,7 +327,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
     # BuildDataTable has NO child elements — uses TableInfo attribute with XSD schema string
     if re.search(r'BuildDataTable\.Columns|DataTableColumnInfo', content):
         result.error(
-            "[lint 23] BuildDataTable uses hallucinated '.Columns' child element with "
+            "[lint 116] BuildDataTable uses hallucinated '.Columns' child element with "
             "DataTableColumnInfo — this property does NOT exist. "
             "BuildDataTable is a SELF-CLOSING tag with a TableInfo=\"...\" attribute "
             "containing an XML-escaped XSD schema string. "
@@ -362,7 +362,7 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
         )
     if fdt_hallucinations:
         result.error(
-            "[lint 23] FilterDataTable uses hallucinated properties — Studio crash: "
+            "[lint 116] FilterDataTable uses hallucinated properties — Studio crash: "
             + "; ".join(fdt_hallucinations)
             + ". Use gen_filter_data_table() from scripts/generate_activities.py."
         )
@@ -374,14 +374,14 @@ def lint_hallucinated_property_names(ctx: FileContext, result: ValidationResult)
         op = m.group(1)
         if op in ('=', '==', '!=', '<>', '<', '<=', '>', '>='):
             result.error(
-                f"[lint 23] FilterOperationArgument Operator=\"{op}\" — "
+                f"[lint 116] FilterOperationArgument Operator=\"{op}\" — "
                 f"'{op}' is not a valid FilterOperator enum value. "
                 f"Use UiPath enum names: EQ, NE, LT, LE, GT, GE, CONTAINS, STARTS_WITH, "
                 f"ENDS_WITH, EMPTY, NOT_EMPTY. Studio throws 'is not a valid value for FilterOperator'."
             )
         elif op not in _VALID_FILTER_OPS:
             result.warn(
-                f"[lint 23] FilterOperationArgument Operator=\"{op}\" — "
+                f"[lint 116] FilterOperationArgument Operator=\"{op}\" — "
                 f"may not be a valid FilterOperator. Studio uses: "
                 f"EQ, NE, LT, LE, GT, GE, CONTAINS, STARTS_WITH, ENDS_WITH, EMPTY, NOT_EMPTY. "
                 f"Use gen_filter_data_table() to ensure correct enum values."

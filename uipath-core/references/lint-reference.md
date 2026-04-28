@@ -2,15 +2,16 @@
 
 Validation rules for `scripts/validate_xaml --lint`. Search by lint number to find the fix.
 
-**Lint checks** (`--lint`) — 65 numbered lint rules (+ plugin lint rules), grouped by severity. When fixing a lint warning, find its number below for the fix reference.
+**Lint checks** (`--lint`) — numbered lint rules (+ plugin lint rules), grouped by severity. When fixing a lint warning, find its number below for the fix reference.
 
 **🔴 Studio crash (file won't open or activity crashes Studio on load):**
 
 | Lint | What it catches | Fix reference |
 |---|---|---|
 | 17 | NExtractDataGeneric uses `DataTable=` attribute (doesn't exist) | Use `ExtractedData="[dt_variable]"`. The `x:TypeArguments="sd2:DataTable"` is the generic type param, NOT a property |
-| 23 | `.TargetAnchorable>` child element (doesn't exist) | Use `.Target>` — the TYPE inside is TargetAnchorable, but the element name is always `.Target` |
+| 23 | Studio-emitted `<ui:UnresolvedActivity>` — hallucinated activity name | Studio could not resolve the activity type. Check `xaml-data.md` / `xaml-*.md` for the correct activity element name |
 | 28 | Invalid ElementType enum (DataGrid, ComboBox, InputBoxText) | Use `Table`, `DropDown`, `InputBox`. See `xaml-ui-automation.md` |
+| 116 | Hallucinated property names on UI activities (`.TargetAnchorable>`, `Url=` on NApplicationCard, bare `Selector=` on TargetAnchorable, etc.) | Use the correct property — see `gen_*` helpers and `xaml-ui-automation.md`. Rule 116 covers the previous "lint 23 hallucinated properties" cases |
 | 57 | `ReferencesForImplementation` with `x:String` TypeArguments | Use `AssemblyReference` type+elements |
 | 73 | Hallucinated NExtractData types/properties | Use `ExtractedData=` (not `DataTable=` or `Result=`). See `gen_nextractdata()` |
 | 76 | InvokeWorkflowFile argument type mismatch (BC30512 crash) | Match caller `x:TypeArguments` to target `x:Property Type=`. See `skill-guide.md` → UiElement arg rules |
@@ -26,9 +27,12 @@ Validation rules for `scripts/validate_xaml --lint`. Search by lint number to fi
 | 30 | NSelectItem has `InteractionMode` (doesn't exist on NSelectItem) | Only NClick and NTypeInto support InteractionMode. Remove it |
 | 31 | ContinueOnError on X-suffix activities (doesn't exist) | X-activities don't have ContinueOnError. Wrap in TryCatch instead |
 | 32 | `Environment.SpecialFolder.Temp` (not a valid enum) | Use `Path.GetTempPath()` instead |
-| 33 | InvokeCode contains SqlConnection/SqlCommand | Use DatabaseConnect + ExecuteQuery activities instead |
-| 34 | InvokeCode captures screenshot via System.Drawing | Use TakeScreenshot + SaveImage activities instead |
-| 35 | InvokeCode uses File.Delete | Use `<ui:DeleteFileX Path="[strPath]" />` instead |
+| 33 | NApplicationCard invalid enum value (AttachMode/OpenMode/CloseMode/InteractionMode/WindowResize/Version) | Use a valid enum from `lint_napplicationcard_enums` |
+| 34 | Credentials passed as InvokeWorkflowFile arguments | Retrieve via `GetRobotCredential` inside the workflow that needs them |
+| 35 | NTypeInto for password uses `Text=` instead of `SecureText=` | Use `SecureText="[secstrPassword]"` and store password as `SecureString` |
+| 117 | InvokeCode contains SqlConnection/SqlCommand | Use DatabaseConnect + ExecuteQuery activities instead |
+| 118 | InvokeCode captures screenshot via System.Drawing | Use TakeScreenshot + SaveImage activities instead |
+| 119 | InvokeCode uses File.Delete | Use `<ui:DeleteFileX Path="[strPath]" />` instead |
 | 40 | Wrong enum namespace (`UIAutomation.Enums` instead of `UIAutomationNext.Enums`) | `UIAutomationNext.Enums` is the correct CLR namespace |
 | 50 | InvokeWorkflowFile passes argument key not declared in target's x:Members | Check for typos — Studio error: 'Property matching [key] not found' |
 | 51 | `GetQueueItem` in dispatcher's GetTransactionData (type mismatch) | Replace with DataTable row indexing. Scaffold `--variant dispatcher` handles this |
@@ -84,3 +88,7 @@ Validation rules for `scripts/validate_xaml --lint`. Search by lint number to fi
 | 103 | UI-heavy workflow (>5 interactions) without TryCatch | Wrap UI block in TryCatch for graceful error handling. See `desktop-form-filling.md` |
 | 104 | Hardcoded user-specific path (`C:\Users\...`) in FilePath | Use variable from Config or InArgument: `FilePath="[in_Config(\"AppPath\").ToString]"` |
 | 105 | Tab NClick immediately followed by NTypeInto without sync | Add 500ms Delay or NCheckAppState after tab click. See `desktop-form-filling.md` |
+| 106 | Desktop NApplicationCard uses `InteractionMode="DebuggerApi"` (browser-only) | Use `Simulate` or `HardwareEvents` for desktop apps |
+| 107 | Desktop NApplicationCard uses `IsIncognito="True"` (browser concept) | Remove `IsIncognito` from desktop NApplicationCards |
+| 108 | TryCatch has empty Catch block — exceptions silently swallowed | Add error logging, cleanup, or Rethrow |
+| 115 | Desktop NApplicationCard missing `FilePath` on TargetApp | Set `FilePath` (attribute or `<uix:TargetApp.FilePath>` child) when `OpenMode` is `IfNotOpen` or `Always` |

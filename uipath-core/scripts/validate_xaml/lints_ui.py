@@ -261,8 +261,13 @@ def lint_tab_click_no_sync(ctx: FileContext, result: ValidationResult):
             f"to ensure the target tab is fully rendered."
         )
 
-    # ---- Lint 106: DebuggerApi on desktop NApplicationCard ----
-    # Desktop = has TargetApp.FilePath child element or FilePath= attribute
+
+def _iter_nac_desktop_blocks(content):
+    """Yield (nac_attr, nac_body) tuples for NApplicationCards judged to be desktop.
+
+    Desktop = FilePath attribute or FilePath child with actual content, and no
+    browser markers (BrowserType, Url=).
+    """
     nac_blocks = re.findall(
         r'<uix:NApplicationCard\b[^>]*>(.*?)</uix:NApplicationCard>',
         content, re.DOTALL
@@ -272,47 +277,59 @@ def lint_tab_click_no_sync(ctx: FileContext, result: ValidationResult):
     )
     for i_nac, nac_attr in enumerate(nac_attrs_blocks):
         nac_body = nac_blocks[i_nac] if i_nac < len(nac_blocks) else ""
-        # Desktop = FilePath attribute with a value on TargetApp, or FilePath child
-        # with actual content (not empty <InArgument />)
         has_filepath_attr = bool(re.search(r'FilePath="[^"]+\S+[^"]*"', nac_attr))
         has_filepath_child = bool(re.search(
             r'<uix:TargetApp[^>]*\sFilePath="[^"]+\S+[^"]*"', nac_body
         ))
-        # Empty FilePath child (<TargetApp.FilePath><InArgument .../></TargetApp.FilePath>)
-        # is a generic utility pattern — NOT desktop
         has_browser = 'BrowserType' in nac_attr or 'Url=' in nac_attr or 'BrowserType' in nac_body
-        is_desktop = (has_filepath_attr or has_filepath_child) and not has_browser
-        if not is_desktop:
-            continue
+        if (has_filepath_attr or has_filepath_child) and not has_browser:
+            yield nac_attr, nac_body
+
+
+@lint_rule(106)
+def lint_nac_desktop_debugger_api(ctx: FileContext, result: ValidationResult):
+    """Lint 106: NApplicationCard with desktop FilePath uses DebuggerApi (browser-only)."""
+    content = ctx.active_content
+    for nac_attr, _ in _iter_nac_desktop_blocks(content):
         if 'InteractionMode="DebuggerApi"' in nac_attr:
             result.error(
-                f"[lint 106] NApplicationCard with desktop FilePath uses "
-                f"InteractionMode=\"DebuggerApi\" — DebuggerApi is browser-only. "
-                f"Use Simulate or HardwareEvents for desktop apps."
-            )
-        if 'IsIncognito="True"' in nac_attr:
-            result.error(
-                f"[lint 107] NApplicationCard with desktop FilePath uses "
-                f"IsIncognito=\"True\" — IsIncognito is a browser concept. "
-                f"Remove IsIncognito from desktop NApplicationCards."
+                "[lint 106] NApplicationCard with desktop FilePath uses "
+                "InteractionMode=\"DebuggerApi\" — DebuggerApi is browser-only. "
+                "Use Simulate or HardwareEvents for desktop apps."
             )
 
-    # ---- Lint 108: Empty TryCatch Catch block ----
+
+@lint_rule(107)
+def lint_nac_desktop_incognito(ctx: FileContext, result: ValidationResult):
+    """Lint 107: NApplicationCard with desktop FilePath uses IsIncognito (browser concept)."""
+    content = ctx.active_content
+    for nac_attr, _ in _iter_nac_desktop_blocks(content):
+        if 'IsIncognito="True"' in nac_attr:
+            result.error(
+                "[lint 107] NApplicationCard with desktop FilePath uses "
+                "IsIncognito=\"True\" — IsIncognito is a browser concept. "
+                "Remove IsIncognito from desktop NApplicationCards."
+            )
+
+
+@lint_rule(108)
+def lint_empty_catch_block(ctx: FileContext, result: ValidationResult):
+    """Lint 108: TryCatch has empty Catch block — exceptions silently swallowed."""
+    content = ctx.active_content
     catch_sequences = re.findall(
         r'<Sequence\s+DisplayName="Catch"[^>]*>(.*?)</Sequence>',
         content, re.DOTALL
     )
     for catch_seq in catch_sequences:
         stripped = catch_seq.strip()
-        # Check if the catch sequence has only ViewState or is truly empty
         without_viewstate = re.sub(
             r'<sap:WorkflowViewStateService\.ViewState>.*?</sap:WorkflowViewStateService\.ViewState>',
             '', stripped, flags=re.DOTALL
         ).strip()
         if not without_viewstate:
             result.error(
-                f"[lint 108] TryCatch has empty Catch block — exceptions will be "
-                f"silently swallowed. Add error logging, cleanup, or Rethrow."
+                "[lint 108] TryCatch has empty Catch block — exceptions will be "
+                "silently swallowed. Add error logging, cleanup, or Rethrow."
             )
 
 
