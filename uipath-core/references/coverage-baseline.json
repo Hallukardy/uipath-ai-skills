@@ -1,13 +1,21 @@
 {
   "totals": {
-    "rows": 460,
-    "covered": 442,
-    "wizard-only": 18,
+    "rows": 497,
+    "covered": 478,
+    "wizard-only": 19,
     "broken-annotation": 0,
     "uncovered-but-harvestable": 0,
     "uncovered-not-harvestable": 0
   },
   "per_package": {
+    "UiPath.Database.Activities/2.0": {
+      "total": 8,
+      "covered": 8,
+      "wizard-only": 0,
+      "broken-annotation": 0,
+      "uncovered-but-harvestable": 0,
+      "uncovered-not-harvestable": 0
+    },
     "UiPath.Excel.Activities/3.4": {
       "total": 116,
       "covered": 110,
@@ -20,6 +28,22 @@
       "total": 43,
       "covered": 41,
       "wizard-only": 2,
+      "broken-annotation": 0,
+      "uncovered-but-harvestable": 0,
+      "uncovered-not-harvestable": 0
+    },
+    "UiPath.PDF.Activities/3.25": {
+      "total": 10,
+      "covered": 9,
+      "wizard-only": 1,
+      "broken-annotation": 0,
+      "uncovered-but-harvestable": 0,
+      "uncovered-not-harvestable": 0
+    },
+    "UiPath.Persistence.Activities/1.4": {
+      "total": 9,
+      "covered": 9,
+      "wizard-only": 0,
       "broken-annotation": 0,
       "uncovered-but-harvestable": 0,
       "uncovered-not-harvestable": 0
@@ -52,6 +76,14 @@
       "total": 76,
       "covered": 70,
       "wizard-only": 6,
+      "broken-annotation": 0,
+      "uncovered-but-harvestable": 0,
+      "uncovered-not-harvestable": 0
+    },
+    "UiPath.WebAPI.Activities/2.4": {
+      "total": 10,
+      "covered": 10,
+      "wizard-only": 0,
       "broken-annotation": 0,
       "uncovered-but-harvestable": 0,
       "uncovered-not-harvestable": 0

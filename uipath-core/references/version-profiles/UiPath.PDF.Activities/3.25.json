@@ -1,0 +1,214 @@
+{
+  "activities": {
+    "ExportPDFPageAsImage": {
+      "doc_name": "Export PDF Page As Image",
+      "name": "ExportPDFPageAsImage",
+      "properties": [
+        "DisplayName",
+        "FileName",
+        "ImageDpi",
+        "OutputFileName",
+        "PageNumber"
+      ],
+      "version_attrs": {
+        "ImageDpi": "150"
+      },
+      "namespace_prefix": "upap",
+      "child_elements": [],
+      "xaml_template": "<upap:ExportPDFPageAsImage FileName=\"{x:Null}\" OutputFileName=\"{x:Null}\" PageNumber=\"{x:Null}\" ImageDpi=\"150\" />",
+      "class_name": "UiPath.PDF.Activities.PDF.ExportPDFPageAsImage",
+      "clr_namespace": "UiPath.PDF.Activities.PDF",
+      "source_package": "UiPath.PDF.Activities",
+      "namespace_match": true,
+      "harvestable": true
+    },
+    "ExtractImagesFromPDF": {
+      "doc_name": "Extract Images From PDF",
+      "name": "ExtractImagesFromPDF",
+      "properties": [
+        "DisplayName",
+        "FileName",
+        "OutputFolderName"
+      ],
+      "version_attrs": {},
+      "namespace_prefix": "upap",
+      "child_elements": [],
+      "xaml_template": "<upap:ExtractImagesFromPDF FileName=\"{x:Null}\" OutputFolderName=\"{x:Null}\" />",
+      "class_name": "UiPath.PDF.Activities.PDF.ExtractImagesFromPDF",
+      "clr_namespace": "UiPath.PDF.Activities.PDF",
+      "source_package": "UiPath.PDF.Activities",
+      "namespace_match": true,
+      "harvestable": true
+    },
+    "ExtractPDFPageRange": {
+      "doc_name": "Extract PDF Page Range",
+      "name": "ExtractPDFPageRange",
+      "properties": [
+        "DisplayName",
+        "FileName",
+        "OutputFileName",
+        "Range"
+      ],
+      "version_attrs": {},
+      "namespace_prefix": "upap",
+      "child_elements": [],
+      "xaml_template": "<upap:ExtractPDFPageRange FileName=\"{x:Null}\" OutputFileName=\"{x:Null}\" Range=\"{x:Null}\" />",
+      "class_name": "UiPath.PDF.Activities.PDF.ExtractPDFPageRange",
+      "clr_namespace": "UiPath.PDF.Activities.PDF",
+      "source_package": "UiPath.PDF.Activities",
+      "namespace_match": true,
+      "harvestable": true
+    },
+    "GetPDFPageCount": {
+      "doc_name": "Get PDF Page Count",
+      "name": "GetPDFPageCount",
+      "properties": [
+        "DisplayName",
+        "FileName",
+        "PageCount"
+      ],
+      "version_attrs": {},
+      "namespace_prefix": "upap",
+      "child_elements": [],
+      "xaml_template": "<upap:GetPDFPageCount FileName=\"{x:Null}\" PageCount=\"{x:Null}\" />",
+      "class_name": "UiPath.PDF.Activities.PDF.GetPDFPageCount",
+      "clr_namespace": "UiPath.PDF.Activities.PDF",
+      "source_package": "UiPath.PDF.Activities",
+      "namespace_match": true,
+      "harvestable": true
+    },
+    "JoinPDF": {
+      "doc_name": "Join PDF",
+      "name": "JoinPDF",
+      "properties": [
+        "DisplayName",
+        "FileList",
+        "OutputFileName"
+      ],
+      "version_attrs": {},
+      "namespace_prefix": "upap",
+      "child_elements": [],
+      "xaml_template": "<upap:JoinPDF FileList=\"{x:Null}\" OutputFileName=\"{x:Null}\" />",
+      "class_name": "UiPath.PDF.Activities.PDF.JoinPDF",
+      "clr_namespace": "UiPath.PDF.Activities.PDF",
+      "source_package": "UiPath.PDF.Activities",
+      "namespace_match": true,
+      "harvestable": true
+    },
+    "ManagePDFPassword": {
+      "doc_name": "Manage PDF Password",
+      "name": "ManagePDFPassword",
+      "properties": [
+        "DisplayName",
+        "FileName",
+        "OutputFileName"
+      ],
+      "version_attrs": {},
+      "namespace_prefix": "upap",
+      "child_elements": [],
+      "xaml_template": "<upap:ManagePDFPassword FileName=\"{x:Null}\" OutputFileName=\"{x:Null}\" />",
+      "class_name": "UiPath.PDF.Activities.PDF.ManagePDFPassword",
+      "clr_namespace": "UiPath.PDF.Activities.PDF",
+      "source_package": "UiPath.PDF.Activities",
+      "namespace_match": true,
+      "harvestable": true
+    },
+    "ReadPDFText": {
+      "doc_name": "Read PDF Text",
+      "name": "ReadPDFText",
+      "properties": [
+        "DisplayName",
+        "FileName",
+        "PreserveFormatting",
+        "Range",
+        "Text"
+      ],
+      "version_attrs": {
+        "Range": "All"
+      },
+      "namespace_prefix": "ui",
+      "child_elements": [],
+      "xaml_template": "<ui:ReadPDFText FileName=\"{x:Null}\" PreserveFormatting=\"{x:Null}\" Text=\"{x:Null}\" Range=\"All\" />",
+      "class_name": "UiPath.PDF.Activities.ReadPDFText",
+      "clr_namespace": "UiPath.PDF.Activities",
+      "source_package": "UiPath.PDF.Activities",
+      "namespace_match": true,
+      "harvestable": true
+    },
+    "ReadPDFWithOCR": {
+      "doc_name": "Read PDF With OCR",
+      "name": "ReadPDFWithOCR",
+      "properties": [
+        "DegreeOfParallelism",
+        "DisplayName",
+        "FileName",
+        "ImageDpi",
+        "OCREngine",
+        "Range",
+        "Text"
+      ],
+      "version_attrs": {
+        "DegreeOfParallelism": "1",
+        "ImageDpi": "150",
+        "Range": "All"
+      },
+      "namespace_prefix": "ui",
+      "child_elements": [
+        "OCREngine"
+      ],
+      "xaml_template": "<ui:ReadPDFWithOCR FileName=\"{x:Null}\" Text=\"{x:Null}\" DegreeOfParallelism=\"1\" ImageDpi=\"150\" Range=\"All\">\n\n  <ui:ReadPDFWithOCR.OCREngine>\n\n    <ActivityFunc x:TypeArguments=\"sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))\">\n\n      <ActivityFunc.Argument>\n\n        <DelegateInArgument x:TypeArguments=\"sd:Image\" Name=\"Image\" />\n\n      </ActivityFunc.Argument>\n\n    </ActivityFunc>\n\n  </ui:ReadPDFWithOCR.OCREngine>\n\n</ui:ReadPDFWithOCR>",
+      "class_name": "UiPath.PDF.Activities.ReadPDFWithOCR",
+      "clr_namespace": "UiPath.PDF.Activities",
+      "source_package": "UiPath.PDF.Activities",
+      "namespace_match": true,
+      "harvestable": true
+    },
+    "ReadXPSText": {
+      "doc_name": "Read XPS Text",
+      "name": "ReadXPSText",
+      "properties": [
+        "DisplayName",
+        "FileName",
+        "Range",
+        "Text"
+      ],
+      "version_attrs": {
+        "Range": "All"
+      },
+      "namespace_prefix": "ui",
+      "child_elements": [],
+      "xaml_template": "<ui:ReadXPSText FileName=\"{x:Null}\" Text=\"{x:Null}\" Range=\"All\" />",
+      "class_name": "UiPath.XPS.Activities.ReadXPSText",
+      "clr_namespace": "UiPath.XPS.Activities",
+      "source_package": "UiPath.PDF.Activities",
+      "namespace_match": true,
+      "harvestable": true
+    },
+    "ReadXPSWithOCR": {
+      "doc_name": "Read XPS With OCR",
+      "name": "ReadXPSWithOCR",
+      "properties": [
+        "DegreeOfParallelism",
+        "DisplayName",
+        "FileName",
+        "OCREngine",
+        "Range",
+        "Text"
+      ],
+      "version_attrs": {
+        "DegreeOfParallelism": "1",
+        "Range": "All"
+      },
+      "namespace_prefix": "ui",
+      "child_elements": [
+        "OCREngine"
+      ],
+      "xaml_template": "<ui:ReadXPSWithOCR FileName=\"{x:Null}\" Text=\"{x:Null}\" DegreeOfParallelism=\"1\" Range=\"All\">\n\n  <ui:ReadXPSWithOCR.OCREngine>\n\n    <ActivityFunc x:TypeArguments=\"sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))\">\n\n      <ActivityFunc.Argument>\n\n        <DelegateInArgument x:TypeArguments=\"sd:Image\" Name=\"Image\" />\n\n      </ActivityFunc.Argument>\n\n    </ActivityFunc>\n\n  </ui:ReadXPSWithOCR.OCREngine>\n\n</ui:ReadXPSWithOCR>",
+      "class_name": "UiPath.XPS.Activities.ReadXPSWithOCR",
+      "clr_namespace": "UiPath.XPS.Activities",
+      "source_package": "UiPath.PDF.Activities",
+      "namespace_match": true,
+      "harvestable": true
+    }
+  }
+}

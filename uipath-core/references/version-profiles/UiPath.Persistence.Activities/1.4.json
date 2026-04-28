@@ -1,0 +1,53 @@
+{
+  "$schema_version": "1.0",
+  "package": "UiPath.Persistence.Activities",
+  "version": "1.4",
+  "note": "9 activities covered by hand-written generators in scripts/generate_activities/persistence.py. CLR namespaces split across four sub-namespaces: Tasks (upat), ExternalTask (upae), FormTask (upaf), UserAction (upau).",
+  "activities": {
+    "AssignTasks": {
+      "class_name": "UiPath.Persistence.Activities.Tasks.AssignTasks",
+      "clr_namespace": "UiPath.Persistence.Activities.Tasks",
+      "harvestable": true
+    },
+    "ForwardTask": {
+      "class_name": "UiPath.Persistence.Activities.Tasks.ForwardTask",
+      "clr_namespace": "UiPath.Persistence.Activities.Tasks",
+      "harvestable": true
+    },
+    "CreateExternalTask": {
+      "class_name": "UiPath.Persistence.Activities.ExternalTask.CreateExternalTask",
+      "clr_namespace": "UiPath.Persistence.Activities.ExternalTask",
+      "harvestable": true
+    },
+    "WaitForExternalTaskAndResume": {
+      "class_name": "UiPath.Persistence.Activities.ExternalTask.WaitForExternalTaskAndResume",
+      "clr_namespace": "UiPath.Persistence.Activities.ExternalTask",
+      "harvestable": true
+    },
+    "CreateFormTask": {
+      "class_name": "UiPath.Persistence.Activities.FormTask.CreateFormTask",
+      "clr_namespace": "UiPath.Persistence.Activities.FormTask",
+      "harvestable": true
+    },
+    "GetFormTasks": {
+      "class_name": "UiPath.Persistence.Activities.FormTask.GetFormTasks",
+      "clr_namespace": "UiPath.Persistence.Activities.FormTask",
+      "harvestable": true
+    },
+    "WaitForFormTaskAndResume": {
+      "class_name": "UiPath.Persistence.Activities.FormTask.WaitForFormTaskAndResume",
+      "clr_namespace": "UiPath.Persistence.Activities.FormTask",
+      "harvestable": true
+    },
+    "GetAppTasks": {
+      "class_name": "UiPath.Persistence.Activities.UserAction.GetAppTasks",
+      "clr_namespace": "UiPath.Persistence.Activities.UserAction",
+      "harvestable": true
+    },
+    "WaitForUserActionAndResume": {
+      "class_name": "UiPath.Persistence.Activities.UserAction.WaitForUserActionAndResume",
+      "clr_namespace": "UiPath.Persistence.Activities.UserAction",
+      "harvestable": true
+    }
+  }
+}

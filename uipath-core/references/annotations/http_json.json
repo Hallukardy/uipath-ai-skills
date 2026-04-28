@@ -279,6 +279,75 @@
         "jobject"
       ]
     },
+    "DeserializeJson`1": {
+      "gen_function": "gen_deserialize_json",
+      "element_tag": "ui:DeserializeJson",
+      "hint_size_key": "DeserializeJson",
+      "params": {
+        "json_string_variable": {
+          "attr": "JsonString",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": true,
+          "type": "string"
+        },
+        "output_variable": {
+          "attr": "JsonObject",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": true,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref",
+          "note": "Prefixed with 'DeserializeJson_'"
+        },
+        "type_argument": {
+          "attr": "x:TypeArguments",
+          "required": false,
+          "default": "njl:JObject",
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "display_name": {
+          "attr": "DisplayName",
+          "required": false,
+          "default": "Deserialize JSON",
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        }
+      },
+      "fixed_attrs": {
+        "Settings": "{x:Null}",
+        "JsonSample": ""
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "note": "Generic-arity-tagged variant. Class name is `DeserializeJson\\`1` but rendered XAML is <ui:DeserializeJson x:TypeArguments=\"...\">. Reuses gen_deserialize_json \u2014 only the activity-name lookup key differs.",
+      "category": "http_json",
+      "description": "Parses a JSON object string into a JObject for property access via VB expressions.",
+      "use_when": "User has a JSON object and wants typed access to its fields; for JSON arrays use DeserializeJsonArray; for outbound serialization use SerializeJson.",
+      "_routing_review_needed": false,
+      "tags": [
+        "json",
+        "deserialize",
+        "jobject"
+      ]
+    },
     "DeserializeJsonArray": {
       "gen_function": null,
       "element_tag": "ui:DeserializeJsonArray",
@@ -456,7 +525,7 @@
       "child_elements": {},
       "conditional_attrs": {},
       "_review_needed": true,
-      "note": "Pass exactly one of xml_string_variable or existing_xml_variable. Mutual-exclusion is not enforced by the generator yet — _review_needed. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "note": "Pass exactly one of xml_string_variable or existing_xml_variable. Mutual-exclusion is not enforced by the generator yet \u2014 _review_needed. (dispatched via gen_from_annotation; element_tag drives emission)",
       "category": "http_json",
       "description": "Runs an XPath query against an XDocument and returns the matching node value.",
       "use_when": "User has XML and wants a single node value via XPath; for multi-node sets use GetNodes.",
@@ -592,9 +661,9 @@
       "child_elements": {},
       "conditional_attrs": {},
       "_review_needed": true,
-      "note": "GetNodes vs GetXMLNodes: GetNodes works on parsed XDocument path-queries, GetXMLNodes targets raw XML strings. Confirm semantics with Studio documentation — _review_needed. (dispatched via gen_from_annotation; element_tag drives emission)",
+      "note": "GetNodes vs GetXMLNodes: GetNodes works on parsed XDocument path-queries, GetXMLNodes targets raw XML strings. Confirm semantics with Studio documentation \u2014 _review_needed. (dispatched via gen_from_annotation; element_tag drives emission)",
       "category": "http_json",
-      "description": "Alias of GetNodes for legacy spec compatibility — returns matching XElement nodes.",
+      "description": "Alias of GetNodes for legacy spec compatibility \u2014 returns matching XElement nodes.",
       "use_when": "User wrote an older spec referencing GetXMLNodes; new specs should use GetNodes.",
       "_routing_review_needed": false,
       "tags": [
@@ -686,7 +755,7 @@
           "escape": null,
           "bracket_wrap": true,
           "type": "string",
-          "note": "String output — serialized JSON"
+          "note": "String output \u2014 serialized JSON"
         },
         "id_ref": {
           "attr": "sap2010:WorkflowViewState.IdRef",
@@ -852,7 +921,7 @@
           "escape": null,
           "bracket_wrap": true,
           "type": "string",
-          "note": "String output — response body"
+          "note": "String output \u2014 response body"
         },
         "status_code_variable": {
           "attr": "StatusCode",
@@ -862,7 +931,7 @@
           "escape": null,
           "bracket_wrap": true,
           "type": "string",
-          "note": "Int32 output — HTTP status code"
+          "note": "Int32 output \u2014 HTTP status code"
         },
         "response_headers_variable": {
           "attr": "ResponseHeaders",
