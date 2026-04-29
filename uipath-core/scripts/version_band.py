@@ -30,7 +30,7 @@ _LOG = logging.getLogger(__name__)
 # Captures the leading integer (the band) after stripping range-prefix chars.
 # ---------------------------------------------------------------------------
 
-_RANGE_PREFIX_RE = re.compile(r"^[\[\(\),>=~\^\*\s]*(\d+)")
+_RANGE_PREFIX_RE = re.compile(r"^[\[\(\),<>=~\^\*\s]*(\d+)")
 
 # ---------------------------------------------------------------------------
 # Year-based packages — major version tracks the Studio release year
@@ -76,6 +76,9 @@ INDEPENDENT_PACKAGE_CAPS = types.MappingProxyType({
 MIN_SUPPORTED_BANDS = types.MappingProxyType({
     "UiPath.UIAutomation.Activities": "25",
 })
+"""Only packages with confirmed version-sensitive generators are listed here.
+Year-based packages below their min are silently dropped during scaffold-time
+band derivation; downstream lints fire on the resulting absence."""
 
 # ---------------------------------------------------------------------------
 # Band → profile version mapping
@@ -464,35 +467,41 @@ def _validate_invariants() -> None:
     - Every package in :data:`INDEPENDENT_PACKAGE_CAPS` covers every band in
       :data:`BAND_PROFILE_VERSIONS`.
 
-    Raises :class:`AssertionError` on any drift.
+    Raises :class:`RuntimeError` on any drift. (RuntimeError, not assert, so
+    ``python -O`` does not strip the invariant check.)
     """
     bands = set(BAND_PROFILE_VERSIONS)
     pkg_sets = [frozenset(m) for m in BAND_PROFILE_VERSIONS.values()]
-    assert len(set(pkg_sets)) == 1, (
-        f"BAND_PROFILE_VERSIONS bands have inconsistent package keys: "
-        f"{[sorted(s) for s in pkg_sets]}"
-    )
+    if len(set(pkg_sets)) != 1:
+        raise RuntimeError(
+            f"BAND_PROFILE_VERSIONS bands have inconsistent package keys: "
+            f"{[sorted(s) for s in pkg_sets]}"
+        )
     for b, m in BAND_PROFILE_VERSIONS.items():
         missing = YEAR_BASED_PACKAGES - frozenset(m)
-        assert not missing, (
-            f"Band {b!r} missing year-based packages: {sorted(missing)}"
-        )
+        if missing:
+            raise RuntimeError(
+                f"Band {b!r} missing year-based packages: {sorted(missing)}"
+            )
     for pkg, minb in MIN_SUPPORTED_BANDS.items():
-        assert minb in bands, (
-            f"MIN_SUPPORTED_BANDS[{pkg!r}]={minb!r} not in "
-            f"BAND_PROFILE_VERSIONS (known bands: {sorted(bands)})"
-        )
+        if minb not in bands:
+            raise RuntimeError(
+                f"MIN_SUPPORTED_BANDS[{pkg!r}]={minb!r} not in "
+                f"BAND_PROFILE_VERSIONS (known bands: {sorted(bands)})"
+            )
     for pkg, capmap in INDEPENDENT_PACKAGE_CAPS.items():
         unknown = set(capmap) - bands
-        assert not unknown, (
-            f"INDEPENDENT_PACKAGE_CAPS[{pkg!r}] has unknown bands: "
-            f"{sorted(unknown)}"
-        )
+        if unknown:
+            raise RuntimeError(
+                f"INDEPENDENT_PACKAGE_CAPS[{pkg!r}] has unknown bands: "
+                f"{sorted(unknown)}"
+            )
         missing = bands - set(capmap)
-        assert not missing, (
-            f"INDEPENDENT_PACKAGE_CAPS[{pkg!r}] missing bands: "
-            f"{sorted(missing)}"
-        )
+        if missing:
+            raise RuntimeError(
+                f"INDEPENDENT_PACKAGE_CAPS[{pkg!r}] missing bands: "
+                f"{sorted(missing)}"
+            )
 
 
 _validate_invariants()

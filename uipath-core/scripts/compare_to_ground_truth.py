@@ -30,6 +30,19 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 PROFILES_DIR = REPO_ROOT / "uipath-core" / "references" / "version-profiles"
 GROUND_TRUTH_DIR = REPO_ROOT / "uipath-core" / "references" / "studio-ground-truth"
 
+# Cap profile JSON loads to keep memory bounded; well above the current corpus
+# footprint but stops a pathologically large file (decompression bomb,
+# accidental multi-GB commit) from being slurped into memory unchecked.
+MAX_ANNOTATION_BYTES = 32 * 1024 * 1024  # 32 MB
+
+
+def _safe_json_load(path: Path, max_bytes: int):
+    """Load JSON from *path*, refusing files larger than *max_bytes*."""
+    if path.stat().st_size > max_bytes:
+        raise ValueError(f"{path}: exceeds {max_bytes} byte cap")
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
 # Common Studio xmlns declarations the snippets need to parse standalone.
 #
 # Must cover every prefix that appears in any profile xaml_template:
@@ -131,7 +144,7 @@ def _pick_profile(package: str, preferred_version: str | None) -> tuple[Path | s
                     plugin_profiles[plugin_key].get("activities", {}))
         candidate = PROFILES_DIR / package / f"{preferred_version}.json"
         if candidate.exists():
-            return candidate, json.loads(candidate.read_text(encoding="utf-8")).get("activities", {})
+            return candidate, _safe_json_load(candidate, MAX_ANNOTATION_BYTES).get("activities", {})
 
     # Collect all candidate versions (disk + plugin) and pick the latest.
     pkg_dir = PROFILES_DIR / package
@@ -145,7 +158,7 @@ def _pick_profile(package: str, preferred_version: str | None) -> tuple[Path | s
         return (f"<plugin:{package}@{chosen}>",
                 plugin_profiles[plugin_versions[chosen]].get("activities", {}))
     path = disk_versions[chosen]
-    return path, json.loads(path.read_text(encoding="utf-8")).get("activities", {})
+    return path, _safe_json_load(path, MAX_ANNOTATION_BYTES).get("activities", {})
 
 
 def _diff_one(activity: str, harvested: ET.Element, profile_template: str | None) -> dict:

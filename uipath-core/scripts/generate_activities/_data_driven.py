@@ -68,6 +68,31 @@ from ._xml_utils import _selector_xml
 
 
 # ---------------------------------------------------------------------------
+# JSON size caps — guard annotation file loads against pathological sizes
+# (decompression bombs, accidental commit of a multi-GB blob). 32 MB is well
+# above the current corpus footprint (~few MB total across all files) but
+# keeps memory pressure bounded.
+# ---------------------------------------------------------------------------
+MAX_ANNOTATION_BYTES = 32 * 1024 * 1024  # 32 MB
+
+
+def _safe_json_load(path: Path, max_bytes: int) -> Any:
+    """Load JSON from *path*, refusing files larger than *max_bytes*."""
+    if path.stat().st_size > max_bytes:
+        raise ValueError(f"{path}: exceeds {max_bytes} byte cap")
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+# ---------------------------------------------------------------------------
+# Annotation tag/arg name safety — tag_name, element_tag, etc. get inlined
+# into XAML element/attribute positions, so they must match XML name rules.
+# Reject anything that could break the surrounding XML if interpolated raw.
+# ---------------------------------------------------------------------------
+_SAFE_TAG_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_:.]*$")
+
+
+# ---------------------------------------------------------------------------
 # Root scope sentinel — kept in sync with generate_workflow.ROOT_SCOPE_SENTINEL.
 # Duplicated here so _data_driven.py can be imported without pulling in the
 # top-level generator module (which depends on this one).
@@ -204,13 +229,18 @@ def _review_needed_opt_in() -> bool:
 _PREFIX_REF_RE = re.compile(r"\b([a-zA-Z][a-zA-Z0-9_]*):[A-Za-z_]")
 
 
-def _collect_referenced_prefixes(*texts: str) -> list[str]:
+def _collect_referenced_prefixes(*texts: str, element_tag: str | None = None) -> list[str]:
     """Return the de-duplicated, declaration-order list of prefix tokens
     referenced anywhere in ``texts`` (element tag, fixed-attr values, ...).
 
     Standard prefixes are filtered out; only prefixes that need an inline
     xmlns binding survive. Order is preserved so the resulting xmlns
     declarations are stable across invocations (helps test-snapshot diffs).
+
+    Raises ``ValueError`` when ``texts`` reference a prefix that is neither a
+    standard project prefix nor in :data:`_KNOWN_PREFIX_NAMESPACES`. Silently
+    skipping was masking real annotation bugs (typo'd prefixes, missing
+    namespace registrations) until they surfaced as Studio designer errors.
     """
     seen: dict[str, None] = {}
     for text in texts:
@@ -220,7 +250,12 @@ def _collect_referenced_prefixes(*texts: str) -> list[str]:
             pfx = m.group(1)
             if pfx in _STANDARD_XMLNS_PREFIXES:
                 continue
-            if pfx in _KNOWN_PREFIX_NAMESPACES and pfx not in seen:
+            if pfx not in _KNOWN_PREFIX_NAMESPACES:
+                raise ValueError(
+                    f"Unknown xmlns prefix '{pfx}' in tag {element_tag!r}; "
+                    f"register it in _KNOWN_PREFIX_NAMESPACES"
+                )
+            if pfx not in seen:
                 seen[pfx] = None
     return list(seen)
 
@@ -237,13 +272,13 @@ def _xmlns_decls_for_tag(element_tag: str, *extra_texts: str) -> str:
          (``_STANDARD_XMLNS_PREFIXES``), AND
       2. has a known URI in ``_KNOWN_PREFIX_NAMESPACES``.
 
-    Unknown prefixes are silently skipped — the resulting XAML will fail XML
-    parse, surfacing the missing mapping in battle tests so we can register it.
+    Unknown prefixes raise :class:`ValueError` — silently skipping was masking
+    annotation bugs until they surfaced as Studio designer errors.
 
     Returns an empty string when no inline binding is needed (the common case
     for ``ui:`` and ``uix:`` activities).
     """
-    prefixes = _collect_referenced_prefixes(element_tag, *extra_texts)
+    prefixes = _collect_referenced_prefixes(element_tag, *extra_texts, element_tag=element_tag)
     if not prefixes:
         return ""
     return "".join(
@@ -274,12 +309,22 @@ def _load_annotations() -> dict[str, dict]:
     merged: dict[str, dict] = {}
     for path in sorted(annotations_dir.glob("*.json")):
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError) as exc:
+            data = _safe_json_load(path, MAX_ANNOTATION_BYTES)
+        except (json.JSONDecodeError, OSError, ValueError) as exc:
             print(f"  [WARN] _data_driven: could not read {path}: {exc}", file=sys.stderr)
             continue
         activities = data.get("activities", {})
         for name, entry in activities.items():
+            # Validate annotation-derived names that get interpolated into XAML
+            # element/attribute positions. Reject anything the XML parser would
+            # choke on, before we silently emit corrupt XAML downstream.
+            if isinstance(entry, dict):
+                for field in ("tag_name", "element_tag"):
+                    v = entry.get(field)
+                    if v is not None and isinstance(v, str) and not _SAFE_TAG_RE.match(v):
+                        raise ValueError(
+                            f"{path}::{name}::{field} fails safe-name regex: {v!r}"
+                        )
             merged[name.lower()] = entry
 
     _ANNOTATIONS_CACHE = merged
@@ -424,7 +469,9 @@ def gen_from_annotation(
 
     # 3. Fixed attrs
     for fa_name, fa_val in fixed_attrs.items():
-        attrs_parts.append(f'{fa_name}="{fa_val}"')
+        # Annotation-derived; XML-escape so a stray '"' / '&' / '<' / '>' in
+        # a fixed_attrs value can't corrupt the surrounding attribute.
+        attrs_parts.append(f'{fa_name}="{_escape_xml_attr(str(fa_val))}"')
 
     attrs_str = " ".join(attrs_parts)
 
@@ -470,8 +517,8 @@ def gen_from_annotation(
                 )
 
         elif child_type == "activity_action":
-            arg_type = child_meta.get("arg_type", "x:Object")
-            arg_name = child_meta.get("arg_name", "WSSessionData")
+            arg_type = _escape_xml_attr(str(child_meta.get("arg_type", "x:Object")))
+            arg_name = _escape_xml_attr(str(child_meta.get("arg_name", "WSSessionData")))
             i4 = i3 + "  "
             i5 = i4 + "  "
             i6 = i5 + "  "
@@ -490,7 +537,10 @@ def gen_from_annotation(
             # Optional tag_prefix overrides the default "uix:" namespace prefix.
             # Use when the element belongs to "ui:" or another namespace.
             tag_prefix = child_meta.get("tag_prefix", "uix:")
-            list_tag = f"{tag_prefix}{child_key}"
+            # Annotation-derived; escape defensively so a hostile entry can't
+            # break out of the tag position. M-21 load-time regex normally
+            # rejects malformed names, but escape is cheap defence-in-depth.
+            list_tag = _escape_xml_attr(f"{tag_prefix}{child_key}")
             # items_key allows the annotation to specify a custom spec_args key;
             # defaults to the child_key lowercased (e.g. "invokecode.arguments").
             items_key = child_meta.get("items_key") or child_key.lower()
@@ -499,7 +549,7 @@ def gen_from_annotation(
             # empty (no items supplied).  When absent, the wrapper self-closes.
             empty_content = child_meta.get("empty_content")
             if items:
-                item_tag = child_meta.get("item_tag", "x:String")
+                item_tag = _escape_xml_attr(str(child_meta.get("item_tag", "x:String")))
                 # Items must be scalars — anything else (dict, list, custom obj)
                 # would silently stringify to e.g. "{'k': 'v'}" inside the XAML
                 # and corrupt the activity element. Fail loudly with a message
@@ -535,7 +585,7 @@ def gen_from_annotation(
             # parent activity's id_ref plus the child_key to stay unique within
             # the file. Callers that need to embed real content into this body
             # should use a hand-coded gen_* function instead.
-            display_name = child_meta.get("display_name", "Do")
+            display_name = _escape_xml_attr(str(child_meta.get("display_name", "Do")))
             seq_key = child_key.replace(".", "_").replace(":", "_")
             seq_idref = f"Sequence_{id_ref}_{seq_key}"
             children_xml_parts.append(

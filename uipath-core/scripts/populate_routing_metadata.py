@@ -44,7 +44,6 @@ FILE_TO_CATEGORY = {
     "mail_extended.json": "mail",
     "navigation.json": "navigation",
     "orchestrator.json": "orchestrator",
-    "persistence_extended.json": "persistence",
     # system_extended.json is the historical "everything else" bucket: it
     # holds date/string helpers (AddOrSubtractFromDate, FormatValue), generic
     # workflow plumbing (Trigger, RetryScope variants), and assorted system
