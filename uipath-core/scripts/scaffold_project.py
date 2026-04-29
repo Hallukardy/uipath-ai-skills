@@ -74,6 +74,48 @@ TRANSACTION_TYPE_MAP = {
 }
 
 
+# Positive allowlist for `--name`. Defends against:
+#   - empty / whitespace-only / "." / ".."  (would wipe output_dir under --overwrite)
+#   - path separators ("/", "\\") and drive-relative names ("C:foo")
+#   - NUL bytes and other control characters
+#   - Windows reserved device names (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+#   - trailing "." or " " (silently stripped by Windows -> alias-collision)
+_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
+_WINDOWS_RESERVED = (
+    {"CON", "PRN", "AUX", "NUL"}
+    | {f"COM{i}" for i in range(1, 10)}
+    | {f"LPT{i}" for i in range(1, 10)}
+)
+
+
+def _validate_name(name: str) -> None:
+    """Raise ValueError if `name` is not a safe project directory name.
+
+    See M-Sec-3 / C-1: `name` is joined to `output_dir` and rmtree-d under
+    `--overwrite`. Untrusted callers must not be able to escape that path.
+    """
+    if not name or not name.strip():
+        raise ValueError("--name must not be empty or whitespace-only")
+    if not _NAME_RE.fullmatch(name):
+        raise ValueError(
+            f"--name must match [A-Za-z0-9][A-Za-z0-9._-]{{0,99}}: {name!r}"
+        )
+    # Belt-and-suspenders: regex permits `..` as inner chars (foo..bar is fine,
+    # but a bare `..` is rejected by the leading [A-Za-z0-9] anchor). Reject
+    # the literal traversal segment explicitly in case anyone loosens the regex.
+    if name == "." or name == "..":
+        raise ValueError(f"--name must not be '.' or '..': {name!r}")
+    if name.endswith(".") or name.endswith(" "):
+        raise ValueError(f"--name must not end with '.' or ' ': {name!r}")
+    # Windows reserved device names match with or without an extension
+    # (CON, CON.txt, con.log all collide with the device).
+    stem = name.split(".", 1)[0].upper()
+    if stem in _WINDOWS_RESERVED:
+        raise ValueError(
+            f"--name must not be a Windows reserved device name: {name!r}"
+        )
+
+
 def get_skill_dir():
     """Find the skill directory (parent of scripts/)."""
     return Path(__file__).resolve().parent.parent
@@ -343,19 +385,13 @@ def scaffold_project(name: str, description: str, output_dir: str,
                      target: str = "both",
                      version_band: str = None):
     """Scaffold a new UiPath project from real templates."""
-    # Reject path-traversal in --name before any filesystem op. The skill is
-    # invoked programmatically by Claude Code agents with user-controlled
-    # project names, and `--name` is joined to `output_dir` then `rmtree`-d
-    # under `--overwrite`. A `--name` containing path separators or `..` would
-    # let the caller delete arbitrary directories.
-    if (
-        os.sep in name
-        or (os.altsep and os.altsep in name)
-        or ".." in name.split(os.sep)
-    ):
-        raise ValueError(
-            f"--name must not contain path separators or '..': {name!r}"
-        )
+    # Reject unsafe --name before any filesystem op. The skill is invoked
+    # programmatically by Claude Code agents with user-controlled project
+    # names, and `--name` is joined to `output_dir` then `rmtree`-d under
+    # `--overwrite`. A positive allowlist (see _validate_name) defends against
+    # path separators, `..`, empty/whitespace, NUL bytes, drive-relative
+    # forms ("C:foo"), Windows reserved device names, and trailing "." / " ".
+    _validate_name(name)
 
     skill_dir = get_skill_dir()
 

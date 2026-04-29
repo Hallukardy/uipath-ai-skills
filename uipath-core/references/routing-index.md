@@ -4,7 +4,7 @@ Auto-generated from `references/annotations/*.json` by
 `uipath-core/scripts/generate_routing_index.py`. Do not hand-edit — edit
 the annotation entries instead, then regenerate.
 
-**463 activities indexed** (supported: 445, wizard-only / unsupported: 18, routing wording review pending: 0).
+**464 activities indexed** (supported: 446, wizard-only / unsupported: 18, routing wording review pending: 0).
 
 ## UI automation (69)
 
@@ -414,11 +414,12 @@ the annotation entries instead, then regenerate.
 | `ReadTextFile` | `gen_read_text_file` | Read the entire contents of a text file into a string variable. | You want raw text (config, template, log) handed back as one string. Use ReadCsvFile when the file is delimited and should be parsed into a DataTable; use WriteTextFile to push text the other direction. |
 | `WriteTextFile` | `gen_write_text_file` | Write a string variable to a text file at the given path, overwriting any existing file. | You have generated text (a report, config, JSON payload as text) and want it persisted as a single file. Use AppendWriteCsvFile when the data is tabular and should be written column-aware; use ReadTextFile to load text the other direction. |
 
-## HTTP & JSON (10)
+## HTTP & JSON (11)
 
 | Activity | Generator | Description | Use when |
 |---|---|---|---|
 | `DeserializeJson` | `gen_deserialize_json` | Parses a JSON object string into a JObject for property access via VB expressions. | User has a JSON object and wants typed access to its fields; for JSON arrays use DeserializeJsonArray; for outbound serialization use SerializeJson. |
+| `DeserializeJson`1` | `gen_deserialize_json` | Parses a JSON object string into a JObject for property access via VB expressions. | User has a JSON object and wants typed access to its fields; for JSON arrays use DeserializeJsonArray; for outbound serialization use SerializeJson. |
 | `DeserializeJsonArray` | `DeserializeJsonArray` (data-driven) | Parses a JSON array string into a JArray for iteration with ForEach<JToken>. | User has a JSON array and wants to iterate elements; for JSON objects use DeserializeJson. |
 | `DeserializeXml` | `DeserializeXml` (data-driven) | Parses an XML document string into an XDocument for LINQ to XML access. | User has XML text and wants to query nodes via XPath/LINQ; for XPath-only queries use ExecuteXPath; for HTML scraping prefer browser activities. |
 | `ExecuteXPath` | `ExecuteXPath` (data-driven) | Runs an XPath query against an XDocument and returns the matching node value. | User has XML and wants a single node value via XPath; for multi-node sets use GetNodes. |
@@ -726,5 +727,5 @@ trigger that picks the substitute over the canonical activity.
 
 
 ---
-_Index footer:_ 463 activities, 16 categories, 18 unsupported, 0 review-pending. Regenerate with `python uipath-core/scripts/generate_routing_index.py`.
+_Index footer:_ 464 activities, 16 categories, 18 unsupported, 0 review-pending. Regenerate with `python uipath-core/scripts/generate_routing_index.py`.
 
