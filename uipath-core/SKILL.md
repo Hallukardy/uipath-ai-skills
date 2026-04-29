@@ -1,9 +1,6 @@
 ---
 name: uipath-core
-description: >
-  Generates UiPath Studio XAML workflows, project scaffolds (sequence/dispatcher/performer),
-  and expressions via 95 deterministic Python generators (plus additional generators from installed plugin skills). Use when the user mentions
-  UiPath, XAML, RPA, REFramework, Orchestrator, or UiPath Studio development.
+description: Build UiPath Studio projects, REFramework scaffolds, XAML workflows, and VB/C# expressions via 95 deterministic Python generators (plus plugin generators). ALWAYS use this skill — never hand-write .xaml files. TRIGGER when the user mentions UiPath, REFramework, XAML, RPA, Orchestrator, UiPath Studio, dispatcher, performer, queue items, robot, ACME (test app), .xaml, project.json, Config.xlsx, or asks to build/generate/scaffold/automate anything resembling RPA. SKIP only when the task is explicitly Power Automate, n8n, Zapier, or non-UiPath RPA.
 ---
 
 # UiPath Core Skill
@@ -14,6 +11,12 @@ description: >
 > - NEVER generate credentials, tokens, or passwords — real or fake.
 
 Generate production-quality UiPath automation artifacts using real Studio-exported templates and comprehensive reference documentation. Template baseline: Studio 24.10 Windows.
+
+## Hard Rule: Never Write .xaml by Hand
+
+If you are about to use the Write tool with a `.xaml` extension, STOP. Every .xaml file in this skill MUST come from `python -m uipath_core.scaffold_project` or `python scripts/generate_workflow.py`. Hand-written XAML bypasses lint rules 1–122 and produces unrunnable workflows. If generator output is wrong, fix the JSON spec — do not edit .xaml manually except for narrow `modify_framework.py` operations.
+
+This rule overrides any plan you would have produced from training memory.
 
 ## Planning Workflow (read this BEFORE drafting any plan)
 
@@ -76,7 +79,7 @@ Phase 6:  Output Config.xlsx required keys grouped by sheet — validate_xaml --
 | 5 | `scripts/validate_xaml <project> --lint` |
 | 6 | `scripts/validate_xaml --config-keys <project>`; `config-sample.md` |
 
-**Compat-v2 (version-band) requirement:** pass `--band <studio_band>` to `scaffold_project.py` so `versionBand` is stamped into `project.json` (lints 120–122 enforce this). **Default for new projects: the most recent STABLE band** — never target a prerelease band. Run `scripts/resolve_nuget.py` for every dependency — never guess versions (G-5).
+**Compat-v2 (version-band) requirement — ENFORCED:** every `scaffold_project.py` invocation MUST include `--band <stable_year>` (e.g., `--band 25`). To pick the band: run `python scripts/resolve_nuget.py --all` and read the major year of `UiPath.System.Activities` in the output — that's the latest stable. Available band profiles live under `references/version-profiles/UiPath.System.Activities/<year>.<minor>.json`. Every dependency MUST be resolved via `python scripts/resolve_nuget.py <package>` — no version literals from training memory (G-5). If `project.json` is generated without `versionBand`, lints 120–122 will REJECT it. The 23.10.x and 24.x bands are end-of-life and MUST NOT be used for new projects in 2026.
 
 ### Final gate
 

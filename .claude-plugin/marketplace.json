@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "uipath-core",
-      "description": "Generates UiPath Studio XAML workflows, project scaffolds (sequence/dispatcher/performer), and expressions. Covers REFramework, Orchestrator, UI automation, Excel, email, PDF, HTTP, and more.",
+      "description": "Build UiPath Studio projects, REFramework scaffolds, XAML workflows, and VB/C# expressions via 95 deterministic Python generators. Trigger keywords: UiPath, REFramework, XAML, RPA, Orchestrator, dispatcher, performer, queue items, project.json, Config.xlsx.",
       "source": "./",
       "strict": false,
       "skills": ["./uipath-core"]
