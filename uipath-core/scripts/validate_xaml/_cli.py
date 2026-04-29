@@ -78,7 +78,10 @@ def main():
                             all_keys.setdefault(k, []).append(fname)
 
         if all_keys:
-            # Auto-categorize keys by sheet (see config-sample.md decision flowchart)
+            # Auto-categorize keys by sheet (see config-sample.md decision flowchart).
+            # Each branch returns (sheet, reason) so the user sees WHY the
+            # classifier suggested a sheet — they can override and we want
+            # the override to be informed.
             SETTINGS_KEYS = {
                 "OrchestratorQueueName", "OrchestratorQueueFolder",
                 "logF_BusinessProcessName",
@@ -89,24 +92,43 @@ def main():
                 "ExScreenshotsFolderPath", "ShouldMarkJobAsFaulted",
             }
             CONSTANTS_PREFIXES = ("LogMessage_", "ExceptionMessage_")
+            ASSET_TOKENS = ("Url", "Endpoint", "BaseUrl", "Path", "Folder")
+            # Tokens that hint at admin-tunable / frequently-changing values.
+            # If we see them in a key name, route to Assets so the value can
+            # be updated in Orchestrator without redeploying the project.
+            FREQUENT_CHANGE_TOKENS = (
+                "Timeout", "Threshold", "Limit", "MaxItems", "BatchSize",
+                "Recipient", "Recipients", "Email", "Notification",
+                "FeatureFlag", "Toggle", "Enabled", "Schedule", "Cron",
+            )
 
-            def classify_key(key: str) -> str:
+            def classify_key(key: str) -> tuple[str, str]:
                 if key in SETTINGS_KEYS:
-                    return "Settings"
+                    return "Settings", "project identity (queue/process)"
                 if key in CONSTANTS_KEYS or key.startswith(CONSTANTS_PREFIXES):
-                    return "Constants"
-                # Credential asset name references → Settings (just a string, no API call)
+                    return "Constants", "framework knob (never changes per env)"
+                # Credential asset NAME → Settings. The cell value is just a
+                # string passed to GetRobotCredential at point of use, so
+                # storing it in Assets would force a wasted GetRobotAsset call.
                 if "CredentialAsset" in key or "Credential" in key:
-                    return "Settings"
-                # URLs, endpoints, paths, shared config → Assets
-                return "Assets"
+                    return "Settings", "credential asset name (passed to GetRobotCredential)"
+                # URLs/endpoints/paths/shared values → Assets. They are
+                # environment-specific and admins update them in Orchestrator
+                # without redeploying.
+                if any(tok in key for tok in ASSET_TOKENS):
+                    return "Assets", "URL/endpoint/path — environment-specific, shared across projects"
+                # Admin-tunable / frequently-changing values → Assets so
+                # they can be updated in Orchestrator without a redeploy.
+                if any(tok in key for tok in FREQUENT_CHANGE_TOKENS):
+                    return "Assets", "admin-tunable — frequently changes, avoid redeploy"
+                return "Assets", "default — assumed environment-specific (override if local-only)"
 
-            sheets: dict[str, dict[str, list[str]]] = {
+            sheets: dict[str, dict[str, tuple[list[str], str]]] = {
                 "Settings": {}, "Constants": {}, "Assets": {}
             }
             for key in all_keys:
-                sheet = classify_key(key)
-                sheets[sheet][key] = all_keys[key]
+                sheet, reason = classify_key(key)
+                sheets[sheet][key] = (all_keys[key], reason)
 
             print("\n📋 Required Config.xlsx entries (grouped by sheet):")
             for sheet_name in ("Settings", "Constants", "Assets"):
@@ -114,12 +136,14 @@ def main():
                 if sheet_keys:
                     print(f"\n  {sheet_name} sheet:")
                     for key in sorted(sheet_keys):
-                        files = ", ".join(sorted(set(sheet_keys[key])))
-                        print(f"    {key:<40} (used in: {files})")
+                        files_list, reason = sheet_keys[key]
+                        files = ", ".join(sorted(set(files_list)))
+                        print(f"    {key:<40} {reason}")
+                        print(f"    {' ':<40}   used in: {files}")
                 else:
                     print(f"\n  {sheet_name} sheet: (none — framework defaults sufficient)")
             print(f"\nTotal: {len(all_keys)} Config keys across {len(results)} files")
-            print("Note: Sheet assignment is heuristic — see config-sample.md for decision flowchart.")
+            print("Rule of thumb: URLs/paths/shared/frequently-changing → Assets; credential asset names → Settings; framework knobs → Constants. See config-sample.md for the full decision flowchart.")
         else:
             print("No Config() references found in XAML files.")
         sys.exit(0)

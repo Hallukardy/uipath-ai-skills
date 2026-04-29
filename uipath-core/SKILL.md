@@ -1,6 +1,6 @@
 ---
 name: uipath-core
-description: Build UiPath Studio projects, REFramework scaffolds, XAML workflows, and VB/C# expressions via 95 deterministic Python generators (plus plugin generators). ALWAYS use this skill — never hand-write .xaml files. TRIGGER when the user mentions UiPath, REFramework, XAML, RPA, Orchestrator, UiPath Studio, dispatcher, performer, queue items, robot, ACME (test app), .xaml, project.json, Config.xlsx, or asks to build/generate/scaffold/automate anything resembling RPA. SKIP only when the task is explicitly Power Automate, n8n, Zapier, or non-UiPath RPA.
+description: Build UiPath Studio projects, REFramework scaffolds, XAML workflows, and VB/C# expressions via 104 deterministic Python generators (plus plugin generators). ALWAYS use this skill — never hand-write .xaml files. TRIGGER when the user mentions UiPath, REFramework, XAML, RPA, Orchestrator, UiPath Studio, dispatcher, performer, queue items, robot, ACME (test app), .xaml, project.json, Config.xlsx, or asks to build/generate/scaffold/automate anything resembling RPA. SKIP only when the task is explicitly Power Automate, n8n, Zapier, or non-UiPath RPA.
 ---
 
 # UiPath Core Skill
@@ -78,6 +78,17 @@ Phase 6:  Output Config.xlsx required keys grouped by sheet — validate_xaml --
 | 4 | `decomposition.md` § Login/Launch + REFramework wiring; A-7 log bookends |
 | 5 | `scripts/validate_xaml <project> --lint` |
 | 6 | `scripts/validate_xaml --config-keys <project>`; `config-sample.md` |
+
+### Config layout rule of thumb
+
+When listing required Config.xlsx keys (Phase 6), apply this rule before falling back to `config-sample.md`'s decision flowchart:
+
+- **URLs, API endpoints, file/network paths, shared values across projects, or anything whose value may change frequently → Assets sheet.** They are environment-specific, fetched from Orchestrator at `InitAllSettings`, and admins update them without redeploying. If you expect the value to be tuned post-deployment (timeouts, thresholds, recipient lists, feature flags, batch sizes), it belongs here too — Settings/Constants require a redeploy to change.
+- **Credential asset NAMES → Settings sheet.** The string in the cell is just a name passed to `GetRobotCredential`; storing it in Assets would trigger a needless `GetRobotAsset` round-trip. The credential value itself never appears in Config.xlsx — fetch it at point of use.
+- **Project identity (queue name, process name, processes-to-kill list) → Settings sheet.** Local to the project, never changes per environment.
+- **Framework knobs (retry counts, log message templates) → Constants sheet.** Identical across dev/staging/prod.
+
+`validate_xaml --config-keys <project>` auto-classifies via this rule and emits a per-key reason — review the suggestion before manually editing Config.xlsx.
 
 **Compat-v2 (version-band) requirement — ENFORCED:** every `scaffold_project.py` invocation MUST include `--band <stable_year>` (e.g., `--band 25`). To pick the band: run `python scripts/resolve_nuget.py --all` and read the major year of `UiPath.System.Activities` in the output — that's the latest stable. Available band profiles live under `references/version-profiles/UiPath.System.Activities/<year>.<minor>.json`. Every dependency MUST be resolved via `python scripts/resolve_nuget.py <package>` — no version literals from training memory (G-5). If `project.json` is generated without `versionBand`, lints 120–122 will REJECT it. The 23.10.x and 24.x bands are end-of-life and MUST NOT be used for new projects in 2026.
 
@@ -201,10 +212,10 @@ Before generating ANY XAML, determine project context:
 | `references/golden-templates.md` | Template catalog — patterns extracted from each real template file |
 | `references/scaffolding.md` | Template selection, NuGet mapping, XAML validation, project scaffolding (variants, dispatcher/performer, transaction types), full project generation checklist |
 | `references/decomposition.md` | Naming conventions, decomposition rules (universal 1-8, browser 9-13, desktop 14), common process patterns, argument design, Login/Launch pattern, REFramework Init/Close, UiElement chain |
-| `references/generation.md` | Object Repository, Workflow Generation CLI (JSON spec format, 95 core generators + plugin extensions), Activity Generators (usage pattern, what model provides vs what generators lock down) |
+| `references/generation.md` | Object Repository, Workflow Generation CLI (JSON spec format, 104 core generators + plugin extensions), Activity Generators (usage pattern, what model provides vs what generators lock down) |
 | `references/ui-inspection.md` | Playwright MCP workflow (login gate, 5-step process, element mapping), Desktop inspection (PowerShell, inspect-ui-tree.ps1, framework detection) |
 | `references/skill-guide.md` | **Index + examples.** Routes to scaffolding/decomposition/generation/ui-inspection. Contains 7 worked examples + anti-example |
-| `references/lint-reference.md` | **80 lint rules** by severity, searchable by lint number (core rules; plugins add more — `uipath-tasks` registers AC-26..AC-34) |
+| `references/lint-reference.md` | **85 lint rules** by severity, searchable by lint number (core rules; plugins add more — `uipath-tasks` registers AC-26..AC-34) |
 | `references/playwright-selectors.md` | Playwright MCP → UiPath selector mapping |
 | `references/config-sample.md` | Config.xlsx three-sheet reference (Settings, Constants, Assets), key naming conventions, sheet placement decision flowchart, required keys output format |
 | `references/cheat-sheet.md` | JSON spec patterns (multiple_assign, if, try_catch, foreach_row, pick_login_validation, filter_data_table, add_queue_item, selectors.json), modify_framework.py CLI+Python API, valid enum values, naming, quick rules |
@@ -225,7 +236,7 @@ Before generating ANY XAML, determine project context:
 | `scripts/config_xlsx_manager.py` | Add/list/validate Config.xlsx keys. Cross-references XAML Config() refs vs actual sheets. |
 | `scripts/modify_framework.py` | Insert InvokeWorkflowFile into framework files, replace SCAFFOLD.* markers, **wire UiElement argument chain** (`wire-uielement`), **add variables with auto type normalization** (`add-variables`), **replace placeholder expressions** (`set-expression`). ⛔ G-8: Never Edit/Write .xaml directly — use this script or `generate_workflow.py`. |
 | `scripts/generate_activities` | **Deterministic XAML generators** for 95 core activities. Locks down enums, versions, child elements. MANDATORY for NTypeInto, NClick, NGetText, NCheckState, NApplicationCard, etc. Plugin skills add more (e.g., Tasks, SAP WinGUI). |
-| `scripts/generate_workflow.py` | **Generate complete .xaml files from JSON specs.** 95 core generators + plugin generators loaded via `plugin_loader.py`. Covers ALL activities including Pick login validation, TryCatch, ForEachRow, NExtractData, NCheckState. **Pass `--project-dir <project>` to auto-wire Object Repository references** (`Reference=`/`ContentHash=` on TargetAnchorable) from `.objects/refs.json`. ⛔ Do NOT write .xaml by hand — use this CLI instead. |
+| `scripts/generate_workflow.py` | **Generate complete .xaml files from JSON specs.** 104 core generators + plugin generators loaded via `plugin_loader.py`. Covers ALL activities including Pick login validation, TryCatch, ForEachRow, NExtractData, NCheckState. **Pass `--project-dir <project>` to auto-wire Object Repository references** (`Reference=`/`ContentHash=` on TargetAnchorable) from `.objects/refs.json`. ⛔ Do NOT write .xaml by hand — use this CLI instead. |
 | `scripts/generate_object_repository.py` | **Generate Object Repository** (`.objects/` tree). CLI: `python3 generate_object_repository.py --from-selectors selectors.json --project-dir <dir>`. Reads `selectors.json` (written during Playwright inspection) with full app/screen/element hierarchy. Lint 94 is ERROR — project cannot pass validation without populated Object Repository. |
 | `scripts/inspect-ui-tree.ps1` | **Windows-only.** Inspect desktop app UI tree via UIA API. Run via Bash (`powershell -File`). |
 | `scripts/regression_test.py` | Regression tests — validates templates, scaffolding, naming conventions, line count accuracy, skill integrity |
