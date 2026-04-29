@@ -14,13 +14,21 @@ def generate_uuid() -> str:
     return str(uuid.uuid4())
 
 
+_ILLEGAL_CTRL = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
+
+
 def escape_xml_attr(s: str) -> str:
     """Escape for XML attribute values (inside double quotes).
+
+    Pre-strips XML 1.0-illegal control characters (everything in U+0000..U+001F
+    except TAB, LF, CR) — these are illegal anywhere in well-formed XML and
+    were previously passing through to corrupt downstream parsers.
 
     Single quotes are NOT escaped — UiPath Studio preserves them unescaped
     in attribute values (e.g., selectors use single-quoted attribute values
     like tag='INPUT'). XML spec allows unescaped ' inside ""-delimited attrs.
     """
+    s = _ILLEGAL_CTRL.sub("", s)
     return (s.replace("&", "&amp;")
              .replace("<", "&lt;")
              .replace(">", "&gt;")

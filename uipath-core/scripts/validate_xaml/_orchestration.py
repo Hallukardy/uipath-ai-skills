@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import sys
 from pathlib import Path
 
 from ._context import FileContext, ValidationResult
@@ -25,15 +26,91 @@ def _get_lints_project():
     return lints_project
 
 
+def _read_version_band(project_dir: str | None) -> str | None:
+    """Return project.json's versionBand for *project_dir*, or None.
+
+    Quiet on any failure (missing file, invalid JSON, missing field) — lints
+    that need a band check ``ctx.target_version_band is None`` and no-op.
+
+    The schema expects a string (e.g. ``"25"``), but a project.json authored
+    with ``"versionBand": 25`` (int) is silently coerced to ``"25"`` so lint
+    122's string-keyed lookup works. A one-line stderr nudge surfaces the
+    schema deviation. Other JSON types collapse to ``None``. (R2b M1.)
+
+    After int→str coercion, the coerced value is validated via
+    ``validate_band(...)``. An int that doesn't round-trip to a real band
+    raises ``ValueError`` instead of silently propagating into lints that
+    would then no-op on the unknown band. String inputs are passed through
+    unchanged so the SILENT no-op contract for malformed bands at lint time
+    (R2a H2) still holds. (M4.)
+    """
+    if not project_dir:
+        return None
+    pj_path = Path(project_dir) / "project.json"
+    if not pj_path.exists():
+        return None
+    # H-10 (partial): cap project.json reads at 8 MB so a malicious or
+    # corrupted oversized file can't OOM the process. project.json files in
+    # real projects are <100 KB; anything north of 8 MB is pathological.
+    # Silent-None per the existing contract — no warning, lints already
+    # no-op when band is None.
+    MAX_PROJECT_JSON_BYTES = 8 * 1024 * 1024  # 8 MB
+    try:
+        if pj_path.stat().st_size > MAX_PROJECT_JSON_BYTES:
+            return None
+    except OSError:
+        return None
+    try:
+        with open(pj_path, "r", encoding="utf-8-sig") as f:
+            value = json.load(f).get("versionBand")
+    except (OSError, json.JSONDecodeError):
+        return None
+    if value is None or value == "":
+        return None
+    if isinstance(value, str):
+        return value
+    if isinstance(value, int) and not isinstance(value, bool):
+        coerced = str(value)
+        # Deferred import to avoid cycles between version_band and validate_xaml.
+        from version_band import validate_band
+        # M-1: validate_band() rejects unknown bands with ValueError. Re-raising
+        # would crash the orchestrator on a malformed-but-int versionBand
+        # (e.g. 99) instead of falling through to the silent-None contract that
+        # downstream lints already honor for unknown bands. Surface the schema
+        # nudge on stderr and return None so the orchestrator stays alive.
+        try:
+            validate_band(coerced)
+        except ValueError as e:
+            print(
+                f"WARNING: invalid versionBand int {value!r} in {pj_path}: {e}. "
+                f"Use a two-digit band string like \"25\" or \"26\".",
+                file=sys.stderr,
+            )
+            return None
+        print(
+            f"warning: project.json versionBand is an int ({value!r}); "
+            f"schema expects a string. Coerced to {coerced!r}.",
+            file=sys.stderr,
+        )
+        return coerced
+    return None
+
+
 def validate_xaml_file(filepath: str, project_dir: str | None = None,
                        strict: bool = False, lint: bool = False,
-                       golden: bool = False) -> ValidationResult:
+                       golden: bool = False,
+                       target_version_band: str | None = None) -> ValidationResult:
     """Run all validations on a single XAML file.
 
     golden: suppress warnings expected in Studio golden template exports.
+    target_version_band: explicit band override. When omitted, derived from
+    project.json's ``versionBand`` so single-file invocations still feed
+    lints 120/121/122 without callers having to plumb it manually.
     """
     result = ValidationResult(filepath)
-    ctx = FileContext(filepath)
+    if target_version_band is None:
+        target_version_band = _read_version_band(project_dir)
+    ctx = FileContext(filepath, target_version_band=target_version_band)
 
     # 1. Well-formed XML (critical — everything else depends on this)
     root = validate_xml_wellformed(ctx, result)
@@ -123,6 +200,8 @@ def validate_project(project_dir: str, strict: bool = False, lint: bool = False,
         validate_project_json(pj_path, pj_result)
         results.append(pj_result)
 
+        target_band = _read_version_band(project_dir)
+
         for root_dir, dirs, files in os.walk(project_dir):
             dirs[:] = [d for d in dirs if d != "lint-test-cases"]
             for fname in sorted(files):
@@ -131,7 +210,8 @@ def validate_project(project_dir: str, strict: bool = False, lint: bool = False,
                     if fname.startswith("_tmp_") or fname.startswith("spec_"):
                         continue
                     fpath = os.path.join(root_dir, fname)
-                    result = validate_xaml_file(fpath, project_dir, strict, lint, golden)
+                    result = validate_xaml_file(fpath, project_dir, strict, lint, golden,
+                                                target_version_band=target_band)
                     results.append(result)
 
         # Project-level cross-reference: Config.xlsx vs XAML Config() keys

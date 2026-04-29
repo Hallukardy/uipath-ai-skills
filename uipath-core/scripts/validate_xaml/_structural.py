@@ -4,6 +4,7 @@ import re
 import xml.etree.ElementTree as ET
 from collections import Counter
 from pathlib import Path
+from defusedxml.ElementTree import parse as ET_parse
 from ._constants import NS, REQUIRED_XMLNS, PREFIX_TO_XMLNS, NEEDS_IDREF, _RE_IDREF, _RE_XPROPERTY_NAME, _RE_DISPLAY_NAME, _RE_WORKFLOW_FILENAME
 from ._context import FileContext, ValidationResult
 
@@ -11,7 +12,7 @@ from ._context import FileContext, ValidationResult
 def validate_xml_wellformed(ctx: FileContext, result: ValidationResult) -> ET.Element | None:
     """Check 1: Is it valid XML?"""
     try:
-        tree = ET.parse(ctx.filepath)
+        tree = ET_parse(ctx.filepath)
         root = tree.getroot()
         ctx.tree = tree  # Store for lint rules that need tree traversal
         result.ok("Well-formed XML")

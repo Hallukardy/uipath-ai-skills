@@ -51,6 +51,11 @@ TESTS = [
     ("bad_delay_activity.xaml", "lint 109", "WARN"),
     ("bad_launch_login_no_validation.xaml", "lint 69", "ERROR"),
     ("bad_double_escaped_quotes.xaml", "lint 71", "ERROR"),
+    ("bad_empty_field_mode.xaml", "lint 70", "ERROR"),
+    ("bad_selector_double_quotes.xaml", "lint 89", "ERROR"),
+    ("bad_selector_double_escaped.xaml", "lint 90", "ERROR"),
+    ("bad_invalid_array_type.xaml", "lint 93", "ERROR"),
+    ("bad_fqdn_type_arguments.xaml", "lint 99", "ERROR"),
     ("bad_WebApp_Login.xaml", "lint 72", "ERROR"),
     ("bad_nextractdata_hallucinated.xaml", "lint 73", "ERROR"),
     ("bad_InitAllApplications.xaml", "lint 74", "ERROR"),
@@ -119,6 +124,10 @@ PROJECT_TESTS = [
     ("bad_project_crossfile", "lint 63", "WARN"),
     ("bad_project_cycle", "lint 101", "ERROR"),
     ("bad_project_orphan", "lint 102", "WARN"),
+    # Version-compatibility lints (120/121/122) — directory fixtures with project.json
+    ("bad_project_version_compat", "lint 120", "ERROR"),
+    ("bad_project_version_compat", "lint 121", "ERROR"),
+    ("bad_project_version_compat_band26", "lint 122", "ERROR"),
 ]
 
 

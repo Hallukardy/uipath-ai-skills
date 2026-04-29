@@ -800,7 +800,52 @@ def _generate_activity(spec: dict, scope_id: str, counter: _IdRefCounter,
                               id_ref=id_ref, scope_id=scope_id,
                               indent=indent, project_root=_PROJECT_ROOT)
 
-    raise ValueError(f"Unknown generator: {gen}")
+    # Final fallback: try the data-driven generator (annotation corpus).
+    # Lets activities described purely in references/annotations/*.json be
+    # emitted without a hand-written gen_* function.
+    #
+    # Exception policy:
+    #   - WizardOnlyActivityError: let it propagate as its own type so callers
+    #     (e.g. battle_test_activities.py) can distinguish "wizard-only refusal"
+    #     from generic dispatch errors. The CLI's `except Exception` catch-all
+    #     in main() still surfaces a useful message.
+    #   - MissingScopeError: already a ValueError subclass — wrapping is
+    #     redundant and hides the type from any future caller that wants to
+    #     recover. Let it propagate.
+    #   - ReviewNeededError: wrap as ValueError so the CLI message is uniform
+    #     ("Cannot generate ...: ...") for activities awaiting human review.
+    # Edge case: a SyntaxError or other load-time failure inside
+    # _data_driven.py surfaces here as ImportError (Python wraps module
+    # load errors). The bare except below would then mask the real error
+    # behind the generic "Unknown generator" message, which is misleading
+    # during local development. We split the catch: ModuleNotFoundError
+    # genuinely means "data-driven not installed" — fall back as before.
+    # Any other ImportError (including syntax/load failures in the module
+    # itself) is re-raised so the caller sees the underlying cause.
+    try:
+        from generate_activities._data_driven import (
+            gen_from_annotation,
+            ReviewNeededError,
+        )
+    except ModuleNotFoundError as e:
+        # Only the data-driven module's own absence means "no annotation
+        # corpus available — treat unknown gen as a bad gen name". Any
+        # transitive ModuleNotFoundError (e.g. _data_driven failed to import
+        # a real dependency) is a genuine bug in the corpus loader and
+        # MUST surface so the user sees the underlying cause instead of a
+        # misleading "Unknown generator" message. (H-4.)
+        if e.name == "generate_activities._data_driven":
+            raise ValueError(f"Unknown generator: {gen}")
+        raise  # transitive ModuleNotFoundError surfaces
+
+    try:
+        id_ref = counter.next(_idref_prefix(gen))
+        return gen_from_annotation(gen, args, id_ref=id_ref, scope_id=scope_id, indent=indent)
+    except KeyError:
+        # No annotation entry — preserve the original "Unknown generator" message
+        raise ValueError(f"Unknown generator: {gen}")
+    except ReviewNeededError as e:
+        raise ValueError(f"Cannot generate {gen!r}: {e}") from e
 
 
 # ---------------------------------------------------------------------------

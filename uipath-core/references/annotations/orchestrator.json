@@ -1,0 +1,462 @@
+{
+  "$schema_version": "1.0",
+  "module": "orchestrator",
+  "activities": {
+    "AddQueueItem": {
+      "gen_function": "gen_add_queue_item",
+      "element_tag": "ui:AddQueueItem",
+      "hint_size_key": "AddQueueItem",
+      "note": "Wrapped in RetryScope automatically (Rule 13: API calls must be retried)",
+      "params": {
+        "queue_name_config": {
+          "attr": "QueueType",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": true,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref",
+          "note": "Prefixed with 'AddQueueItem_'"
+        },
+        "item_fields": {
+          "attr": null,
+          "required": false,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string",
+          "note": "Dict of {field_name: vb_expression}. Creates ItemInformation child with bare InArgument elements."
+        },
+        "reference_variable": {
+          "attr": "Reference",
+          "required": false,
+          "default": "",
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": true,
+          "type": "string"
+        },
+        "folder_path_config": {
+          "attr": "FolderPath",
+          "required": false,
+          "default": "",
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": true,
+          "type": "string",
+          "note": "When empty, uses FolderPath=\"{x:Null}\""
+        },
+        "priority": {
+          "attr": "Priority",
+          "required": false,
+          "default": "Normal",
+          "enum": [
+            "Normal",
+            "High",
+            "Low"
+          ],
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "display_name": {
+          "attr": "DisplayName",
+          "required": false,
+          "default": "Add Queue Item",
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "number_of_retries": {
+          "attr": null,
+          "required": false,
+          "default": 3,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string",
+          "note": "Passed to wrapping RetryScope"
+        }
+      },
+      "fixed_attrs": {
+        "ServiceBaseAddress": "{x:Null}",
+        "TimeoutMS": "{x:Null}"
+      },
+      "child_elements": {
+        "AddQueueItem.ItemInformation": {
+          "type": "list",
+          "content": "Bare InArgument x:TypeArguments='x:String' elements with x:Key (NO Dictionary wrapper)"
+        }
+      },
+      "conditional_attrs": {},
+      "category": "orchestrator",
+      "description": "Enqueues a single transaction item into an Orchestrator queue, optionally with reference, deadline, priority, and SpecificContent.",
+      "use_when": "User wants to push one item to a queue from a dispatcher; for many items in a batch use BulkAddQueueItems to avoid per-item HTTP overhead.",
+      "alternatives": [
+        {
+          "activity": "BulkAddQueueItems",
+          "use_instead_when": "You have many items to enqueue at once; bulk uploads are dramatically faster than a per-item loop."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "orchestrator",
+        "queue",
+        "dispatcher"
+      ]
+    },
+    "BulkAddQueueItems": {
+      "gen_function": "gen_bulk_add_queue_items",
+      "element_tag": "ui:BulkAddQueueItems",
+      "hint_size_key": "BulkAddQueueItems",
+      "note": "Self-closing tag inside RetryScope.",
+      "params": {
+        "queue_name": {
+          "attr": "QueueName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "vb_expr",
+          "bracket_wrap": true,
+          "type": "string"
+        },
+        "datatable_variable": {
+          "attr": "QueueItemsDataTable",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": true,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref",
+          "note": "Prefixed with 'BulkAddQueueItems_'"
+        },
+        "display_name": {
+          "attr": "DisplayName",
+          "required": false,
+          "default": "Bulk Add Queue Items",
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "number_of_retries": {
+          "attr": null,
+          "required": false,
+          "default": 3,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        }
+      },
+      "fixed_attrs": {
+        "TimeoutMS": "{x:Null}"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "category": "orchestrator",
+      "description": "Enqueues multiple transaction items in a single Orchestrator request from a list of SpecificContent dictionaries.",
+      "use_when": "User wants to push many items at once (faster than looping AddQueueItem); for a single item use AddQueueItem.",
+      "alternatives": [
+        {
+          "activity": "AddQueueItem",
+          "use_instead_when": "You only have a single item to enqueue; the bulk path is overkill."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "orchestrator",
+        "queue",
+        "bulk",
+        "dispatcher"
+      ]
+    },
+    "GetQueueItem": {
+      "gen_function": "gen_get_queue_item",
+      "element_tag": "ui:GetQueueItem",
+      "hint_size_key": "GetQueueItem",
+      "note": "Wrapped in RetryScope automatically",
+      "params": {
+        "queue_name_config": {
+          "attr": "QueueType",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": true,
+          "type": "string"
+        },
+        "transaction_item_variable": {
+          "attr": "TransactionItem",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": true,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref",
+          "note": "Prefixed with 'GetQueueItem_'"
+        },
+        "folder_path_config": {
+          "attr": "FolderPath",
+          "required": false,
+          "default": "",
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": true,
+          "type": "string",
+          "note": "When empty, uses FolderPath=\"{x:Null}\""
+        },
+        "display_name": {
+          "attr": "DisplayName",
+          "required": false,
+          "default": "Get transaction item",
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "number_of_retries": {
+          "attr": null,
+          "required": false,
+          "default": 3,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        }
+      },
+      "fixed_attrs": {
+        "ContinueOnError": "{x:Null}"
+      },
+      "child_elements": {
+        "GetQueueItem.Reference": {
+          "type": "static_block",
+          "content": "<InArgument x:TypeArguments=\"x:String\" />"
+        },
+        "GetQueueItem.TimeoutMS": {
+          "type": "static_block",
+          "content": "<InArgument x:TypeArguments=\"x:Int32\" />"
+        }
+      },
+      "conditional_attrs": {},
+      "category": "orchestrator",
+      "description": "Pops the next available queue item from an Orchestrator queue and assigns it to a QueueItem variable.",
+      "use_when": "User wants the next transaction in a Performer; for adding items use AddQueueItem; in REFramework use the built-in Get Transaction Data state instead of calling this directly.",
+      "_routing_review_needed": false,
+      "tags": [
+        "orchestrator",
+        "queue",
+        "performer"
+      ]
+    },
+    "GetRobotCredential": {
+      "gen_function": "gen_getrobotcredential",
+      "element_tag": "ui:GetRobotCredential",
+      "hint_size_key": "GetRobotCredential",
+      "params": {
+        "asset_name_variable": {
+          "attr": "AssetName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": true,
+          "type": "string"
+        },
+        "username_variable": {
+          "attr": "Username",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": true,
+          "type": "string"
+        },
+        "password_variable": {
+          "attr": "Password",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": true,
+          "type": "string"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref"
+        },
+        "display_name": {
+          "attr": "DisplayName",
+          "required": false,
+          "default": "Get Credential",
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string"
+        }
+      },
+      "fixed_attrs": {
+        "TimeoutMS": "{x:Null}",
+        "CacheStrategy": "None"
+      },
+      "child_elements": {},
+      "conditional_attrs": {},
+      "note": "Self-closing tag.",
+      "category": "orchestrator",
+      "description": "Reads a credential asset from Orchestrator and outputs username + secure password into local variables.",
+      "use_when": "User wants to retrieve a credential by asset name; for non-credential assets (text/int/bool/json) use GetRobotAsset.",
+      "alternatives": [
+        {
+          "activity": "GetRobotAsset",
+          "use_instead_when": "The asset is a non-credential value (text, integer, bool, JSON) rather than a username/password pair."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "orchestrator",
+        "credential",
+        "asset",
+        "secure"
+      ]
+    },
+    "GetRobotAsset": {
+      "gen_function": "gen_get_robot_asset",
+      "element_tag": "ui:GetRobotAsset",
+      "hint_size_key": null,
+      "note": "Wrapped in RetryScope automatically",
+      "params": {
+        "asset_name": {
+          "attr": "AssetName",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string",
+          "note": "String literal, NOT a variable"
+        },
+        "output_variable": {
+          "attr": null,
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": true,
+          "type": "string",
+          "note": "Placed inside GetRobotAsset.Value OutArgument child element"
+        },
+        "id_ref": {
+          "attr": "sap2010:WorkflowViewState.IdRef",
+          "required": true,
+          "default": null,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "id_ref",
+          "note": "Prefixed with 'GetRobotAsset_'"
+        },
+        "output_type": {
+          "attr": null,
+          "required": false,
+          "default": "x:String",
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string",
+          "note": "x:TypeArguments on OutArgument"
+        },
+        "cache_strategy": {
+          "attr": "CacheStrategy",
+          "required": false,
+          "default": "None",
+          "enum": [
+            "None",
+            "PerRobot",
+            "Global"
+          ],
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        },
+        "display_name": {
+          "attr": "DisplayName",
+          "required": false,
+          "default": "",
+          "enum": null,
+          "escape": "xml",
+          "bracket_wrap": false,
+          "type": "string",
+          "note": "Auto-generated as 'Get Asset - {asset_name}' when empty"
+        },
+        "number_of_retries": {
+          "attr": null,
+          "required": false,
+          "default": 3,
+          "enum": null,
+          "escape": null,
+          "bracket_wrap": false,
+          "type": "string"
+        }
+      },
+      "fixed_attrs": {
+        "TimeoutMS": "{x:Null}"
+      },
+      "child_elements": {
+        "GetRobotAsset.Value": {
+          "type": "static_block",
+          "content": "<OutArgument x:TypeArguments=\"{output_type}\">[{output_variable}]</OutArgument>"
+        }
+      },
+      "conditional_attrs": {},
+      "category": "orchestrator",
+      "description": "Reads a typed asset (text, integer, boolean, json) from Orchestrator and assigns its value to a local variable.",
+      "use_when": "User wants a configuration value held centrally in Orchestrator; for username+password pairs use GetRobotCredential.",
+      "alternatives": [
+        {
+          "activity": "GetRobotCredential",
+          "use_instead_when": "The asset is a Credential type and you need both username and password (as SecureString) returned."
+        }
+      ],
+      "_routing_review_needed": false,
+      "tags": [
+        "orchestrator",
+        "asset",
+        "configuration"
+      ]
+    }
+  }
+}

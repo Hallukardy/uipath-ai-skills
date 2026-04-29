@@ -38,6 +38,7 @@ import os
 import re
 import shutil
 import sys
+import urllib.error
 import uuid
 from pathlib import Path
 
@@ -71,6 +72,48 @@ TRANSACTION_TYPE_MAP = {
         None, None, None, None,  # scg: already in REFramework
     ),
 }
+
+
+# Positive allowlist for `--name`. Defends against:
+#   - empty / whitespace-only / "." / ".."  (would wipe output_dir under --overwrite)
+#   - path separators ("/", "\\") and drive-relative names ("C:foo")
+#   - NUL bytes and other control characters
+#   - Windows reserved device names (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+#   - trailing "." or " " (silently stripped by Windows -> alias-collision)
+_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
+_WINDOWS_RESERVED = (
+    {"CON", "PRN", "AUX", "NUL"}
+    | {f"COM{i}" for i in range(1, 10)}
+    | {f"LPT{i}" for i in range(1, 10)}
+)
+
+
+def _validate_name(name: str) -> None:
+    """Raise ValueError if `name` is not a safe project directory name.
+
+    See M-Sec-3 / C-1: `name` is joined to `output_dir` and rmtree-d under
+    `--overwrite`. Untrusted callers must not be able to escape that path.
+    """
+    if not name or not name.strip():
+        raise ValueError("--name must not be empty or whitespace-only")
+    if not _NAME_RE.fullmatch(name):
+        raise ValueError(
+            f"--name must match [A-Za-z0-9][A-Za-z0-9._-]{{0,99}}: {name!r}"
+        )
+    # Belt-and-suspenders: regex permits `..` as inner chars (foo..bar is fine,
+    # but a bare `..` is rejected by the leading [A-Za-z0-9] anchor). Reject
+    # the literal traversal segment explicitly in case anyone loosens the regex.
+    if name == "." or name == "..":
+        raise ValueError(f"--name must not be '.' or '..': {name!r}")
+    if name.endswith(".") or name.endswith(" "):
+        raise ValueError(f"--name must not end with '.' or ' ': {name!r}")
+    # Windows reserved device names match with or without an extension
+    # (CON, CON.txt, con.log all collide with the device).
+    stem = name.split(".", 1)[0].upper()
+    if stem in _WINDOWS_RESERVED:
+        raise ValueError(
+            f"--name must not be a Windows reserved device name: {name!r}"
+        )
 
 
 def get_skill_dir():
@@ -365,8 +408,17 @@ def scaffold_project(name: str, description: str, output_dir: str,
                      transaction_type: str = "DataRow",
                      queue_name: str = None, queue_folder: str = None,
                      overwrite: bool = False,
-                     target: str = "both"):
+                     target: str = "both",
+                     version_band: str = None):
     """Scaffold a new UiPath project from real templates."""
+    # Reject unsafe --name before any filesystem op. The skill is invoked
+    # programmatically by Claude Code agents with user-controlled project
+    # names, and `--name` is joined to `output_dir` then `rmtree`-d under
+    # `--overwrite`. A positive allowlist (see _validate_name) defends against
+    # path separators, `..`, empty/whitespace, NUL bytes, drive-relative
+    # forms ("C:foo"), Windows reserved device names, and trailing "." / " ".
+    _validate_name(name)
+
     skill_dir = get_skill_dir()
 
     # Dispatcher and performer share the same REFramework base
@@ -392,13 +444,37 @@ def scaffold_project(name: str, description: str, output_dir: str,
             f"  Available asset dirs: {[d.name for d in (skill_dir / 'assets').iterdir() if d.is_dir()] if (skill_dir / 'assets').exists() else '(assets/ not found)'}"
         )
 
-    if project_dir.exists():
+    if project_dir.exists() or project_dir.is_symlink():
         if not overwrite:
             raise FileExistsError(
                 f"Output directory already exists: {project_dir}. "
                 f"Pass --overwrite to replace it."
             )
-        shutil.rmtree(project_dir)
+        # Refuse to follow symlinks/junctions: rmtree would traverse to the
+        # link target and delete contents outside output_dir. Unlink the link
+        # itself instead so we don't leak deletions across the symlink.
+        if project_dir.is_symlink():
+            project_dir.unlink()
+        else:
+            # Containment check: project_dir must resolve under output_dir
+            # so that intermediate symlinks in the path don't redirect us.
+            try:
+                resolved_project = project_dir.resolve(strict=True)
+                resolved_output = Path(output_dir).resolve(strict=True)
+            except OSError as e:
+                raise OSError(
+                    f"Cannot resolve {project_dir} for overwrite safety check: {e}"
+                ) from e
+            try:
+                resolved_project.relative_to(resolved_output)
+            except ValueError:
+                raise PermissionError(
+                    f"Refusing to overwrite {project_dir}: it resolves to "
+                    f"{resolved_project}, which is outside --output "
+                    f"{resolved_output}. A symlink or junction may be redirecting "
+                    f"the target."
+                )
+            shutil.rmtree(project_dir)
 
     try:
         shutil.copytree(template_dir, project_dir)
@@ -457,6 +533,12 @@ def scaffold_project(name: str, description: str, output_dir: str,
 
     if extra_deps:
         pj["dependencies"].update(extra_deps)
+
+    # Stamp versionBand BEFORE running plugin hooks so any future hook can
+    # read pj["versionBand"] when deciding what to register. Today no hook
+    # reads it, but flipping the order is purely defensive (L1).
+    if version_band:
+        pj["versionBand"] = version_band
 
     # Run plugin scaffold hooks (e.g. Tasks persistence support).
     # Mirror validate_xaml/_registry.py: each plugin hook is wrapped so a
@@ -583,6 +665,14 @@ if __name__ == "__main__":
                              "If omitted, template default 'ProcessABCQueue' is kept.")
     parser.add_argument("--queue-folder", default=None,
                         help="Orchestrator folder for the queue (written to Config.xlsx Settings sheet).")
+    parser.add_argument("--band", metavar="NN", default=None,
+                        help="Target version band (e.g., 25 or 26). Stamps versionBand into "
+                             "project.json and resolves baseline dependencies within the band.")
+    parser.add_argument("--force-band", action="store_true",
+                        help="Allow --band to disagree with the deps-derived band. Without "
+                             "this flag, a mismatch between --band and the year-based "
+                             "dependencies is a hard error (avoids stamping a band that "
+                             "downstream lints will reject).")
     parser.add_argument("--overwrite", action="store_true",
                         help="Delete and replace existing output directory. Without this flag, "
                              "scaffolding into an existing directory fails safely.")
@@ -602,11 +692,90 @@ if __name__ == "__main__":
             print(f"WARNING: {pkg} version '{clean_ver}' appears to be a prerelease "
                   f"(contains '-'). Use stable versions only.")
 
+    # Resolve band-specific baseline deps when --band is set. --deps still wins.
+    band_deps = {}
+    if args.band:
+        try:
+            from version_band import validate_band
+            validate_band(args.band)
+            from resolve_nuget import resolve_packages_in_band, COMMON_PACKAGES
+            print(f"Resolving baseline dependencies for band {args.band}...")
+            band_deps = {pkg: f"[{ver}]"
+                         for pkg, ver in resolve_packages_in_band(COMMON_PACKAGES, args.band).items()}
+        except (ImportError, FileNotFoundError, json.JSONDecodeError,
+                urllib.error.URLError, OSError) as e:
+            print(f"WARNING: Could not resolve band {args.band} deps ({e}). "
+                  f"Using template baseline.", file=sys.stderr)
+
+    merged_deps = dict(band_deps)
+    merged_deps.update(extra_deps)
+
+    # If --band was not explicit, derive it from the resolved year-based deps.
+    # This keeps project.json's versionBand in sync with what was actually
+    # pinned, so lints 120-124 engage on downstream edits without the caller
+    # having to pass --band. Stays silent (no stamping) when no year-based
+    # dep is present so sequence scaffolds with bare deps remain opt-in.
+    effective_band = args.band
+    if effective_band is None and merged_deps:
+        try:
+            from version_band import derive_band_from_deps, UnsupportedBandError
+            effective_band = derive_band_from_deps(merged_deps)
+            if effective_band:
+                print(f"Derived versionBand={effective_band} from resolved dependencies.")
+        except UnsupportedBandError as e:
+            print(f"WARNING: {e}. versionBand will be omitted.", file=sys.stderr)
+        except (ImportError, ValueError) as e:
+            print(f"WARNING: Could not derive versionBand from deps ({e}). "
+                  f"versionBand will be omitted.", file=sys.stderr)
+    elif effective_band is not None and merged_deps:
+        # --band was explicit. Defensively derive from deps too: if the
+        # year-based deps point at a different band, refuse to stamp a band
+        # that downstream lints will reject (M2). The user can override with
+        # --force-band, restoring the old "warn and proceed" behavior, but the
+        # default is now a hard failure to surface the skew loudly.
+        try:
+            from version_band import derive_band_from_deps, UnsupportedBandError
+            derived = derive_band_from_deps(merged_deps)
+            if derived is not None and derived != effective_band:
+                if args.force_band:
+                    print(
+                        f"Warning: --band {effective_band} disagrees with "
+                        f"deps-derived band {derived}; --force-band set, "
+                        f"using --band as authoritative",
+                        file=sys.stderr,
+                    )
+                else:
+                    print(
+                        f"ERROR: --band {effective_band} disagrees with "
+                        f"deps-derived band {derived}. The pinned year-based "
+                        f"dependencies imply band {derived}, but --band was "
+                        f"set to {effective_band}. Either align --band with "
+                        f"the deps, or pass --force-band to stamp "
+                        f"{effective_band} anyway (downstream lints "
+                        f"120/121/122 may reject the mismatch).",
+                        file=sys.stderr,
+                    )
+                    sys.exit(2)
+        except UnsupportedBandError as e:
+            if args.force_band:
+                print(f"Warning: deps imply unsupported band ({e}); "
+                      f"--force-band set, using --band {effective_band} "
+                      f"as authoritative", file=sys.stderr)
+            else:
+                print(f"ERROR: deps imply an unsupported band ({e}). "
+                      f"--band {effective_band} cannot be reconciled. "
+                      f"Pass --force-band to override.", file=sys.stderr)
+                sys.exit(2)
+        except (ImportError, ValueError):
+            # Best-effort cross-check; never block scaffolding on a derive failure.
+            pass
+
     try:
         scaffold_project(args.name, args.description, args.output, args.variant,
-                         extra_deps, args.attended, args.lang, args.transaction_type,
+                         merged_deps if merged_deps else extra_deps,
+                         args.attended, args.lang, args.transaction_type,
                          args.queue_name, args.queue_folder, args.overwrite,
-                         args.target)
+                         args.target, effective_band)
     except FileNotFoundError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)

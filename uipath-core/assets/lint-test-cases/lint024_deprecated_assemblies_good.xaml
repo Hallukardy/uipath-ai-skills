@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="Lint024Good"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- GOOD: no deprecated/renamed assembly references. Lint 24's DEPRECATED
+       table is currently empty (no renames active in this band) — this
+       fixture confirms the rule stays silent on a clean file. -->
+  <Sequence DisplayName="Main" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <ui:LogMessage DisplayName="Log Hello"
+      Message="[&quot;Hello&quot;]"
+      sap2010:WorkflowViewState.IdRef="LogMessage_1"
+      Level="Info" />
+  </Sequence>
+</Activity>

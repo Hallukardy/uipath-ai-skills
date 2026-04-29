@@ -1,0 +1,257 @@
+{
+  "package": "UiPath.System.Activities",
+  "version": "26.2",
+  "concrete_version": "26.2.4",
+  "activities": {
+    "Assign": {
+      "status": "benign_skip",
+      "class_name": "System.Activities.Statements.Assign",
+      "note": "WF4 built-in; no NuGet template available"
+    },
+    "Delay": {
+      "status": "benign_skip",
+      "class_name": "System.Activities.Statements.Delay",
+      "note": "WF4 built-in; no NuGet template available"
+    },
+    "DoWhile": {
+      "status": "benign_skip",
+      "class_name": null,
+      "note": "WF4 built-in; no NuGet template available"
+    },
+    "ForEach": {
+      "status": "benign_skip",
+      "class_name": null,
+      "note": "WF4 built-in; no NuGet template available"
+    },
+    "If": {
+      "status": "benign_skip",
+      "class_name": "System.Activities.Statements.If",
+      "note": "WF4 built-in; no NuGet template available"
+    },
+    "InvokeCode": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.InvokeCode",
+      "size": 513
+    },
+    "InvokeWorkflowFile": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.InvokeWorkflowFile",
+      "size": 582
+    },
+    "LogMessage": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.LogMessage",
+      "size": 260
+    },
+    "Switch": {
+      "status": "benign_skip",
+      "class_name": null,
+      "note": "WF4 built-in; no NuGet template available"
+    },
+    "Throw": {
+      "status": "benign_skip",
+      "class_name": "System.Activities.Statements.Throw",
+      "note": "WF4 built-in; no NuGet template available"
+    },
+    "TryCatch": {
+      "status": "benign_skip",
+      "class_name": "System.Activities.Statements.TryCatch",
+      "note": "WF4 built-in; no NuGet template available"
+    },
+    "While": {
+      "status": "benign_skip",
+      "class_name": null,
+      "note": "WF4 built-in; no NuGet template available"
+    },
+    "AddOrSubtractFromDate": {
+      "status": "ok",
+      "class_name": "UiPath.Activities.System.Date.AddOrSubtractFromDate",
+      "size": 383
+    },
+    "BeginProcess": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.BeginProcess",
+      "size": 524
+    },
+    "Break": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.Break",
+      "size": 231
+    },
+    "BulkAddQueueItems": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.BulkAddQueueItems",
+      "size": 328
+    },
+    "CombineText": {
+      "status": "ok",
+      "class_name": "UiPath.Activities.System.Text.CombineText",
+      "size": 340
+    },
+    "CommentOut": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.CommentOut",
+      "size": 365
+    },
+    "Continue": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.Continue",
+      "size": 237
+    },
+    "CustomInput": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.CustomInput",
+      "size": 326
+    },
+    "EvaluateBusinessRule": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.EvaluateBusinessRule",
+      "size": 594
+    },
+    "ExtractDateTime": {
+      "status": "ok",
+      "class_name": "UiPath.Activities.System.Text.ExtractDateTime",
+      "size": 371
+    },
+    "ExtractText": {
+      "status": "ok",
+      "class_name": "UiPath.Activities.System.Text.ExtractText",
+      "size": 486
+    },
+    "FilterDataTable": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.FilterDataTable",
+      "size": 370
+    },
+    "FormatDateAsText": {
+      "status": "ok",
+      "class_name": "UiPath.Activities.System.Date.FormatDateAsText",
+      "size": 354
+    },
+    "GenerateDataTable": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.GenerateDataTable",
+      "size": 393
+    },
+    "GetLastDownloadedFile": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.GetLastDownloadedFile",
+      "size": 668
+    },
+    "GetQueueItem": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.GetQueueItem",
+      "size": 341
+    },
+    "InterruptibleDoWhile": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.InterruptibleDoWhile",
+      "size": 425
+    },
+    "InterruptibleWhile": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.InterruptibleWhile",
+      "size": 415
+    },
+    "IsMatch": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.IsMatch",
+      "size": 335
+    },
+    "Matches": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.Matches",
+      "size": 357
+    },
+    "MessageBox": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.MessageBox",
+      "size": 310
+    },
+    "ModifyText": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.ModifyText",
+      "size": 444
+    },
+    "OutputDataTable": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.OutputDataTable",
+      "size": 288
+    },
+    "PathExists": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.PathExists",
+      "size": 311
+    },
+    "QueueTrigger": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.QueueTrigger",
+      "size": 409
+    },
+    "RaiseAlert": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.RaiseAlert",
+      "size": 302
+    },
+    "ReadStorageText": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.Storage.ReadStorageText",
+      "size": 354
+    },
+    "ReadTextFile": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.ReadTextFile",
+      "size": 300
+    },
+    "RemoveDuplicateRows": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.RemoveDuplicateRows",
+      "size": 307
+    },
+    "RepeatNumberOfTimesX": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.RepeatNumberOfTimesX",
+      "size": 663
+    },
+    "RetryScope": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.RetryScope",
+      "size": 604
+    },
+    "SetTransactionProgress": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.SetTransactionProgress",
+      "size": 333
+    },
+    "SplitText": {
+      "status": "ok",
+      "class_name": "UiPath.Activities.System.Text.SplitText",
+      "size": 355
+    },
+    "StopJob": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.StopJob",
+      "size": 291
+    },
+    "TextToLeftRight": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.TextToLeftRight",
+      "size": 359
+    },
+    "TrackObject": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.ProcessTracking.TrackObject",
+      "size": 446
+    },
+    "WaitQueueItem": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.WaitQueueItem",
+      "size": 360
+    },
+    "WriteTextFile": {
+      "status": "ok",
+      "class_name": "UiPath.Core.Activities.WriteTextFile",
+      "size": 317
+    }
+  }
+}

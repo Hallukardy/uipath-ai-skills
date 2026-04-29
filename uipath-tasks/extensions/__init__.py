@@ -9,10 +9,12 @@ each plugin's modules are isolated — no sys.path pollution, no cross-plugin
 name collisions even when multiple uipath-* skills coexist.
 """
 
+import json
 from pathlib import Path
 
 from plugin_loader import (
     register_generator,
+    register_generator_alias,
     register_lint,
     register_scaffold_hook,
     register_namespace,
@@ -25,9 +27,11 @@ from plugin_loader import (
     register_lint_test_fixture,
     register_type_mapping,
     register_variable_prefix,
+    register_version_profile,
+    register_band_profile_mapping,
 )
 
-REQUIRED_API_VERSION = 1
+REQUIRED_API_VERSION = 2
 
 _PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 
@@ -35,6 +39,7 @@ from .generators import (
     gen_create_form_task, gen_wait_for_form_task,
     gen_create_external_task, gen_wait_for_external_task,
     gen_get_form_tasks, gen_complete_task, gen_assign_tasks,
+    gen_forward_task, gen_get_app_tasks, gen_wait_for_user_action_and_resume,
     form_layout_to_external_file,
 )
 from .lint_rules import (
@@ -60,6 +65,30 @@ register_generator("wait_for_external_task", gen_wait_for_external_task, display
 register_generator("get_form_tasks", gen_get_form_tasks, display_name="GetFormTasks")
 register_generator("complete_task", gen_complete_task, display_name="CompleteTask")
 register_generator("assign_tasks", gen_assign_tasks, display_name="AssignTasks")
+
+# --- Generators for activities harvested into the version profile but not
+#     covered by the legacy gen_* set above.
+#
+# M-8: previously each generator was double-registered under its snake_case
+# AND lowercase-no-underscore form so both human specs and
+# battle_test_activities (which calls ``activity_name.lower()``) could
+# dispatch. The duplicate ``register_generator`` calls produced two entries
+# pointing at the same callable. We now register the canonical snake_case
+# form once, then add the legacy lowercase alias via
+# ``register_generator_alias`` so ``get_generators()`` still surfaces both
+# names but only one canonical registration owns the slot.
+register_generator("forward_task", gen_forward_task, display_name="ForwardTask")
+register_generator_alias("forwardtask", "forward_task")
+register_generator("get_app_tasks", gen_get_app_tasks, display_name="GetAppTasks")
+register_generator_alias("getapptasks", "get_app_tasks")
+register_generator(
+    "wait_for_user_action_and_resume",
+    gen_wait_for_user_action_and_resume,
+    display_name="WaitForUserActionAndResume",
+)
+register_generator_alias(
+    "waitforuseractionandresume", "wait_for_user_action_and_resume"
+)
 
 # --- Lint rules ---
 register_lint(lint_tasks, "lint_tasks")
@@ -91,6 +120,11 @@ register_namespace(
     "upat",
     "clr-namespace:UiPath.Persistence.Activities.Tasks;assembly=UiPath.Persistence.Activities"
 )
+# UserAction sub-namespace — hosts GetAppTasks and WaitForUserActionAndResume.
+register_namespace(
+    "upau",
+    "clr-namespace:UiPath.Persistence.Activities.UserAction;assembly=UiPath.Persistence.Activities"
+)
 
 # --- Type mappings (short spec name → prefixed XAML type) ---
 register_type_mapping("FormTaskData", "upaf:FormTaskData")
@@ -111,6 +145,7 @@ register_known_activities(
     "CreateFormTask", "WaitForFormTaskAndResume",
     "CreateExternalTask", "WaitForExternalTaskAndResume",
     "GetFormTasks", "CompleteTask", "AssignTasks",
+    "ForwardTask", "GetAppTasks", "WaitForUserActionAndResume",
 )
 
 # --- Key activities (DisplayName required) ---
@@ -118,6 +153,8 @@ register_key_activities(
     "upaf:CreateFormTask", "upaf:WaitForFormTaskAndResume",
     "upae:CreateExternalTask", "upae:WaitForExternalTaskAndResume",
     "upaf:GetFormTasks", "upat:CompleteTask", "upat:AssignTasks",
+    "upat:ForwardTask",
+    "upau:GetAppTasks", "upau:WaitForUserActionAndResume",
 )
 
 # --- Hallucination patterns ---
@@ -259,3 +296,17 @@ register_lint_test_fixture(
     "bad_unrolled_sequential_tasks.xaml", "AC-34", "ERROR",
     _PLUGIN_ROOT / "assets" / "lint-test-cases",
 )
+
+# --- Version profiles (lint 122 / version-band-aware enforcement) ---
+# UiPath.Persistence.Activities ships a single profile that targets both
+# bands 25 and 26 (the package is band-independent; the activity surface is
+# identical across UiPath Studio 25.10 and 26.2).
+_PERSISTENCE_PROFILE_PATH = (
+    _PLUGIN_ROOT / "references" / "version-profiles"
+    / "UiPath.Persistence.Activities" / "1.4.json"
+)
+if _PERSISTENCE_PROFILE_PATH.exists():
+    _persistence_profile = json.loads(_PERSISTENCE_PROFILE_PATH.read_text(encoding="utf-8"))
+    register_version_profile("UiPath.Persistence.Activities", "1.4", _persistence_profile)
+    register_band_profile_mapping("25", "UiPath.Persistence.Activities", "1.4")
+    register_band_profile_mapping("26", "UiPath.Persistence.Activities", "1.4")

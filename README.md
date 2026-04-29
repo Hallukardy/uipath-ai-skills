@@ -127,6 +127,20 @@ cp -r uipath-ai-skills/uipath-tasks <your-project>/.codex/skills/
    - **Update an existing project** — point it at an existing UiPath project and ask for a bug fix, a new workflow, or a small change. It reads the project structure, generates only the deltas, and re-validates.
    - **Refactor a legacy project into REFramework** — point it at an existing project built with flat structure or bad practices and ask for a wholesale rewrite. It reads the workflows, proposes a proper decomposition (launch / init / process / action files, Config.xlsx, Object Repository), and migrates the logic into the new shape. *Not battle-tested as the other two modes*
 
+### Version-band targeting (v1.2.1+)
+
+UiPath activity packages evolve their attribute set across Studio releases — `Version="V5"`, `HealingAgentBehavior`, and `ClipboardMode` exist in band 25.10+ but not in earlier bands. Generating XAML against the wrong band produces "Could not find member" errors when Studio opens the project.
+
+To target a specific Studio band, pass `--band` when scaffolding:
+
+```bash
+python uipath-core/scripts/scaffold_project.py --template reframework --band 25 ...
+```
+
+This stamps `versionBand` into `project.json` and activates lints **120/121/122**, which fire when an emitted XAML contains attributes incompatible with the target band. The scaffold also auto-stamps the band when year-based dependencies are supplied via `--deps`. Always target the most recent **stable** band — version profiles are never authored against prerelease packages.
+
+See `CHANGELOG.md` (1.2.1) for the full list of additions: data-driven generator, Studio harvest tooling, plugin API v2 (`register_version_profile` / `register_band_profile_mapping`), and the auto-generated `references/routing-index.md` index across 463 activities.
+
 ---
 
 ## How it works
