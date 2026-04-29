@@ -12,6 +12,17 @@ imported, and its top-level code should call the register_* functions.
 Usage from core scripts:
     from plugin_loader import load_plugins, get_generators, get_lint_rules, ...
     load_plugins()  # call once at module level or in main()
+
+Plugin submodule rule (M-20)
+----------------------------
+Plugin submodules MUST NOT mutate state outside ``plugin_loader``'s
+registration API before ``__init__.py`` returns. Submodules are exec'd
+BEFORE ``pkg_module`` (so relative imports like ``from .generators import X``
+in ``__init__.py`` resolve), and their import-time side effects are NOT
+covered by ``_cleanup_failed_plugin``'s rollback. If a submodule registers
+a generator at import time and the plugin's ``__init__.py`` then raises,
+the partial registration leaks past the rollback. Confine all
+``register_*`` calls to ``__init__.py`` body so the rollback contract holds.
 """
 
 import copy
@@ -36,6 +47,7 @@ __all__ = [
     "PLUGIN_API_VERSION",
     # Registration API
     "register_generator",
+    "register_generator_alias",
     "register_lint",
     "register_scaffold_hook",
     "register_namespace",
@@ -78,6 +90,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 _generators = {}            # gen_name -> callable
+_generator_aliases = {}     # alias_name -> canonical gen_name (M-8: backward-compat aliases)
 _display_name_map = {}      # gen_name -> Studio display name
 _ui_generators = set()      # gen names that require uix: namespace (UI activities)
 _lint_rules = []            # list of (callable, name_str)
@@ -133,14 +146,48 @@ def register_generator(name, fn, display_name=None, requires_ui_namespace=False)
         requires_ui_namespace: If True, this generator requires uix: namespace
                                (UI automation activities like SAP WinGUI)
     """
-    if name in _generators:
-        warnings.warn(f"[plugin_loader] Duplicate generator registration: '{name}' "
-                       f"(overwriting {_generators[name].__module__}.{_generators[name].__name__})")
-    _generators[name] = fn
-    if display_name:
-        _display_name_map[name] = display_name
-    if requires_ui_namespace:
-        _ui_generators.add(name)
+    # M-7: every register_* mutator must hold _registry_lock so concurrent
+    # plugin registrations and rollbacks observe a consistent state. RLock
+    # allows reentrance — load_plugins() already holds the lock while
+    # exec'ing each plugin's __init__.py, and the plugin's top-level
+    # register_* calls re-acquire it without deadlocking.
+    with _registry_lock:
+        if name in _generators:
+            warnings.warn(f"[plugin_loader] Duplicate generator registration: '{name}' "
+                           f"(overwriting {_generators[name].__module__}.{_generators[name].__name__})")
+        _generators[name] = fn
+        if display_name:
+            _display_name_map[name] = display_name
+        if requires_ui_namespace:
+            _ui_generators.add(name)
+
+
+def register_generator_alias(alias, canonical):
+    """Register *alias* as a backward-compat name for an existing generator.
+
+    The alias resolves to the same callable (and same display name / UI flag)
+    as ``canonical`` when surfaced via :func:`get_generators` / the display
+    map. Use this for lowercase / no-underscore aliases that callers
+    historically passed (e.g. ``forwardtask`` -> ``forward_task``) so a
+    single canonical ``register_generator`` call doesn't have to be cloned.
+
+    Args:
+        alias: The legacy / alternate name callers may use as ``spec["gen"]``.
+        canonical: The name passed to a prior ``register_generator`` call.
+
+    Raises:
+        ValueError: if either name is empty or non-str.
+    """
+    if not isinstance(alias, str) or not alias:
+        raise ValueError(
+            f"register_generator_alias: 'alias' must be a non-empty str, got {alias!r}"
+        )
+    if not isinstance(canonical, str) or not canonical:
+        raise ValueError(
+            f"register_generator_alias: 'canonical' must be a non-empty str, got {canonical!r}"
+        )
+    with _registry_lock:
+        _generator_aliases[alias] = canonical
 
 
 def register_lint(fn, name=None):
@@ -148,7 +195,8 @@ def register_lint(fn, name=None):
 
     The function must accept (ctx: FileContext, result: ValidationResult).
     """
-    _lint_rules.append((fn, name or fn.__name__))
+    with _registry_lock:
+        _lint_rules.append((fn, name or fn.__name__))
 
 
 def register_scaffold_hook(fn):
@@ -156,25 +204,29 @@ def register_scaffold_hook(fn):
 
     The function receives the project.json dict and can modify it in place.
     """
-    _scaffold_hooks.append(fn)
+    with _registry_lock:
+        _scaffold_hooks.append(fn)
 
 
 def register_namespace(prefix, xmlns):
     """Register an XML namespace prefix → URI mapping for validation."""
-    if prefix in _extra_namespaces and _extra_namespaces[prefix] != xmlns:
-        warnings.warn(f"[plugin_loader] Duplicate namespace prefix: '{prefix}' "
-                       f"(overwriting {_extra_namespaces[prefix]})")
-    _extra_namespaces[prefix] = xmlns
+    with _registry_lock:
+        if prefix in _extra_namespaces and _extra_namespaces[prefix] != xmlns:
+            warnings.warn(f"[plugin_loader] Duplicate namespace prefix: '{prefix}' "
+                           f"(overwriting {_extra_namespaces[prefix]})")
+        _extra_namespaces[prefix] = xmlns
 
 
 def register_known_activities(*names):
     """Register activity local names that require IdRef attributes."""
-    _extra_known_activities.update(names)
+    with _registry_lock:
+        _extra_known_activities.update(names)
 
 
 def register_key_activities(*names):
     """Register prefixed activity names that should have DisplayName."""
-    _extra_key_activities.extend(names)
+    with _registry_lock:
+        _extra_key_activities.extend(names)
 
 
 def register_hallucination_pattern(wrong_attr, correct_attr, context_hint):
@@ -185,12 +237,14 @@ def register_hallucination_pattern(wrong_attr, correct_attr, context_hint):
         correct_attr: Correct attribute name (e.g. "TaskOutput/TaskInput")
         context_hint: Activity context (e.g. "CreateFormTask/WaitForFormTask")
     """
-    _hallucination_patterns.append((wrong_attr, correct_attr, context_hint))
+    with _registry_lock:
+        _hallucination_patterns.append((wrong_attr, correct_attr, context_hint))
 
 
 def register_common_packages(*package_ids):
     """Register NuGet package IDs for resolve_nuget --all resolution."""
-    _common_packages.extend(package_ids)
+    with _registry_lock:
+        _common_packages.extend(package_ids)
 
 
 def register_battle_test_grader(suite_name, grader_fn):
@@ -198,7 +252,8 @@ def register_battle_test_grader(suite_name, grader_fn):
 
     The grader_fn must accept (scenario: int, project_dir: Path) -> GradeResult.
     """
-    _battle_test_graders[suite_name] = grader_fn
+    with _registry_lock:
+        _battle_test_graders[suite_name] = grader_fn
 
 
 def register_test_spec(name, spec):
@@ -208,7 +263,8 @@ def register_test_spec(name, spec):
         name: Spec name (e.g. "tasks_form_task")
         spec: Dict with class_name, arguments, variables, activities
     """
-    _test_specs[name] = spec
+    with _registry_lock:
+        _test_specs[name] = spec
 
 
 def register_lint_test_fixture(filename, expected_substr, severity, fixture_dir):
@@ -220,7 +276,8 @@ def register_lint_test_fixture(filename, expected_substr, severity, fixture_dir)
         severity: Expected severity (e.g. "ERROR")
         fixture_dir: Absolute path to the directory containing the fixture file
     """
-    _lint_test_fixtures.append((filename, expected_substr, severity, str(fixture_dir)))
+    with _registry_lock:
+        _lint_test_fixtures.append((filename, expected_substr, severity, str(fixture_dir)))
 
 
 def register_type_mapping(short_type, xaml_type):
@@ -233,7 +290,8 @@ def register_type_mapping(short_type, xaml_type):
         short_type: Short type name used in JSON specs (e.g. "FormTaskData")
         xaml_type: Full XAML type with namespace prefix (e.g. "upaf:FormTaskData")
     """
-    _type_mappings[short_type] = xaml_type
+    with _registry_lock:
+        _type_mappings[short_type] = xaml_type
 
 
 def register_version_profile(package, profile_version, profile):
@@ -356,7 +414,8 @@ def register_variable_prefix(xaml_type, prefix):
         prefix: Expected variable-name prefix string (e.g. "fdt", "edt").
                 Case-sensitive substring used with `startswith`.
     """
-    _variable_prefixes[xaml_type] = prefix
+    with _registry_lock:
+        _variable_prefixes[xaml_type] = prefix
 
 
 # ---------------------------------------------------------------------------
@@ -364,13 +423,30 @@ def register_variable_prefix(xaml_type, prefix):
 # ---------------------------------------------------------------------------
 
 def get_generators():
-    """Return dict of gen_name -> callable for all plugin generators."""
-    return dict(_generators)
+    """Return dict of gen_name -> callable for all plugin generators.
+
+    Aliases registered via :func:`register_generator_alias` are folded in so
+    callers that look up ``spec["gen"]`` can find both canonical names
+    (``forward_task``) and legacy aliases (``forwardtask``) in the same map.
+    """
+    result = dict(_generators)
+    for alias, canonical in _generator_aliases.items():
+        if canonical in _generators and alias not in result:
+            result[alias] = _generators[canonical]
+    return result
 
 
 def get_display_name_map():
-    """Return dict of gen_name -> Studio display name for plugin generators."""
-    return dict(_display_name_map)
+    """Return dict of gen_name -> Studio display name for plugin generators.
+
+    Aliases inherit the canonical generator's display name so a lookup by
+    alias surfaces the same Studio display string.
+    """
+    result = dict(_display_name_map)
+    for alias, canonical in _generator_aliases.items():
+        if canonical in _display_name_map and alias not in result:
+            result[alias] = _display_name_map[canonical]
+    return result
 
 
 def get_lint_rules():
@@ -438,22 +514,38 @@ def get_variable_prefixes():
     return dict(_variable_prefixes)
 
 
+def _freeze_profile(p):
+    """Recursively wrap dicts/lists into immutable views.
+
+    Inner ``dict`` becomes ``MappingProxyType`` (writes raise ``TypeError``)
+    and ``list`` becomes ``tuple`` so the entire tree returned by
+    ``get_version_profiles`` is read-only end-to-end. Atomic values pass
+    through. The shallow ``MappingProxyType`` wrapper alone wasn't enough
+    because callers could still reach into ``activities[name]`` and mutate
+    the inner ``dict``, leaking state across readers (H-1).
+    """
+    if isinstance(p, dict):
+        return MappingProxyType({k: _freeze_profile(v) for k, v in p.items()})
+    if isinstance(p, list):
+        return tuple(_freeze_profile(x) for x in p)
+    return p
+
+
 def get_version_profiles():
     """Return read-only mapping of (package, profile_version) -> profile.
 
     The outer mapping is wrapped in ``types.MappingProxyType`` so callers
     cannot add or replace registered profiles via the returned view. Inner
-    profile values are returned as deep copies, so mutating a profile
-    obtained from this getter never affects the registered profile. To
-    register or replace a profile, call ``register_version_profile``.
+    profile values are deep-copied AND deep-frozen (every nested dict
+    becomes a ``MappingProxyType`` and every list a ``tuple``), so mutating
+    any layer of a profile obtained from this getter raises ``TypeError``
+    instead of silently leaking state to subsequent readers. To register
+    or replace a profile, call ``register_version_profile``.
 
     The snapshot is cached and reused between calls — invalidated whenever
-    ``register_version_profile`` mutates the registry. Callers may still
-    mutate the inner dicts they receive without affecting other callers
-    because the cached snapshot is itself a fresh deep copy of the live
-    registry, and the cache returns the same MappingProxyType view to all
-    readers (mutations to the inner dicts persist within that view, just as
-    they did before this cache was introduced).
+    ``register_version_profile`` mutates the registry. Because the inner
+    structure is now fully immutable, the same cached snapshot is safely
+    shared across concurrent readers without any cross-contamination risk.
     """
     global _version_profiles_snapshot
     snap = _version_profiles_snapshot
@@ -462,7 +554,8 @@ def get_version_profiles():
             snap = _version_profiles_snapshot
             if snap is None:
                 snap = MappingProxyType(
-                    {key: copy.deepcopy(profile) for key, profile in _version_profiles.items()}
+                    {key: _freeze_profile(copy.deepcopy(profile))
+                     for key, profile in _version_profiles.items()}
                 )
                 _version_profiles_snapshot = snap
     return snap
@@ -583,6 +676,7 @@ def load_plugins():
 
             # Snapshot registry state so we can roll back on failure
             snap_generators = dict(_generators)
+            snap_aliases = dict(_generator_aliases)
             snap_display = dict(_display_name_map)
             snap_ui_gens = set(_ui_generators)
             snap_lint = list(_lint_rules)
@@ -604,6 +698,7 @@ def load_plugins():
                 """Roll back all registries to pre-load snapshot."""
                 global _version_profiles_snapshot, _band_profile_mappings_snapshot
                 _generators.clear(); _generators.update(snap_generators)
+                _generator_aliases.clear(); _generator_aliases.update(snap_aliases)
                 _display_name_map.clear(); _display_name_map.update(snap_display)
                 _ui_generators.clear(); _ui_generators.update(snap_ui_gens)
                 _lint_rules.clear(); _lint_rules.extend(snap_lint)
@@ -672,8 +767,12 @@ def load_plugins():
                     print(f"[plugin_loader] ERROR: {child.name}: {error_msg}",
                           file=sys.stderr)
                 elif required != PLUGIN_API_VERSION:
-                    error_msg = (f"API version mismatch: plugin wants v{required}, "
-                                 f"core provides v{PLUGIN_API_VERSION}")
+                    error_msg = (
+                        f"API version mismatch: plugin wants v{required}, "
+                        f"core provides v{PLUGIN_API_VERSION}."
+                        f" Update the plugin: set "
+                        f"'REQUIRED_API_VERSION = {PLUGIN_API_VERSION}' at module top."
+                    )
                     _load_failures.append((child.name, error_msg))
                     _cleanup_failed_plugin()
                     print(f"[plugin_loader] ERROR: {child.name}: {error_msg}",

@@ -827,8 +827,16 @@ def _generate_activity(spec: dict, scope_id: str, counter: _IdRefCounter,
             gen_from_annotation,
             ReviewNeededError,
         )
-    except ModuleNotFoundError:
-        raise ValueError(f"Unknown generator: {gen}")
+    except ModuleNotFoundError as e:
+        # Only the data-driven module's own absence means "no annotation
+        # corpus available — treat unknown gen as a bad gen name". Any
+        # transitive ModuleNotFoundError (e.g. _data_driven failed to import
+        # a real dependency) is a genuine bug in the corpus loader and
+        # MUST surface so the user sees the underlying cause instead of a
+        # misleading "Unknown generator" message. (H-4.)
+        if e.name == "generate_activities._data_driven":
+            raise ValueError(f"Unknown generator: {gen}")
+        raise  # transitive ModuleNotFoundError surfaces
 
     try:
         id_ref = counter.next(_idref_prefix(gen))

@@ -14,12 +14,21 @@ import logging
 import os
 import re
 from pathlib import Path
+from types import MappingProxyType
 
 from ._registry import lint_rule
 from ._context import FileContext, ValidationResult
 
 
 _LOG = logging.getLogger(__name__)
+
+# Profile dicts surfaced from `plugin_loader.get_version_profiles()` are now
+# deep-frozen — every nested dict is wrapped in ``MappingProxyType``. Plain
+# ``isinstance(x, dict)`` rejects those views, which would short-circuit the
+# version-compat lints into silent no-ops on every plugin-supplied profile.
+# Use this 2-tuple anywhere the code expects "a mapping-like object I can
+# call .get / .items on, regardless of mutability".
+_MAPPING_TYPES = (dict, MappingProxyType)
 
 _PROFILES_DIR = Path(__file__).resolve().parents[2] / "references" / "version-profiles"
 
@@ -144,23 +153,23 @@ def _detect_version_sensitive_activities() -> set[str]:
     activity_versions: dict[str, dict[str, str]] = {}
 
     for band, packages in _merged_band_profile_versions().items():
-        if not isinstance(packages, dict):
+        if not isinstance(packages, _MAPPING_TYPES):
             continue
         for package, profile_version in packages.items():
             if profile_version is None:
                 continue
             data = _load_profile_data(package, profile_version)
-            if not isinstance(data, dict):
+            if not isinstance(data, _MAPPING_TYPES):
                 continue
 
             activities = data.get("activities") or {}
-            if not isinstance(activities, dict):
+            if not isinstance(activities, _MAPPING_TYPES):
                 continue
             for act_name, act_data in activities.items():
-                if not isinstance(act_data, dict):
+                if not isinstance(act_data, _MAPPING_TYPES):
                     continue
                 vattrs = act_data.get("version_attrs") or {}
-                if not isinstance(vattrs, dict):
+                if not isinstance(vattrs, _MAPPING_TYPES):
                     continue
                 for tag, version in vattrs.items():
                     if not isinstance(version, str):
@@ -218,9 +227,15 @@ def _invalidate_cache() -> None:
 
     The plugin loader does NOT currently call this — wiring is up to F3 — but
     exposing the helper unblocks that work and is safe to call at any time.
+
+    M-2: ``_V25_ONLY_ATTRIBUTES`` is also rebuilt — it is computed once at
+    import time from ``attrs_introduced_in`` markers across every profile,
+    and a plugin that registers a new profile carrying additional 25-only
+    markers must see those reflected when the cache is invalidated.
     """
-    global _VERSION_SENSITIVE_ACTIVITIES
+    global _VERSION_SENSITIVE_ACTIVITIES, _V25_ONLY_ATTRIBUTES
     _VERSION_SENSITIVE_ACTIVITIES = _safe_detect_version_sensitive_activities()
+    _V25_ONLY_ATTRIBUTES = _build_v25_only_attributes()
     _BAND_EXPECTED_CACHE.clear()
 
 
@@ -260,7 +275,7 @@ def _build_band_expected_versions(band: str) -> dict[str, str]:
     expected: dict[str, str] = {}
     plugin_profiles = _get_plugin_profiles()
     band_packages = _merged_band_profile_versions().get(band) or {}
-    if not isinstance(band_packages, dict):
+    if not isinstance(band_packages, _MAPPING_TYPES):
         _BAND_EXPECTED_CACHE[band] = expected
         return expected
     for package, profile_version in band_packages.items():
@@ -281,16 +296,16 @@ def _build_band_expected_versions(band: str) -> dict[str, str]:
         available = [v for v in available if _version_key(v) <= canonical_key]
         for ver in available:
             data = _load_profile_data(package, ver)
-            if not isinstance(data, dict):
+            if not isinstance(data, _MAPPING_TYPES):
                 continue
             activities = data.get("activities") or {}
-            if not isinstance(activities, dict):
+            if not isinstance(activities, _MAPPING_TYPES):
                 continue
             for act_name, act_data in activities.items():
-                if not isinstance(act_data, dict):
+                if not isinstance(act_data, _MAPPING_TYPES):
                     continue
                 vattrs = act_data.get("version_attrs") or {}
-                if not isinstance(vattrs, dict):
+                if not isinstance(vattrs, _MAPPING_TYPES):
                     continue
                 for tag, version in vattrs.items():
                     if not isinstance(version, str):
@@ -333,22 +348,22 @@ def _build_v25_only_attributes() -> set[str]:
     saw_marker = False
     try:
         for band, packages in _merged_band_profile_versions().items():
-            if not isinstance(packages, dict):
+            if not isinstance(packages, _MAPPING_TYPES):
                 continue
             for package, profile_version in packages.items():
                 if profile_version is None:
                     continue
                 data = _load_profile_data(package, profile_version)
-                if not isinstance(data, dict):
+                if not isinstance(data, _MAPPING_TYPES):
                     continue
                 activities = data.get("activities") or {}
-                if not isinstance(activities, dict):
+                if not isinstance(activities, _MAPPING_TYPES):
                     continue
                 for act_data in activities.values():
-                    if not isinstance(act_data, dict):
+                    if not isinstance(act_data, _MAPPING_TYPES):
                         continue
                     introduced = act_data.get("attrs_introduced_in") or {}
-                    if not isinstance(introduced, dict):
+                    if not isinstance(introduced, _MAPPING_TYPES):
                         continue
                     saw_marker = saw_marker or bool(introduced)
                     for attr_name, intro_band in introduced.items():
@@ -448,12 +463,20 @@ def lint_healing_agent_below_25(ctx: FileContext, result: ValidationResult):
         tag = element.tag
         if not tag.startswith(f"{{{_UIX_NAMESPACE_URI}}}"):
             continue
-        for attr in _V25_ONLY_ATTRIBUTES:
-            if element.get(attr) is not None:
-                result.error(
-                    f"[lint 121] {attr} does not exist in UIAutomation band {band} "
-                    f"(introduced in 25.10+)"
-                )
+        # M-3: collect every offending attribute into one finding per element
+        # so an activity carrying both HealingAgentBehavior AND ClipboardMode
+        # surfaces as a single error (joined attr names) instead of N
+        # near-duplicates that drown the user's lint output.
+        offending = [
+            attr for attr in _V25_ONLY_ATTRIBUTES
+            if element.get(attr) is not None
+        ]
+        if offending:
+            attrs_joined = ", ".join(sorted(offending))
+            result.error(
+                f"[lint 121] {attrs_joined} does not exist in UIAutomation band "
+                f"{band} (introduced in 25.10+)"
+            )
 
 
 @lint_rule(122)

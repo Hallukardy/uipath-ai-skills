@@ -14,6 +14,7 @@ from pathlib import Path
 
 from plugin_loader import (
     register_generator,
+    register_generator_alias,
     register_lint,
     register_scaffold_hook,
     register_namespace,
@@ -66,24 +67,27 @@ register_generator("complete_task", gen_complete_task, display_name="CompleteTas
 register_generator("assign_tasks", gen_assign_tasks, display_name="AssignTasks")
 
 # --- Generators for activities harvested into the version profile but not
-#     covered by the legacy gen_* set above. battle_test_activities.py builds
-#     a spec with `gen` set to the lowercase activity name, so register under
-#     the lowercase form (no underscores) so dispatch resolves before the
-#     annotation fallback. Snake-case aliases are also registered for
-#     human-authored specs.
-register_generator("forwardtask", gen_forward_task, display_name="ForwardTask")
+#     covered by the legacy gen_* set above.
+#
+# M-8: previously each generator was double-registered under its snake_case
+# AND lowercase-no-underscore form so both human specs and
+# battle_test_activities (which calls ``activity_name.lower()``) could
+# dispatch. The duplicate ``register_generator`` calls produced two entries
+# pointing at the same callable. We now register the canonical snake_case
+# form once, then add the legacy lowercase alias via
+# ``register_generator_alias`` so ``get_generators()`` still surfaces both
+# names but only one canonical registration owns the slot.
 register_generator("forward_task", gen_forward_task, display_name="ForwardTask")
-register_generator("getapptasks", gen_get_app_tasks, display_name="GetAppTasks")
+register_generator_alias("forwardtask", "forward_task")
 register_generator("get_app_tasks", gen_get_app_tasks, display_name="GetAppTasks")
-register_generator(
-    "waitforuseractionandresume",
-    gen_wait_for_user_action_and_resume,
-    display_name="WaitForUserActionAndResume",
-)
+register_generator_alias("getapptasks", "get_app_tasks")
 register_generator(
     "wait_for_user_action_and_resume",
     gen_wait_for_user_action_and_resume,
     display_name="WaitForUserActionAndResume",
+)
+register_generator_alias(
+    "waitforuseractionandresume", "wait_for_user_action_and_resume"
 )
 
 # --- Lint rules ---

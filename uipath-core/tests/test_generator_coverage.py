@@ -478,3 +478,72 @@ class TestReviewNeededQuarantine:
         }
         with pytest.raises(ValueError, match="Cannot generate"):
             gw.generate_workflow(spec)
+
+
+# ---------------------------------------------------------------------------
+# H-5: WizardOnly / MissingScope propagate as their own type — NOT wrapped
+# ---------------------------------------------------------------------------
+# generate_workflow's dispatch wraps ReviewNeededError as ValueError so the
+# CLI shows a uniform "Cannot generate ..." line. WizardOnlyActivityError
+# and MissingScopeError must NOT be wrapped — callers (battle_test_activities,
+# regression_test) distinguish the failure modes by exception type to bin
+# wizard-only refusals separately from genuine generation errors.
+# ---------------------------------------------------------------------------
+
+
+class TestExceptionTypePropagation:
+    """generate_workflow's dispatch preserves WizardOnlyActivityError and
+    MissingScopeError as their own types — NEVER wrapped in plain ValueError.
+
+    A regression here surfaces as wizard-only refusals being indistinguishable
+    from "cannot generate" in the CLI, which broke battle_test_activities's
+    binning before R2a M2.
+    """
+
+    def test_wizard_only_propagates_as_wizard_only_error(self):
+        """A wizard-only activity (NSetValue) must reach the caller as
+        WizardOnlyActivityError, not get caught and re-raised as ValueError."""
+        sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+        import generate_workflow as gw
+
+        spec = {
+            "class_name": "WizardOnly_Test",
+            "arguments": [],
+            "variables": [],
+            "activities": [
+                {"gen": "nsetvalue", "args": {"display_name": "Wizard-only"}},
+            ],
+        }
+        # The exception type must be WizardOnlyActivityError — not its
+        # ValueError parent (if it has one). Using `pytest.raises` with a
+        # class catches subclasses; assert the exact type via excinfo.
+        with pytest.raises(WizardOnlyActivityError) as excinfo:
+            gw.generate_workflow(spec)
+        # Reject the broader ValueError type wrapper that ReviewNeededError
+        # paths produce: the message must NOT carry the "Cannot generate"
+        # prefix that the dispatch wraps ReviewNeeded with.
+        assert "Cannot generate" not in str(excinfo.value), (
+            f"WizardOnlyActivityError was wrapped — message: {excinfo.value!r}"
+        )
+
+    def test_missing_scope_propagates_as_missing_scope_error(self):
+        """SAP activity dispatched with the root-scope sentinel must reach the
+        caller as MissingScopeError, not as a wrapped ValueError. Calling
+        ``_generate_activity`` directly with the sentinel mirrors what
+        battle_test_activities does when probing root-level dispatch — the
+        contract under test is that ``_data_driven``'s scope-enforcement
+        exception flows OUT of the dispatch layer unwrapped."""
+        sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+        import generate_workflow as gw
+
+        spec = {"gen": "nsapcalltransaction",
+                "args": {"display_name": "Call without scope"}}
+        counter = gw._IdRefCounter()
+
+        with pytest.raises(MissingScopeError) as excinfo:
+            gw._generate_activity(spec, _ROOT_SCOPE_SENTINEL, counter)
+        # Anti-wrapping: the dispatch's ValueError wrapper would prefix
+        # with "Cannot generate" — MissingScopeError must NOT carry it.
+        assert "Cannot generate" not in str(excinfo.value), (
+            f"MissingScopeError was wrapped — message: {excinfo.value!r}"
+        )

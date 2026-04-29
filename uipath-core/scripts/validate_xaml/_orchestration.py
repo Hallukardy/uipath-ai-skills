@@ -46,8 +46,19 @@ def _read_version_band(project_dir: str | None) -> str | None:
     """
     if not project_dir:
         return None
-    pj_path = os.path.join(project_dir, "project.json")
-    if not os.path.exists(pj_path):
+    pj_path = Path(project_dir) / "project.json"
+    if not pj_path.exists():
+        return None
+    # H-10 (partial): cap project.json reads at 8 MB so a malicious or
+    # corrupted oversized file can't OOM the process. project.json files in
+    # real projects are <100 KB; anything north of 8 MB is pathological.
+    # Silent-None per the existing contract — no warning, lints already
+    # no-op when band is None.
+    MAX_PROJECT_JSON_BYTES = 8 * 1024 * 1024  # 8 MB
+    try:
+        if pj_path.stat().st_size > MAX_PROJECT_JSON_BYTES:
+            return None
+    except OSError:
         return None
     try:
         with open(pj_path, "r", encoding="utf-8-sig") as f:
@@ -62,13 +73,20 @@ def _read_version_band(project_dir: str | None) -> str | None:
         coerced = str(value)
         # Deferred import to avoid cycles between version_band and validate_xaml.
         from version_band import validate_band
+        # M-1: validate_band() rejects unknown bands with ValueError. Re-raising
+        # would crash the orchestrator on a malformed-but-int versionBand
+        # (e.g. 99) instead of falling through to the silent-None contract that
+        # downstream lints already honor for unknown bands. Surface the schema
+        # nudge on stderr and return None so the orchestrator stays alive.
         try:
             validate_band(coerced)
         except ValueError as e:
-            raise ValueError(
-                f"Invalid versionBand {value!r} in {pj_path}: {e}. "
-                f"Use a two-digit band string like \"25\" or \"26\"."
-            ) from e
+            print(
+                f"WARNING: invalid versionBand int {value!r} in {pj_path}: {e}. "
+                f"Use a two-digit band string like \"25\" or \"26\".",
+                file=sys.stderr,
+            )
+            return None
         print(
             f"warning: project.json versionBand is an int ({value!r}); "
             f"schema expects a string. Coerced to {coerced!r}.",

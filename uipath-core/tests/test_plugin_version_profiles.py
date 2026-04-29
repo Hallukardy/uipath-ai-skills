@@ -159,23 +159,40 @@ class TestGetReturnsImmutableView:
         with pytest.raises(TypeError):
             profiles[("Other", "1.0")] = {}  # type: ignore[index]
 
-    def test_get_version_profiles_inner_mutation_does_not_leak(self, isolated_registries):
+    def test_get_version_profiles_inner_mutation_raises(self, isolated_registries):
+        # H-1 contract: inner profile dicts are deep-frozen via _freeze_profile,
+        # so any nested write raises TypeError instead of silently corrupting
+        # the cached snapshot or leaking into other readers.
         profile = {"activities": {"OriginalAct": {"version_attrs": {"X": "V1"}}}}
         register_version_profile("Pkg.View", "1.0", profile)
         profiles = get_version_profiles()
         inner = profiles[("Pkg.View", "1.0")]
-        # Inner is a real dict (so isinstance(dict) passes downstream),
-        # but it's a deep copy of the registry — mutations don't reach the
-        # backing store.
-        assert isinstance(inner, dict)
-        inner["activities"]["LeakedAct"] = {"version_attrs": {}}
+        # Inner is now a MappingProxyType (read-only mapping).
+        assert isinstance(inner, MappingProxyType)
+        with pytest.raises(TypeError):
+            inner["activities"]["LeakedAct"] = {"version_attrs": {}}  # type: ignore[index]
+        # The registry itself is untouched.
         assert "LeakedAct" not in plugin_loader._version_profiles[("Pkg.View", "1.0")]["activities"]
-        # After a fresh registration, the cached snapshot is invalidated and
-        # the next getter call rebuilds from the (untouched) registry, so the
-        # leaked mutation is gone.
+
+    def test_get_version_profiles_caller_b_no_leak_after_caller_a_attempts_mutation(
+        self, isolated_registries
+    ):
+        # H-1 cross-contamination test: caller A reads, attempts a nested
+        # write (TypeError), caller B reads after and sees a pristine view.
+        profile = {"activities": {"OriginalAct": {"version_attrs": {"X": "V1"}}}}
         register_version_profile("Pkg.View", "1.0", profile)
-        fresh = get_version_profiles()
-        assert "LeakedAct" not in fresh[("Pkg.View", "1.0")]["activities"]
+
+        # Caller A
+        view_a = get_version_profiles()
+        with pytest.raises(TypeError):
+            view_a[("Pkg.View", "1.0")]["activities"]["X"] = "leaked"  # type: ignore[index]
+
+        # Caller B reads after A — must see the original profile only.
+        view_b = get_version_profiles()
+        b_inner = view_b[("Pkg.View", "1.0")]
+        assert isinstance(b_inner, MappingProxyType)
+        assert set(b_inner["activities"].keys()) == {"OriginalAct"}
+        assert b_inner["activities"]["OriginalAct"]["version_attrs"]["X"] == "V1"
 
     def test_get_band_profile_mappings_outer_is_mappingproxy(self, isolated_registries):
         register_version_profile("Pkg.View", "1.0", {"activities": {}})
@@ -286,6 +303,7 @@ def stub_plugin_factory(tmp_path_factory):
     snap_loaded = plugin_loader._loaded
     snap_failures = list(plugin_loader._load_failures)
     snap_generators = dict(plugin_loader._generators)
+    snap_aliases = dict(plugin_loader._generator_aliases)
     snap_display = dict(plugin_loader._display_name_map)
     snap_ui_gens = set(plugin_loader._ui_generators)
     snap_lint = list(plugin_loader._lint_rules)
@@ -328,6 +346,7 @@ def stub_plugin_factory(tmp_path_factory):
     plugin_loader._load_failures.clear()
     plugin_loader._load_failures.extend(snap_failures)
     plugin_loader._generators.clear(); plugin_loader._generators.update(snap_generators)
+    plugin_loader._generator_aliases.clear(); plugin_loader._generator_aliases.update(snap_aliases)
     plugin_loader._display_name_map.clear(); plugin_loader._display_name_map.update(snap_display)
     plugin_loader._ui_generators.clear(); plugin_loader._ui_generators.update(snap_ui_gens)
     plugin_loader._lint_rules.clear(); plugin_loader._lint_rules.extend(snap_lint)
@@ -382,3 +401,109 @@ class TestPluginMissingRequiredApiVersion:
         assert ("Stub.NoApiVersion.Pkg", "9.9") not in profiles, (
             "rejected plugin's profile registration was not rolled back"
         )
+
+    def test_plugin_with_required_api_version_1_rejected(self, stub_plugin_factory):
+        # H-2 part 1: a plugin pinned to the prior API version (v1) must be
+        # rejected with a clear "API version mismatch" message that names the
+        # required vs declared versions, so a stale plugin author sees what
+        # to update.
+        init_body = (
+            "REQUIRED_API_VERSION = 1\n"
+        )
+        stub_plugin_factory("_omc_stub_api_v1", init_body)
+
+        plugin_loader._loaded = False
+        plugin_loader._load_failures.clear()
+        plugin_loader.load_plugins()
+
+        failures = plugin_loader.get_load_failures()
+        match = [(s, e) for s, e in failures if s == "_omc_stub_api_v1"]
+        assert match, f"expected stub v1 plugin to fail; load failures: {failures}"
+        skill_name, err_msg = match[0]
+        # The mismatch error names both versions and the remediation hint
+        # (added by H-3) so the operator can fix the plugin without grepping.
+        assert "API version mismatch" in err_msg, err_msg
+        assert "v1" in err_msg, err_msg
+        assert f"v{PLUGIN_API_VERSION}" in err_msg, err_msg
+        # H-3 remediation hint: tells the plugin author exactly what to set.
+        assert "REQUIRED_API_VERSION" in err_msg, err_msg
+        assert f"= {PLUGIN_API_VERSION}" in err_msg, err_msg
+
+    def test_plugin_partial_load_failure_rolls_back_all_registries(self, stub_plugin_factory):
+        # H-2 part 2: a plugin that calls register_version_profile then raises
+        # mid-import must roll back EVERY registry so the failed plugin's
+        # partial state can't leak into subsequent plugins or callers.
+        # Snapshot every registry from outside the load_plugins call and
+        # compare keys after the failed load — they must be byte-identical.
+        snap_before = {
+            "generators": dict(plugin_loader._generators),
+            "aliases": dict(plugin_loader._generator_aliases),
+            "display": dict(plugin_loader._display_name_map),
+            "ui_gens": set(plugin_loader._ui_generators),
+            "lint": list(plugin_loader._lint_rules),
+            "hooks": list(plugin_loader._scaffold_hooks),
+            "ns": dict(plugin_loader._extra_namespaces),
+            "known": set(plugin_loader._extra_known_activities),
+            "key": list(plugin_loader._extra_key_activities),
+            "hallucination": list(plugin_loader._hallucination_patterns),
+            "packages": list(plugin_loader._common_packages),
+            "graders": dict(plugin_loader._battle_test_graders),
+            "specs": dict(plugin_loader._test_specs),
+            "lint_fixtures": list(plugin_loader._lint_test_fixtures),
+            "type_mappings": dict(plugin_loader._type_mappings),
+            "variable_prefixes": dict(plugin_loader._variable_prefixes),
+            "version_profiles": dict(plugin_loader._version_profiles),
+            "band_mappings": {b: dict(p) for b, p in plugin_loader._band_profile_mappings.items()},
+        }
+
+        init_body = (
+            "import sys, pathlib\n"
+            "_root = pathlib.Path(__file__).resolve().parent.parent.parent / 'uipath-core' / 'scripts'\n"
+            "sys.path.insert(0, str(_root))\n"
+            "from plugin_loader import register_version_profile\n"
+            "REQUIRED_API_VERSION = 2\n"
+            "register_version_profile('Stub.PartialFail.Pkg', '7.7', {'activities': {}})\n"
+            "raise RuntimeError('simulated')\n"
+        )
+        stub_plugin_factory("_omc_stub_partial_fail", init_body)
+
+        plugin_loader._loaded = False
+        plugin_loader._load_failures.clear()
+        plugin_loader.load_plugins()
+
+        failures = plugin_loader.get_load_failures()
+        match = [(s, e) for s, e in failures if s == "_omc_stub_partial_fail"]
+        assert match, f"expected partial-fail stub to be in failures: {failures}"
+        # Error message is "RuntimeError: simulated".
+        assert "simulated" in match[0][1]
+
+        # Every one of the 17 registries must be byte-identical to pre-load.
+        snap_after = {
+            "generators": dict(plugin_loader._generators),
+            "aliases": dict(plugin_loader._generator_aliases),
+            "display": dict(plugin_loader._display_name_map),
+            "ui_gens": set(plugin_loader._ui_generators),
+            "lint": list(plugin_loader._lint_rules),
+            "hooks": list(plugin_loader._scaffold_hooks),
+            "ns": dict(plugin_loader._extra_namespaces),
+            "known": set(plugin_loader._extra_known_activities),
+            "key": list(plugin_loader._extra_key_activities),
+            "hallucination": list(plugin_loader._hallucination_patterns),
+            "packages": list(plugin_loader._common_packages),
+            "graders": dict(plugin_loader._battle_test_graders),
+            "specs": dict(plugin_loader._test_specs),
+            "lint_fixtures": list(plugin_loader._lint_test_fixtures),
+            "type_mappings": dict(plugin_loader._type_mappings),
+            "variable_prefixes": dict(plugin_loader._variable_prefixes),
+            "version_profiles": dict(plugin_loader._version_profiles),
+            "band_mappings": {b: dict(p) for b, p in plugin_loader._band_profile_mappings.items()},
+        }
+        assert snap_after == snap_before, (
+            "partial-load failure left state in one or more registries:\n"
+            + "\n".join(
+                f"  {k}: before={snap_before[k]!r} after={snap_after[k]!r}"
+                for k in snap_before if snap_before[k] != snap_after[k]
+            )
+        )
+        # And the partial profile registration is gone.
+        assert ("Stub.PartialFail.Pkg", "7.7") not in plugin_loader._version_profiles
