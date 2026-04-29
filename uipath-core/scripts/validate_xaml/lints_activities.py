@@ -183,24 +183,31 @@ def lint_file_operations(ctx: FileContext, result: ValidationResult):
     result.ok(f"File operations: {len(file_ops)} activit(ies)")
 
 
+def _decoded_invoke_code_blocks(content):
+    """Yield decoded Code= bodies from InvokeCode activities."""
+    for code in re.findall(r'Code="([^"]*)"', content):
+        yield (
+            code.replace("&#xA;", "\n")
+                .replace("&quot;", '"')
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&#x9;", "\t")
+        )
+
+
 @lint_rule(27)
 def lint_invoke_code_datatable_setup(ctx: FileContext, result: ValidationResult):
-    """Lint 27/33/34: InvokeCode anti-patterns.
-    
-    27: DataTable creation + Columns.Add → use Variable Default + AddDataColumn
-    33: SqlConnection/SqlClient → use DatabaseConnect + ExecuteQuery/ExecuteNonQuery
-    34: CopyFromScreen/Graphics screenshot → use TakeScreenshot + SaveImage activities
+    """Lint 27: InvokeCode creates a DataTable AND adds columns.
+
+    Use Variable Default='new DataTable' + AddDataColumn activities instead.
+    Reserve InvokeCode for procedural logic only (LINQ, GroupBy, loops).
     """
     try:
         content = ctx.active_content
     except Exception:
         return
-    
-    # Find all InvokeCode Code attributes
-    code_blocks = re.findall(r'Code="([^"]*)"', content)
-    for code in code_blocks:
-        # Decode XML entities for analysis
-        decoded = code.replace("&#xA;", "\n").replace("&quot;", '"').replace("&lt;", "<").replace("&gt;", ">").replace("&#x9;", "\t")
+
+    for decoded in _decoded_invoke_code_blocks(content):
         has_new_dt = bool(re.search(r'New\s+DataTable', decoded))
         has_col_add = bool(re.search(r'\.Columns\.Add\(', decoded))
         if has_new_dt and has_col_add:
@@ -210,34 +217,68 @@ def lint_invoke_code_datatable_setup(ctx: FileContext, result: ValidationResult)
                 "Reserve InvokeCode for procedural logic only (LINQ, GroupBy, loops). "
                 "See xaml-data.md → 'Add Data Column' section."
             )
-        
-        # Lint 33: Database operations via InvokeCode
-        has_sql = bool(re.search(r'SqlConnection|SqlCommand|\.Open\(\)|\.ExecuteNonQuery\(\)|\.ExecuteReader\(\)', decoded))
-        if has_sql:
+
+
+@lint_rule(117)
+def lint_invoke_code_sql(ctx: FileContext, result: ValidationResult):
+    """Lint 117: InvokeCode contains SqlConnection/SqlCommand.
+
+    Use DatabaseConnect + ExecuteQuery/ExecuteNonQuery activities from
+    UiPath.Database.Activities instead.
+    """
+    try:
+        content = ctx.active_content
+    except Exception:
+        return
+
+    for decoded in _decoded_invoke_code_blocks(content):
+        if re.search(r'SqlConnection|SqlCommand|\.Open\(\)|\.ExecuteNonQuery\(\)|\.ExecuteReader\(\)', decoded):
             result.error(
-                "[lint 33] InvokeCode contains SqlConnection/SqlCommand — "
+                "[lint 117] InvokeCode contains SqlConnection/SqlCommand — "
                 "use DatabaseConnect + ExecuteQuery/ExecuteNonQuery activities from "
                 "UiPath.Database.Activities instead. They handle connection pooling, "
                 "parameterized queries, and proper disposal. "
                 "See xaml-integrations.md → 'Database Activities' section."
             )
-        
-        # Lint 34: Screenshot via InvokeCode
-        has_screenshot = bool(re.search(r'CopyFromScreen|Graphics\.FromImage|PrimaryScreenWidth|PrimaryScreenHeight', decoded))
-        if has_screenshot:
+
+
+@lint_rule(118)
+def lint_invoke_code_screenshot(ctx: FileContext, result: ValidationResult):
+    """Lint 118: InvokeCode captures a screenshot via System.Drawing.
+
+    Use TakeScreenshot + SaveImage activities instead.
+    """
+    try:
+        content = ctx.active_content
+    except Exception:
+        return
+
+    for decoded in _decoded_invoke_code_blocks(content):
+        if re.search(r'CopyFromScreen|Graphics\.FromImage|PrimaryScreenWidth|PrimaryScreenHeight', decoded):
             result.error(
-                "[lint 34] InvokeCode captures screenshot via System.Drawing — "
+                "[lint 118] InvokeCode captures screenshot via System.Drawing — "
                 "use TakeScreenshot + SaveImage activities instead. They handle "
                 "DPI scaling, multi-monitor setups, and memory disposal correctly. "
                 "In REFramework, call Framework/TakeScreenshot.xaml. "
                 "See xaml-integrations.md → 'Screenshot Activities' section."
             )
-        
-        # Lint 35: File.Delete via InvokeCode
-        has_file_delete = bool(re.search(r'File\.Delete\(|IO\.File\.Delete', decoded))
-        if has_file_delete:
+
+
+@lint_rule(119)
+def lint_invoke_code_file_delete(ctx: FileContext, result: ValidationResult):
+    """Lint 119: InvokeCode uses File.Delete.
+
+    Use the DeleteFileX activity instead.
+    """
+    try:
+        content = ctx.active_content
+    except Exception:
+        return
+
+    for decoded in _decoded_invoke_code_blocks(content):
+        if re.search(r'File\.Delete\(|IO\.File\.Delete', decoded):
             result.error(
-                "[lint 35] InvokeCode uses File.Delete — "
+                "[lint 119] InvokeCode uses File.Delete — "
                 "use DeleteFileX activity instead: "
                 "<ui:DeleteFileX Path=\"[strFilePath]\" />. "
                 "See xaml-data.md → 'Delete File' section."
@@ -1075,7 +1116,7 @@ def lint_argument_type_mismatch(ctx: FileContext, result: ValidationResult,
 
 @lint_rule(109)
 def lint_delay_activity(ctx: FileContext, result: ValidationResult):
-    """Lint 109: Delay activity should not be used — use NCheckState/NCheckAppState."""
+    """Lint 109: Delay activity should not be used — use NCheckState."""
     try:
         content = ctx.active_content
     except Exception:
@@ -1084,6 +1125,6 @@ def lint_delay_activity(ctx: FileContext, result: ValidationResult):
     if delay_hits:
         result.warn(
             f"[lint 109] Workflow contains {len(delay_hits)} Delay activit{'y' if len(delay_hits) == 1 else 'ies'}. "
-            f"Use NCheckState/NCheckAppState for synchronization instead of Delay."
+            f"Use NCheckState for synchronization instead of Delay."
         )
 

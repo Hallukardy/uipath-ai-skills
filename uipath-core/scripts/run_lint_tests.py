@@ -26,11 +26,11 @@ TESTS = [
     # Bad files — each should trigger specific lint
     ("bad_hardcoded_url.xaml", "lint 37", "WARN"),
     ("bad_no_incognito.xaml", "lint 38", "WARN"),
-    ("bad_credential_args.xaml", "credential", "WARN"),
+    ("bad_credential_args.xaml", "lint 34", "ERROR"),
     ("bad_throw_csharp.xaml", "C# syntax", "ERROR"),
     ("bad_api_no_retry.xaml", "lint 36", "ERROR"),
-    ("bad_attach_by_url.xaml", "ByUrl", "ERROR"),
-    ("bad_password_text.xaml", "SecureText", "WARN"),
+    ("bad_attach_by_url.xaml", "lint 33", "ERROR"),
+    ("bad_password_text.xaml", "lint 35", "ERROR"),
     ("bad_xlist_selectitem.xaml", "x:List", "ERROR"),
     ("bad_nselectitem_version.xaml", "NSelectItem Version", "ERROR"),
     ("bad_addqueue_dict_expr.xaml", "Missing key value", "ERROR"),
@@ -76,16 +76,16 @@ TESTS = [
     ("bad_double_bracket_expr.xaml", "lint 83", "ERROR"),
     # --- New lint coverage tests ---
     ("bad_inline_result_extractdata.xaml", "lint 17", "ERROR"),
-    ("bad_targetanchorable_child.xaml", "lint 23", "ERROR"),
+    ("bad_targetanchorable_child.xaml", "lint 116", "ERROR"),
     # AC-26 (persistence in sub-workflows) → moved to uipath-tasks plugin
     ("bad_invoke_code_datatable.xaml", "lint 27", "WARN"),
     ("bad_element_type.xaml", "lint 28", "ERROR"),
     ("bad_nselectitem_interactionmode.xaml", "lint 30", "ERROR"),
     ("bad_continue_on_error_x.xaml", "lint 31", "ERROR"),
     ("bad_special_folder_temp.xaml", "lint 32", "ERROR"),
-    ("bad_invoke_code_sql.xaml", "lint 33", "ERROR"),
-    ("bad_invoke_code_screenshot.xaml", "lint 34", "ERROR"),
-    ("bad_invoke_code_filedelete.xaml", "lint 35", "ERROR"),
+    ("bad_invoke_code_sql.xaml", "lint 117", "ERROR"),
+    ("bad_invoke_code_screenshot.xaml", "lint 118", "ERROR"),
+    ("bad_invoke_code_filedelete.xaml", "lint 119", "ERROR"),
     ("bad_enum_namespace.xaml", "lint 40", "ERROR"),
     ("bad_fuzzy_default.xaml", "lint 41", "WARN"),
     ("bad_AppName_NavigateTo.xaml", "lint 45", "ERROR"),
@@ -134,12 +134,14 @@ PROJECT_TESTS = [
 # Lint numbers deliberately excluded from test coverage with justification.
 # Every entry here must explain WHY the lint can't be tested.
 EXCLUDED_LINTS = {
+    23: "Requires Studio-emitted <ui:UnresolvedActivity> — only appears when Studio fails to resolve an activity type; can't be authored as a static fixture",
     39: "Informational OK message (not error/warn) — lists Config keys referenced",
     61: "Requires openpyxl + real Config.xlsx at project level — low ROI",
     68: "Requires REFramework project context (Framework/ dir) — single-file lint test can't trigger",
     94: "Project-level Object Repository check — requires .objects/ directory + UI XAML files",
     106: "Requires NApplicationCard with desktop FilePath — hard to create minimal test without desktop app context",
     107: "Requires NApplicationCard with desktop FilePath — hard to create minimal test without desktop app context",
+    115: "Requires NApplicationCard with desktop FilePath — hard to create minimal test without desktop app context",
 }
 
 # Lints provided by plugin skills — tested only when the plugin is installed.
@@ -282,6 +284,26 @@ def run_lint(filepath: str) -> str:
     return result.stdout + result.stderr
 
 
+def _matches_co_located(output: str, expected_substr: str, severity: str) -> bool:
+    """Return True iff expected_substr and [SEVERITY] co-occur on the same output line.
+
+    Requiring co-location prevents false PASS when one rule emits the substring on
+    one line while an unrelated rule contributes the severity bracket elsewhere.
+    Falls back to relaxed matching for non-numeric expectations (e.g. "C# syntax").
+    """
+    sev_token = f"[{severity}]"
+    needle = expected_substr.lower()
+    is_numeric_lint = re.match(r"^lint \d+$", expected_substr.strip().lower()) is not None
+    for line in output.splitlines():
+        line_lower = line.lower()
+        if needle in line_lower and sev_token in line:
+            return True
+    if is_numeric_lint:
+        return False
+    # Relaxed mode: substring may appear anywhere, severity bracket anywhere
+    return needle in output.lower() and sev_token in output
+
+
 def main():
     passed = 0
     failed = 0
@@ -297,10 +319,7 @@ def main():
             continue
 
         output = run_lint(filepath)
-        found = expected_substr.lower() in output.lower()
-        severity_found = f"[{severity}]" in output
-
-        if found and severity_found:
+        if _matches_co_located(output, expected_substr, severity):
             print(f"  PASS  {filename} — triggered '{expected_substr}' as [{severity}]")
             passed += 1
         else:
@@ -325,9 +344,7 @@ def main():
                 print(f"  SKIP  {filename} — file not found")
                 continue
             output = run_lint(filepath)
-            found = expected_substr.lower() in output.lower()
-            severity_found = f"[{severity}]" in output
-            if found and severity_found:
+            if _matches_co_located(output, expected_substr, severity):
                 print(f"  PASS  {filename} — triggered '{expected_substr}' as [{severity}] (plugin)")
                 passed += 1
             else:
@@ -361,10 +378,7 @@ def main():
             continue
 
         output = run_lint(filepath)
-        found = expected_substr.lower() in output.lower()
-        severity_found = f"[{severity}]" in output
-
-        if found and severity_found:
+        if _matches_co_located(output, expected_substr, severity):
             print(f"  PASS  {relpath} — triggered '{expected_substr}' as [{severity}]")
             passed += 1
         else:
@@ -380,10 +394,7 @@ def main():
             continue
 
         output = run_lint(dirpath)
-        found = expected_substr.lower() in output.lower()
-        severity_found = f"[{severity}]" in output
-
-        if found and severity_found:
+        if _matches_co_located(output, expected_substr, severity):
             print(f"  PASS  {relpath}/ — triggered '{expected_substr}' as [{severity}]")
             passed += 1
         else:

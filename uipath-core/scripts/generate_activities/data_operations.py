@@ -21,7 +21,7 @@ def gen_assign(to_variable, value_expression, id_ref, display_name="",
     i, i2, i3 = indent, indent+"  ", indent+"    "
     return f"""{i}<Assign DisplayName="{dn}" {_hs("Assign")} sap2010:WorkflowViewState.IdRef="{id_ref}">
 {i2}<Assign.To>
-{i3}<OutArgument x:TypeArguments="{value_type}">[{to_variable}]</OutArgument>
+{i3}<OutArgument x:TypeArguments="{value_type}">[{_escape_vb_expr(to_variable)}]</OutArgument>
 {i2}</Assign.To>
 {i2}<Assign.Value>
 {i3}<InArgument x:TypeArguments="{value_type}">[{_escape_vb_expr(value_expression)}]</InArgument>
@@ -58,7 +58,7 @@ def gen_multiple_assign(assignments, id_ref, display_name="Multiple Assign",
         val_type = _normalize_type_arg(val_type)
         ops.append(f"""{i4}<ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_{id_ref}_{idx}">
 {i5}<ui:AssignOperation.To>
-{i6}<OutArgument x:TypeArguments="{val_type}">[{to_var}]</OutArgument>
+{i6}<OutArgument x:TypeArguments="{val_type}">[{_escape_vb_expr(to_var)}]</OutArgument>
 {i5}</ui:AssignOperation.To>
 {i5}<ui:AssignOperation.Value>
 {i6}<InArgument x:TypeArguments="{val_type}">[{_escape_vb_expr(val_expr)}]</InArgument>
@@ -381,9 +381,9 @@ def gen_filter_data_table(datatable_variable, filters, id_ref,
         else:
             # String operands: ["value"], non-string: [value]
             if operand_type == "x:String":
-                operand_expr = f'["{_escape_xml_attr(str(operand))}"]'
+                operand_expr = f'["{_escape_vb_expr(str(operand))}"]'
             else:
-                operand_expr = f'[{_escape_xml_attr(str(operand))}]'
+                operand_expr = f'[{_escape_vb_expr(str(operand))}]'
             filter_entries.append(f"""{i4}<ui:FilterOperationArgument BooleanOperator="{bool_op}" Operator="{op}">
 {i5}<ui:FilterOperationArgument.Column>
 {i5}  <InArgument x:TypeArguments="x:String">["{_escape_xml_attr(col)}"]</InArgument>

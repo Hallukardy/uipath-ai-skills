@@ -89,7 +89,7 @@ def gen_invoke_code(code, id_ref, arguments=None, language="VBNet",
         for direction, arg_type, key, variable in arguments:
             tag = dir_map[direction]
             arg_lines.append(
-                f'{i3}<{tag} x:TypeArguments="{arg_type}" x:Key="{key}">[{variable}]</{tag}>'
+                f'{i3}<{tag} x:TypeArguments="{arg_type}" x:Key="{key}">[{_escape_vb_expr(variable)}]</{tag}>'
             )
         args_xml = "\n".join(arg_lines)
         return f"""{i}<ui:InvokeCode ContinueOnError="{{x:Null}}" Code="{encoded_code}" DisplayName="{dn}" Language="{language}" sap2010:WorkflowViewState.IdRef="InvokeCode_{id_ref}">
@@ -136,13 +136,13 @@ def gen_invoke_method(method_name, id_ref, target_object=None, target_object_typ
     if target_object:
         var, typ = target_object
         parts.append(f"""{i2}<InvokeMethod.TargetObject>
-{i3}<InArgument x:TypeArguments="{typ}">[{var}]</InArgument>
+{i3}<InArgument x:TypeArguments="{typ}">[{_escape_vb_expr(var)}]</InArgument>
 {i2}</InvokeMethod.TargetObject>""")
 
     # Positional parameters
     if parameters:
         for param_type, param_var in parameters:
-            parts.append(f'{i2}<InArgument x:TypeArguments="{param_type}">[{param_var}]</InArgument>')
+            parts.append(f'{i2}<InArgument x:TypeArguments="{param_type}">[{_escape_vb_expr(param_var)}]</InArgument>')
 
     parts.append(f'{i}</InvokeMethod>')
     return "\n".join(parts)

@@ -41,7 +41,7 @@ def gen_if(condition_expression, id_ref, then_content,
 
     return f"""{i}<If DisplayName="{dn}" {_hs("If")} sap2010:WorkflowViewState.IdRef="If_{id_ref}">
 {i2}<If.Condition>
-{i3}<InArgument x:TypeArguments="x:Boolean">[{_escape_xml_attr(condition_expression)}]</InArgument>
+{i3}<InArgument x:TypeArguments="x:Boolean">[{_escape_vb_expr(condition_expression)}]</InArgument>
 {i2}</If.Condition>
 {i2}<If.Then>
 {then_block}
@@ -74,13 +74,13 @@ def gen_if_else_if(conditions, id_ref, else_content="",
                                indent+"      ", indent+"        ", indent+"          ")
 
     # Primary condition
-    primary_cond = _escape_xml_attr(conditions[0][0])
+    primary_cond = _escape_vb_expr(conditions[0][0])
     primary_then = conditions[0][1]
 
     # ElseIf blocks
     elseif_blocks = []
     for idx, (cond, content) in enumerate(conditions[1:], 1):
-        elseif_blocks.append(f"""{i5}<ui:IfElseIfBlock BlockType="ElseIf" Condition="[{_escape_xml_attr(cond)}]">
+        elseif_blocks.append(f"""{i5}<ui:IfElseIfBlock BlockType="ElseIf" Condition="[{_escape_vb_expr(cond)}]">
 {i6}<ui:IfElseIfBlock.Then>
 {i6}  <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_ElseIf_{id_ref}_{idx}">
 {content}
@@ -162,7 +162,7 @@ def gen_switch(expression_variable, id_ref, cases, default_content="",
 
     cases_xml = "\n".join(case_blocks)
 
-    return f"""{i}<Switch x:TypeArguments="{switch_type}" DisplayName="{dn}" Expression="[{_escape_xml_attr(expression_variable)}]" {_hs("Switch")} sap2010:WorkflowViewState.IdRef="Switch`1_{id_ref}">
+    return f"""{i}<Switch x:TypeArguments="{switch_type}" DisplayName="{dn}" Expression="[{_escape_vb_expr(expression_variable)}]" {_hs("Switch")} sap2010:WorkflowViewState.IdRef="Switch`1_{id_ref}">
 {default_block}{cases_xml}
 {i}</Switch>"""
 
@@ -297,7 +297,7 @@ def gen_while(condition_expression, id_ref, body_content, body_sequence_idref,
     dn = _escape_xml_attr(display_name)
     i, i2, i3 = indent, indent+"  ", indent+"    "
 
-    return f"""{i}<While Condition="[{_escape_xml_attr(condition_expression)}]" DisplayName="{dn}" {_hs("While")} sap2010:WorkflowViewState.IdRef="While_{id_ref}">
+    return f"""{i}<While Condition="[{_escape_vb_expr(condition_expression)}]" DisplayName="{dn}" {_hs("While")} sap2010:WorkflowViewState.IdRef="While_{id_ref}">
 {i2}<Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="{body_sequence_idref}">
 {i3}{_viewstate_block(body_sequence_idref)}
 {body_content}
@@ -315,7 +315,7 @@ def gen_do_while(condition_expression, id_ref, body_content, body_sequence_idref
     dn = _escape_xml_attr(display_name)
     i, i2, i3 = indent, indent+"  ", indent+"    "
 
-    return f"""{i}<DoWhile Condition="[{_escape_xml_attr(condition_expression)}]" DisplayName="{dn}" {_hs("DoWhile")} sap2010:WorkflowViewState.IdRef="DoWhile_{id_ref}">
+    return f"""{i}<DoWhile Condition="[{_escape_vb_expr(condition_expression)}]" DisplayName="{dn}" {_hs("DoWhile")} sap2010:WorkflowViewState.IdRef="DoWhile_{id_ref}">
 {i2}<Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="{body_sequence_idref}">
 {i3}{_viewstate_block(body_sequence_idref)}
 {body_content}
@@ -402,7 +402,7 @@ def gen_flowchart(steps, decisions, start_ref_id, id_ref,
 
         decision_map[dec["ref_id"]] = f"""{i4}<FlowDecision x:Name="{dec["ref_id"]}" DisplayName="{_escape_xml_attr(dec.get("display_name", "Flow Decision"))}" {_hs("FlowDecision")} sap2010:WorkflowViewState.IdRef="FlowDecision_{id_ref}_{dec["ref_id"]}">
 {i5}<FlowDecision.Condition>
-{i6}<VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="{_escape_xml_attr(dec["condition"])}" />
+{i6}<VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="{_escape_vb_expr(dec["condition"])}" />
 {i5}</FlowDecision.Condition>
 {dec_vs}
 {true_branch}

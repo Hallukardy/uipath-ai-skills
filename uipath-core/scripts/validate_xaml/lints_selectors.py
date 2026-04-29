@@ -34,7 +34,15 @@ def lint_selector_hardcoded(ctx: FileContext, result: ValidationResult):
             f"these are fragile and break when page layout changes"
         )
 
-    # Detect css-selector= usage — valid UiPath WEBCTRL attribute but fragile
+    result.ok(f"Selectors: {dynamic} dynamic, {static} static")
+
+
+@lint_rule(97, golden_suppressed=True)
+def lint_selector_css(ctx: FileContext, result: ValidationResult):
+    """Lint 97: Detect css-selector= usage — valid UiPath WEBCTRL attribute but fragile."""
+    content = ctx.active_content
+
+    selectors = re.findall(r'FullSelectorArgument="([^"]*)"', content)
     css_selector_hits = [s for s in selectors if "css-selector=" in s.lower()]
     if css_selector_hits:
         result.warn(
@@ -42,8 +50,6 @@ def lint_selector_hardcoded(ctx: FileContext, result: ValidationResult):
             f"CSS selectors are fragile and break when page structure changes. "
             f"Prefer id=, aaname=, or parentid= attributes for reliable matching."
         )
-
-    result.ok(f"Selectors: {dynamic} dynamic, {static} static")
 
 
 @lint_rule(14, golden_suppressed=True)

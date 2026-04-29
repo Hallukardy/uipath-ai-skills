@@ -423,3 +423,66 @@ class TestVbExprQuoteEscapingDefensiveSweep:
         )
         assert 'TextString="[strOut]"' in out
         assert 'InUiElement="[uiEl]"' in out
+
+
+class TestEscapeVbExprContract:
+    """Lock the invariants of utils.escape_vb_expr — the canonical helper used
+    everywhere a VB expression is emitted inside an XML attribute as [expr].
+
+    Pin contract:
+    - Empty input returns empty
+    - Idempotent: applying twice equals applying once
+    - All five XML special chars round-trip cleanly
+    - Mixed pre-escaped + raw input normalizes before re-escaping
+    """
+
+    def _f(self):
+        from utils import escape_vb_expr
+        return escape_vb_expr
+
+    def test_empty_input(self):
+        assert self._f()("") == ""
+
+    def test_idempotent(self):
+        f = self._f()
+        for s in [
+            'plain text',
+            'Hello "World"',
+            'a & b',
+            '<tag>',
+            '"&<>',
+            'New BusinessRuleException("Invalid item")',
+            '&quot;already&quot;',
+        ]:
+            assert f(f(s)) == f(s), f"not idempotent for: {s!r}"
+
+    def test_quote_escape(self):
+        assert self._f()('"') == '&quot;'
+
+    def test_ampersand_escape(self):
+        assert self._f()('a & b') == 'a &amp; b'
+
+    def test_lt_gt_escape(self):
+        f = self._f()
+        assert f('<') == '&lt;'
+        assert f('>') == '&gt;'
+
+    def test_apostrophe_passthrough(self):
+        # ' is not XML-special inside double-quoted attrs, so VB-escape leaves it alone.
+        # Locks behavior; flips here would force re-review of every selector site.
+        assert "'" in self._f()("don't")
+
+    def test_normalizes_pre_escaped_input(self):
+        f = self._f()
+        # Pre-escaped &quot; should NOT be double-escaped to &amp;quot;
+        assert f('&quot;Hello&quot;') == '&quot;Hello&quot;'
+        # Mixed pre-escaped + raw: normalize, then re-escape cleanly
+        assert '&amp;quot;' not in f('&quot;Hello&quot; & "World"')
+
+    def test_no_double_escape_amp(self):
+        # The historical regression: & in the middle of pre-escaped content.
+        f = self._f()
+        out = f('&quot;a&quot; & b')
+        assert '&amp;quot;' not in out, out
+        assert out.count('&quot;') == 2
+        assert '&amp;' in out  # the & between &quot;a&quot; and b

@@ -639,7 +639,7 @@ def lint_orphaned_scoped_activities(ctx: FileContext, result: ValidationResult):
     """Lint 58: Modern UI activities outside NApplicationCard scope.
 
     Modern Design activities (NGoToUrl, NTypeInto, NClick, NGetText,
-    NExtractDataGeneric, NSelectItem, NGetAttribute, NCheckAppState,
+    NExtractDataGeneric, NSelectItem, NGetAttribute, NCheckState,
     NHover, NKeyboardShortcut, NScrollTo) are scoped — they must run
     inside an NApplicationCard that provides the browser/app context.
 
@@ -651,10 +651,13 @@ def lint_orphaned_scoped_activities(ctx: FileContext, result: ValidationResult):
     except Exception:
         return
 
-    # Scoped activities that require NApplicationCard parent
+    # Scoped activities that require NApplicationCard parent. NCheckState is
+    # the real Modern-Design activity element; earlier revisions listed
+    # "NCheckAppState" which never appears in generated XAML, so a check-state
+    # used outside NApplicationCard would slip past lint 58.
     SCOPED = [
         "NGoToUrl", "NTypeInto", "NClick", "NGetText", "NGetAttribute",
-        "NSelectItem", "NExtractDataGeneric", "NCheckAppState", "NHover",
+        "NSelectItem", "NExtractDataGeneric", "NCheckState", "NHover",
         "NKeyboardShortcut", "NScrollTo", "NHighlightElement",
     ]
 

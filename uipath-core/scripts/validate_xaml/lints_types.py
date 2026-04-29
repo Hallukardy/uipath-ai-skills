@@ -6,25 +6,6 @@ from ._registry import lint_rule
 from ._context import FileContext, ValidationResult
 
 
-@lint_rule(24)
-def lint_deprecated_assemblies(ctx: FileContext, result: ValidationResult):
-    """Lint 24: Detect deprecated/renamed assembly references."""
-    try:
-        content = ctx.content
-    except Exception:
-        return
-
-    DEPRECATED = {
-    }
-    for old, fix in DEPRECATED.items():
-        count = content.count(old)
-        if count:
-            result.error(
-                f"{count} reference(s) to deprecated '{old}' — "
-                f"renamed to {fix}. Replace all occurrences."
-            )
-
-
 @lint_rule(40)
 def lint_wrong_enum_namespace(ctx: FileContext, result: ValidationResult):
     """Lint 40: Detect wrong UIAutomation enum namespace (must be UIAutomationNext).

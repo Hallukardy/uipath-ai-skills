@@ -197,7 +197,7 @@ def lint_login_without_validation(ctx: FileContext, result: ValidationResult):
 
     When a workflow contains GetRobotCredential (credential retrieval) AND
     NClick (login button submission), it should also contain Pick/PickBranch
-    with NCheckAppState (or ElementExists) to validate login succeeded.
+    with NCheckState (or ElementExists) to validate login succeeded.
 
     Without validation, the workflow proceeds blindly after clicking login —
     if credentials are wrong or the page is slow, all downstream workflows
@@ -220,17 +220,20 @@ def lint_login_without_validation(ctx: FileContext, result: ValidationResult):
     if not (has_credential and has_click):
         return  # Not a login workflow
 
-    # Check for validation patterns
+    # Check for validation patterns. NCheckState is the actual UiPath activity
+    # element name (see gen_ncheckstate in generate_activities/ui_automation.py);
+    # earlier revisions of this rule looked for "NCheckAppState" which never
+    # appears in generated XAML, so the positive-path check was unreachable.
     has_pick = "<Pick" in content or "<PickBranch" in content
-    has_check = "<uix:NCheckAppState" in content or "ElementExists" in content
+    has_check = "<uix:NCheckState" in content or "ElementExists" in content
 
     if not (has_pick or has_check):
         result.warn(
             f"[lint 64] '{os.path.basename(ctx.filepath)}' has GetRobotCredential + "
-            f"NClick (login pattern) but no Pick/NCheckAppState validation. "
+            f"NClick (login pattern) but no Pick/NCheckState validation. "
             f"After clicking login, use Pick with two PickBranch activities: "
-            f"(1) NCheckAppState targeting the post-login success element, "
-            f"(2) NCheckAppState targeting the login error message. "
+            f"(1) NCheckState targeting the post-login success element, "
+            f"(2) NCheckState targeting the login error message. "
             f"This catches wrong credentials immediately instead of failing "
             f"downstream with confusing selector errors."
         )

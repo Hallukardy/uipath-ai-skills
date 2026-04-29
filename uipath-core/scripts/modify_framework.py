@@ -164,6 +164,19 @@ def cmd_insert_invoke(filepath: str, xaml_snippet: str) -> bool:
         print(f"ERROR: File not found: {filepath}", file=sys.stderr)
         return False
 
+    # Idempotency guard: if the snippet's WorkflowFileName already appears in
+    # this file, the insert was already run and re-running would emit a
+    # duplicate <ui:InvokeWorkflowFile> block (Studio executes both at runtime).
+    snippet_wf = re.search(r'WorkflowFileName="([^"]+)"', xaml_snippet)
+    if snippet_wf:
+        wf_name = snippet_wf.group(1)
+        if f'WorkflowFileName="{wf_name}"' in content:
+            print(
+                f"OK: '{wf_name}' is already invoked in {filepath} — skipping "
+                f"(insert-invoke is idempotent: same target = no-op)"
+            )
+            return True
+
     # Find the LAST </Sequence> (the main body)
     close_seq = content.rfind("</Sequence>")
     if close_seq == -1:
@@ -286,10 +299,19 @@ def _add_xproperty(content: str, prop_xml: str) -> str:
     return content[:activity_end] + members_block + content[activity_end:]
 
 
+class WireTargetMissing(LookupError):
+    """Raised when _add_invoke_arg cannot find the target InvokeWorkflowFile."""
+
+
 def _add_invoke_arg(content: str, workflow_filename: str,
                     arg_key: str, arg_type: str, direction: str,
                     var_name: str) -> str:
-    """Add an argument to an InvokeWorkflowFile's Arguments dictionary."""
+    """Add an argument to an InvokeWorkflowFile's Arguments dictionary.
+
+    Raises WireTargetMissing if the target invoke is not present in `content`.
+    Earlier revisions silently warned and returned `content` unchanged, which
+    let cmd_wire_uielement report success even when the wiring did not happen.
+    """
     pattern = re.compile(
         rf'(<ui:InvokeWorkflowFile[^>]*WorkflowFileName="[^"]*{re.escape(workflow_filename)}[^"]*"'
         rf'.*?)(</ui:InvokeWorkflowFile\.Arguments>)',
@@ -297,8 +319,10 @@ def _add_invoke_arg(content: str, workflow_filename: str,
     )
     match = pattern.search(content)
     if not match:
-        print(f"  WARN: Could not find invoke of {workflow_filename}", file=sys.stderr)
-        return content
+        raise WireTargetMissing(
+            f"Could not find <ui:InvokeWorkflowFile WorkflowFileName='...{workflow_filename}'> "
+            f"in target file — cannot wire argument '{arg_key}'"
+        )
 
     block = match.group(1)
 
@@ -637,13 +661,19 @@ def cmd_wire_uielement(project_dir: str, app_name: str) -> bool:
     else:
         print(f"  . Main.xaml: variable {var_name} already exists")
 
+    wire_failures: list[str] = []
+
     if f'x:Key="{out_arg}"' not in main_content:
-        main_content = _add_invoke_arg(
-            main_content, "InitAllApplications.xaml",
-            out_arg, ui_type, "OutArgument", var_name
-        )
-        print(f"  + Main.xaml: wired {out_arg} in InitAllApplications invoke")
-        changes += 1
+        try:
+            main_content = _add_invoke_arg(
+                main_content, "InitAllApplications.xaml",
+                out_arg, ui_type, "OutArgument", var_name
+            )
+            print(f"  + Main.xaml: wired {out_arg} in InitAllApplications invoke")
+            changes += 1
+        except WireTargetMissing as e:
+            wire_failures.append(f"InitAllApplications: {e}")
+            print(f"  ERROR: Main.xaml: {e}", file=sys.stderr)
     else:
         print(f"  . Main.xaml: {out_arg} already wired")
 
@@ -655,12 +685,16 @@ def cmd_wire_uielement(project_dir: str, app_name: str) -> bool:
             main_content, re.DOTALL
         )
         if gtd_match and f'x:Key="{io_arg}"' not in gtd_match.group():
-            main_content = _add_invoke_arg(
-                main_content, "GetTransactionData.xaml",
-                io_arg, ui_type, "InOutArgument", var_name
-            )
-            print(f"  + Main.xaml: wired {io_arg} in GetTransactionData invoke")
-            changes += 1
+            try:
+                main_content = _add_invoke_arg(
+                    main_content, "GetTransactionData.xaml",
+                    io_arg, ui_type, "InOutArgument", var_name
+                )
+                print(f"  + Main.xaml: wired {io_arg} in GetTransactionData invoke")
+                changes += 1
+            except WireTargetMissing as e:
+                wire_failures.append(f"GetTransactionData: {e}")
+                print(f"  ERROR: Main.xaml: {e}", file=sys.stderr)
         else:
             print(f"  . Main.xaml: {io_arg} already wired in GetTransactionData invoke")
 
@@ -670,27 +704,43 @@ def cmd_wire_uielement(project_dir: str, app_name: str) -> bool:
         main_content, re.DOTALL
     )
     if process_match and f'x:Key="{io_arg}"' not in process_match.group():
-        main_content = _add_invoke_arg(
-            main_content, "Process.xaml",
-            io_arg, ui_type, "InOutArgument", var_name
-        )
-        print(f"  + Main.xaml: wired {io_arg} in Process invoke")
-        changes += 1
+        try:
+            main_content = _add_invoke_arg(
+                main_content, "Process.xaml",
+                io_arg, ui_type, "InOutArgument", var_name
+            )
+            print(f"  + Main.xaml: wired {io_arg} in Process invoke")
+            changes += 1
+        except WireTargetMissing as e:
+            wire_failures.append(f"Process: {e}")
+            print(f"  ERROR: Main.xaml: {e}", file=sys.stderr)
     else:
         print(f"  . Main.xaml: {io_arg} already wired in Process invoke")
 
     if f'x:Key="{in_arg}"' not in main_content:
-        main_content = _add_invoke_arg(
-            main_content, "CloseAllApplications.xaml",
-            in_arg, ui_type, "InArgument", var_name
-        )
-        print(f"  + Main.xaml: wired {in_arg} in CloseAllApplications invoke")
-        changes += 1
+        try:
+            main_content = _add_invoke_arg(
+                main_content, "CloseAllApplications.xaml",
+                in_arg, ui_type, "InArgument", var_name
+            )
+            print(f"  + Main.xaml: wired {in_arg} in CloseAllApplications invoke")
+            changes += 1
+        except WireTargetMissing as e:
+            wire_failures.append(f"CloseAllApplications: {e}")
+            print(f"  ERROR: Main.xaml: {e}", file=sys.stderr)
     else:
         print(f"  . Main.xaml: {in_arg} already wired")
 
     with open(files["main"], "w", encoding="utf-8", newline="") as f:
         f.write(main_content)
+
+    if wire_failures:
+        print(
+            f"\nFAIL: {len(wire_failures)} wiring target(s) missing for app '{app_name}': "
+            f"{'; '.join(wire_failures)}",
+            file=sys.stderr,
+        )
+        return False
 
     print(f"\nDone: {changes} changes for app '{app_name}'")
     print(f"  Chain: Launch({out_arg}) -> InitAllApps({out_arg}) -> Main({var_name}) -> GTD({io_arg}) -> Process({io_arg}) -> CloseAll({in_arg})")
