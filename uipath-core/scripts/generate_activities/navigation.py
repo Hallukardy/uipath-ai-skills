@@ -1,5 +1,5 @@
 """Navigation and data extraction generators."""
-from ._helpers import _hs, _uuid, _escape_xml_attr, _escape_vb_expr
+from ._helpers import _hs, _uuid, _selector_uuid, _escape_xml_attr, _escape_vb_expr
 from ._xml_utils import _selector_xml, _viewstate_block
 
 
@@ -67,16 +67,18 @@ def gen_nextractdata(display_name, output_variable, id_ref, scope_id,
 
     # Backtick IdRef notation for generic types
     idref = f"NExtractDataGeneric`1_{id_ref}"
-    guid_next = _uuid()
-    guid_target = _uuid()
 
     # Build attribute strings
     settings_attr = f' ExtractDataSettings="{_escape_xml_attr(extract_data_settings)}"' if extract_data_settings else ""
     meta_attr = f' ExtractMetadata="{_escape_xml_attr(extract_metadata)}"' if extract_metadata else ""
 
-    # NextLink section (pagination)
+    # NextLink section (pagination). Guid is deterministic from the
+    # normalized selector text so two runs of the same spec produce the
+    # same XAML — diff stability for users regenerating projects.
     if next_link_selector:
-        esc_next = _escape_xml_attr(_normalize_selector_quotes(next_link_selector))
+        norm_next = _normalize_selector_quotes(next_link_selector)
+        esc_next = _escape_xml_attr(norm_next)
+        guid_next = _selector_uuid(norm_next)
         esc_scope = _escape_xml_attr(_normalize_selector_quotes(scope_selector)) if scope_selector else ""
         scope_attr = f' ScopeSelectorArgument="{esc_scope}"' if esc_scope else ""
         next_link = f"""{i2}<uix:NExtractDataGeneric.NextLink>
@@ -87,7 +89,9 @@ def gen_nextractdata(display_name, output_variable, id_ref, scope_id,
 
     # Target section (required — the table/list element)
     if table_selector:
-        esc_table = _escape_xml_attr(_normalize_selector_quotes(table_selector))
+        norm_table = _normalize_selector_quotes(table_selector)
+        esc_table = _escape_xml_attr(norm_table)
+        guid_target = _selector_uuid(norm_table)
         esc_scope = _escape_xml_attr(_normalize_selector_quotes(scope_selector)) if scope_selector else ""
         scope_attr = f' ScopeSelectorArgument="{esc_scope}"' if esc_scope else ""
         target = f"""{i2}<uix:NExtractDataGeneric.Target>

@@ -64,14 +64,22 @@ from pathlib import Path
 # ID generation — matches Studio's base64url-encoded GUID pattern
 # ---------------------------------------------------------------------------
 
-def _generate_objrepo_id() -> tuple[str, str]:
+def _generate_objrepo_id(seed: str | None = None) -> tuple[str, str]:
     """Generate an Object Repository ID.
 
     Returns (short_prefix, full_id):
         short_prefix: first 4 chars, used as directory name
         full_id:      22-char base64url-encoded UUID (no padding)
+
+    When `seed` is given, the ID is derived deterministically from it via
+    UUID5 — so regenerating the same project produces the same directory
+    tree (no diff churn). When `seed` is None, falls back to uuid4 for
+    backward compatibility with callers that don't have a stable key.
     """
-    raw = uuid.uuid4().bytes
+    if seed is None:
+        raw = uuid.uuid4().bytes
+    else:
+        raw = uuid.uuid5(uuid.NAMESPACE_DNS, f"uipath-core:objrepo:{seed}").bytes
     encoded = base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
     return encoded[:4], encoded
 
@@ -166,10 +174,17 @@ def _write_hash(path: Path, content: str):
     _write_file(path, h, bom=False)
 
 
-def _write_search_hash(path: Path):
-    """Write a SearchHash file (10-char hex string)."""
+def _write_search_hash(path: Path, seed: str | None = None):
+    """Write a SearchHash file (10-char hex string).
+
+    When `seed` is given, the hash is derived deterministically from it,
+    so the same input produces the same file across regenerations.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    h = hashlib.md5(uuid.uuid4().bytes).hexdigest()[:10]
+    if seed is None:
+        h = hashlib.md5(uuid.uuid4().bytes).hexdigest()[:10]
+    else:
+        h = hashlib.md5(f"uipath-core:searchhash:{seed}".encode("utf-8")).hexdigest()[:10]
     _write_file(path, h, bom=False)
 
 
@@ -286,6 +301,102 @@ def _generate_target_data_xml(
 
 
 # ---------------------------------------------------------------------------
+# Selector quality gate — runs at import time, before any directory is
+# created, so users find out their inspection captured fragile selectors
+# while it is still cheap to refine.
+# ---------------------------------------------------------------------------
+
+
+def _validate_selector_quality(selector: str, location: str) -> list[str]:
+    """Return a list of warning strings if `selector` looks fragile.
+
+    Mirrors the post-generation checks in `validate_xaml/lints_selectors.py`
+    (lints 9, 14, 97) so the user sees the same diagnoses *before* the
+    project is built — not after. Each warning string is prefixed with
+    `location` so callers can tell which app/screen/element triggered it.
+    """
+    warnings: list[str] = []
+
+    # Lint 9 / 14: idx as the only or dominant discriminator.
+    idx_match = re.search(r"idx='(\d+)'", selector)
+    if idx_match and int(idx_match.group(1)) > 0:
+        # Strip the leading <tag and trailing /> to count remaining attrs.
+        body = re.sub(r"^<\w+\s*", "", selector.strip())
+        body = re.sub(r"\s*/?>\s*$", "", body)
+        attrs = re.findall(r"(\w[\w-]*)='", body)
+        non_idx_discriminators = [a for a in attrs if a not in ("idx", "tag", "type")]
+        if not non_idx_discriminators:
+            warnings.append(
+                f"{location}: selector relies on idx alone "
+                f"({selector!r}) — extremely fragile under page reflows. "
+                f"Add aaname/id/parentid for stability."
+            )
+        elif int(idx_match.group(1)) > 2:
+            warnings.append(
+                f"{location}: selector uses idx={idx_match.group(1)} "
+                f"({selector!r}) — high indices break when layout changes."
+            )
+
+    # Lint 14-style: innertext='...*' wildcard with no other anchor.
+    if re.search(r"innertext='[^']*\*'", selector):
+        body = re.sub(r"^<\w+\s*", "", selector.strip())
+        body = re.sub(r"\s*/?>\s*$", "", body)
+        attrs = re.findall(r"(\w[\w-]*)='", body)
+        anchor_attrs = [a for a in attrs if a in ("aaname", "id", "parentid", "name", "automationid")]
+        if not anchor_attrs:
+            warnings.append(
+                f"{location}: selector uses wildcard innertext "
+                f"({selector!r}) without an aaname/id/parentid anchor — "
+                f"fails when surrounding text changes."
+            )
+
+    # Bare web selector with no discriminator beyond tag/type.
+    bare_match = re.match(
+        r"^\s*<webctrl(?:\s+(?:tag|type)='[^']*')+\s*/?>\s*$",
+        selector,
+    )
+    if bare_match:
+        warnings.append(
+            f"{location}: selector has no discriminator beyond tag/type "
+            f"({selector!r}) — matches every element of that kind. "
+            f"Add id/aaname/parentid to disambiguate."
+        )
+
+    # Lint 97: css-selector= is documented as fragile.
+    if "css-selector=" in selector.lower():
+        warnings.append(
+            f"{location}: selector uses css-selector= "
+            f"({selector!r}) — CSS selectors break under DOM restructure. "
+            f"Prefer id/aaname/parentid attributes."
+        )
+
+    return warnings
+
+
+def _check_apps_selectors(apps: list[dict]) -> list[str]:
+    """Collect quality warnings for every selector under `apps`."""
+    warnings: list[str] = []
+    for app in apps:
+        app_name = app.get("name", "<unnamed>")
+        app_sel = app.get("selector")
+        if app_sel:
+            warnings.extend(_validate_selector_quality(app_sel, f"app {app_name!r}"))
+        for screen in app.get("screens", []):
+            screen_name = screen.get("name", "<unnamed>")
+            for elem in screen.get("elements", []):
+                elem_name = elem.get("name", "<unnamed>")
+                elem_sel = elem.get("selector")
+                if elem_sel:
+                    warnings.extend(
+                        _validate_selector_quality(
+                            elem_sel,
+                            f"{app_name}/{screen_name}/{elem_name}",
+                        )
+                    )
+    return warnings
+
+
+# ---------------------------------------------------------------------------
 # Main generator
 # ---------------------------------------------------------------------------
 
@@ -305,12 +416,17 @@ TAXONOMY_TO_ELEMENT_TYPE = {
 def generate_object_repository(
     apps: list[dict],
     project_dir: str,
+    strict_selectors: bool = False,
 ) -> dict:
     """Generate the Object Repository directory tree for a UiPath project.
 
     Args:
         apps: List of application definitions (see module docstring for schema).
         project_dir: Root directory of the UiPath project.
+        strict_selectors: When True, raise ValueError if any captured
+            selector trips the fragility checks (idx-only, innertext
+            wildcard, bare tag, css-selector). When False (default),
+            warnings go to stderr and generation proceeds.
 
     Returns:
         Dictionary with reference mappings:
@@ -321,6 +437,17 @@ def generate_object_repository(
             "elements": {"AppName/ScreenName/ElementName": {"reference": "...", "content_hash": "...", "guid": "..."}},
         }
     """
+    selector_warnings = _check_apps_selectors(apps)
+    if selector_warnings:
+        if strict_selectors:
+            raise ValueError(
+                "Selector quality gate failed:\n  - "
+                + "\n  - ".join(selector_warnings)
+            )
+        import sys as _sys
+        for w in selector_warnings:
+            print(f"⚠ selector quality: {w}", file=_sys.stderr)
+
     project_path = Path(project_dir)
     objects_dir = project_path / ".objects"
     screenshots_dir = project_path / ".screenshots"
@@ -341,8 +468,10 @@ def generate_object_repository(
 
     now = _now_iso()
 
-    # Generate Library root
-    _, library_id = _generate_objrepo_id()
+    # Generate Library root — seed from project path so the same project
+    # always produces the same library_id, then app/screen/element IDs are
+    # seeded relative to that.
+    _, library_id = _generate_objrepo_id(seed=f"library:{project_dir}")
 
     _write_metadata(objects_dir / ".metadata", {
         "Type": "Library",
@@ -373,7 +502,7 @@ def generate_object_repository(
         browser_type = app_def.get("browser_type", "Edge")
 
         # Create App node
-        app_short, app_id = _generate_objrepo_id()
+        app_short, app_id = _generate_objrepo_id(seed=f"app:{library_id}:{app_name}")
         app_dir = objects_dir / app_short
         app_dir.mkdir(parents=True, exist_ok=True)
         (app_dir / ".data" / "ObjectSelectionName").mkdir(parents=True, exist_ok=True)
@@ -398,7 +527,7 @@ def generate_object_repository(
         )
 
         # Create AppVersion node (always "1.0.0")
-        ver_short, ver_id = _generate_objrepo_id()
+        ver_short, ver_id = _generate_objrepo_id(seed=f"appver:{library_id}:{app_name}:1.0.0")
         ver_dir = app_dir / ver_short
         ver_dir.mkdir(parents=True, exist_ok=True)
 
@@ -419,7 +548,7 @@ def generate_object_repository(
             screen_url = screen_def.get("url", app_url)
 
             # Create Screen node
-            scr_short, scr_id = _generate_objrepo_id()
+            scr_short, scr_id = _generate_objrepo_id(seed=f"screen:{library_id}:{app_name}:{screen_name}")
             scr_dir = ver_dir / scr_short
             scr_dir.mkdir(parents=True, exist_ok=True)
 
@@ -453,7 +582,10 @@ def generate_object_repository(
 
             _write_file(screen_data_dir / ".content", screen_xml, bom=False)
             _write_hash(screen_data_dir / ".hash", screen_xml)
-            _write_search_hash(screen_data_dir / ".attributes" / "SearchHash")
+            _write_search_hash(
+                screen_data_dir / ".attributes" / "SearchHash",
+                seed=f"screen:{library_id}:{app_name}:{screen_name}",
+            )
 
             _write_metadata(scr_dir / ".metadata", {
                 "Name": _pascalcase_to_display(screen_name),
@@ -489,10 +621,11 @@ def generate_object_repository(
                     TAXONOMY_TO_ELEMENT_TYPE.get(taxonomy_type, "InputBox"),
                 )
                 elem_selector = elem_def["selector"]
-                elem_guid = str(uuid.uuid4())
+                elem_seed = f"elem:{library_id}:{app_name}:{screen_name}:{elem_name}"
+                elem_guid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"uipath-core:elemguid:{elem_seed}"))
 
                 # Create Element node
-                elem_short, elem_id = _generate_objrepo_id()
+                elem_short, elem_id = _generate_objrepo_id(seed=elem_seed)
                 elem_dir = scr_dir / elem_short
                 elem_dir.mkdir(parents=True, exist_ok=True)
 
@@ -515,7 +648,10 @@ def generate_object_repository(
 
                 _write_file(target_data_dir / ".content", target_xml, bom=False)
                 _write_hash(target_data_dir / ".hash", target_xml)
-                _write_search_hash(target_data_dir / ".attributes" / "SearchHash")
+                _write_search_hash(
+                    target_data_dir / ".attributes" / "SearchHash",
+                    seed=elem_seed,
+                )
 
                 _write_metadata(elem_dir / ".metadata", {
                     "Name": _pascalcase_to_display(elem_name),
@@ -552,9 +688,10 @@ if __name__ == "__main__":
         print("  python3 generate_object_repository.py --from-selectors <selectors.json> --project-dir <dir>")
         print("  python3 generate_object_repository.py --self-test")
         print()
-        print("  --from-selectors  Path to selectors.json with apps/screens/elements")
-        print("  --project-dir     Path to UiPath project root (must contain .objects/)")
-        print("  --self-test       Run built-in self-test with sample data")
+        print("  --from-selectors    Path to selectors.json with apps/screens/elements")
+        print("  --project-dir       Path to UiPath project root (must contain .objects/)")
+        print("  --strict-selectors  Treat selector-quality warnings as fatal errors")
+        print("  --self-test         Run built-in self-test with sample data")
 
     args = sys.argv[1:]
 
@@ -597,6 +734,8 @@ if __name__ == "__main__":
             _print_usage()
             sys.exit(1)
 
+        strict = "--strict-selectors" in args
+
         if not os.path.isfile(selectors_path):
             print(f"Error: selectors file not found: {selectors_path}", file=sys.stderr)
             sys.exit(1)
@@ -612,7 +751,7 @@ if __name__ == "__main__":
             print("Error: selectors.json has no 'apps' array", file=sys.stderr)
             sys.exit(1)
 
-        refs = generate_object_repository(apps, project_dir)
+        refs = generate_object_repository(apps, project_dir, strict_selectors=strict)
 
         app_count = len(refs["apps"])
         screen_count = len(refs["screens"])

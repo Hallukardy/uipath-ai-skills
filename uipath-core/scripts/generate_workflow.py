@@ -275,6 +275,14 @@ class _IdRefCounter:
         return f"{prefix}_{self._counts[prefix]}"
 
 
+def _deterministic_scope_uuid(seed: str) -> str:
+    """Stable UUID derived from `seed` so regenerating an unchanged spec
+    produces byte-identical XAML. Used for NApplicationCard ScopeGuid and
+    child ScopeIdentifier where uniqueness within the workflow is what
+    matters — not run-to-run novelty."""
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"uipath-core:scope:{seed}"))
+
+
 # ---------------------------------------------------------------------------
 # Unified generator registry — single source of truth
 # ---------------------------------------------------------------------------
@@ -333,7 +341,8 @@ def _make_simple_container_handler(gen_fn, idref_prefix, *, new_scope=False):
     """
     def handler(spec, args, scope_id, counter, indent):
         if new_scope:
-            child_scope = args.get("scope_guid", str(uuid.uuid4()))
+            seed = f"{scope_id}:{idref_prefix}:{counter.next('__ChildScope')}"
+            child_scope = args.get("scope_guid", _deterministic_scope_uuid(seed))
             # Ensure scope_guid is in args for _auto_dispatch to pick up
             args = dict(args, scope_guid=child_scope)
         else:
@@ -925,7 +934,7 @@ def generate_workflow(spec: dict) -> str:
     vars_xml = _build_variables_xml(variables, type_map=type_map)
 
     # Build activity body
-    root_scope = str(uuid.uuid4())
+    root_scope = _deterministic_scope_uuid(f"root:{class_name}")
     body_parts = []
     for act_spec in activities:
         body_parts.append(_generate_activity(act_spec, root_scope, counter))

@@ -4,7 +4,71 @@ Extracted from generate_activities.py. These functions produce reusable XAML
 fragments consumed by the individual activity generator modules.
 """
 
-from ._helpers import _uuid, _escape_xml_attr, _normalize_selector_quotes, _hs
+import re
+
+from ._helpers import _uuid, _selector_uuid, _escape_xml_attr, _normalize_selector_quotes, _hs
+
+
+_RE_SEQUENCE_OPEN = re.compile(r"<Sequence(?=[\s/>])[^>]*>")
+_RE_SEQUENCE_CLOSE = re.compile(r"</Sequence>")
+
+
+def extract_sequence_body(xaml: str) -> str:
+    """Return the inner content of the OUTERMOST `<Sequence>` in a workflow XAML.
+
+    For workflows produced by `generate_workflow.generate_workflow()`, this
+    strips the `<Activity>`/`<x:Members>`/outer `<Sequence>` envelope and
+    returns just the activity list — ready to inject into a framework
+    file's existing `<Sequence>` via `modify_framework.replace-marker` or
+    `insert-invoke`.
+
+    Uses a depth-counted scan over the raw text instead of an XML parser
+    so attribute order, whitespace, and inline comments survive intact —
+    `ElementTree`'s round-trip would normalize them. The regex requires a
+    whitespace, `/`, or `>` immediately after `Sequence` so property tags
+    like `<Sequence.Variables>` aren't mistaken for nested elements
+    (otherwise the depth counter never balances).
+
+    Raises ValueError if no balanced `<Sequence>` is found.
+    """
+    m = _RE_SEQUENCE_OPEN.search(xaml)
+    if not m:
+        raise ValueError("No <Sequence> found in XAML")
+    start = m.end()
+    depth = 1
+    i = start
+    while depth > 0:
+        m_close = _RE_SEQUENCE_CLOSE.search(xaml, i)
+        if m_close is None:
+            raise ValueError("Unbalanced <Sequence> tags in XAML")
+        m_open = _RE_SEQUENCE_OPEN.search(xaml, i)
+        if m_open is not None and m_open.start() < m_close.start():
+            depth += 1
+            i = m_open.end()
+        else:
+            depth -= 1
+            if depth == 0:
+                return xaml[start:m_close.start()].strip()
+            i = m_close.end()
+    raise ValueError("Unbalanced <Sequence> tags in XAML")
+
+
+def strip_leading_viewstate(body: str) -> str:
+    """Drop a leading `<sap:WorkflowViewStateService.ViewState>...</...>` block.
+
+    Snippets bound for `modify_framework.replace-marker` / `insert-invoke`
+    must NOT carry their own ViewState dictionary — the destination
+    `<Sequence>` already owns one, and Studio rejects duplicates with
+    `XamlDuplicateMemberException` at load time. Idempotent when no
+    leading block is present.
+    """
+    if not re.match(r"\s*<sap:WorkflowViewStateService\.ViewState>", body):
+        return body
+    end_tag = "</sap:WorkflowViewStateService.ViewState>"
+    end = body.find(end_tag)
+    if end == -1:
+        return body
+    return body[end + len(end_tag):].lstrip()
 
 
 def _selector_xml(selector: str, obj_repo: dict = None) -> str:
@@ -19,7 +83,7 @@ def _selector_xml(selector: str, obj_repo: dict = None) -> str:
     """
     selector = _normalize_selector_quotes(selector)
     escaped = _escape_xml_attr(selector)
-    guid = obj_repo["guid"] if obj_repo else _uuid()
+    guid = obj_repo["guid"] if obj_repo else _selector_uuid(selector)
     extra_attrs = ""
     if obj_repo:
         ch = obj_repo.get("content_hash", "")

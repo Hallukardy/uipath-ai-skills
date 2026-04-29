@@ -149,6 +149,23 @@ Regex.IsMatch(strValue, "^[A-Z]{2}\\d{9}$", RegexOptions.None)
 Regex.Match(strText, "[\\d,]+\\.?\\d*", RegexOptions.None).Value
 ```
 
+#### Safe extraction (always guard `.Groups(N).Value`)
+
+`Regex.Match(...).Groups(1).Value` throws `IndexOutOfRangeException` when the match fails or the capture group is absent. **Always** check `m.Success` and `m.Groups.Count` before reading a capture. Use the `If(...)` ternary to fall back to a sentinel:
+
+```vb
+' Single-line safe extraction with fallback
+out_strID = If(Regex.Match(in_strBody, "Client ID:\s*(.+)").Success, _
+               Regex.Match(in_strBody, "Client ID:\s*(.+)").Groups(1).Value.Trim(), _
+               String.Empty)
+
+' Preferred: assign once, then guard — avoids re-running the regex
+Dim m = Regex.Match(in_strBody, "Client ID:\s*(.+)")
+out_strID = If(m.Success AndAlso m.Groups.Count > 1, m.Groups(1).Value.Trim(), String.Empty)
+```
+
+The two-line form (assign + guarded read) is the recommended idiom in spec authoring — it makes the failure mode explicit and avoids running the regex twice. Use the inline form only when expression-language constraints force a single statement.
+
 ### Unicode Normalization & Diacritics Removal
 ```vb
 ' Remove diacritics/accents (ã→a, é→e, ñ→n)

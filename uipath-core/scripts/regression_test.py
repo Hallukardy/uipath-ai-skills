@@ -1287,6 +1287,89 @@ def test_validate_snippet_rejects_non_xaml() -> TestResult:
     return t
 
 
+def test_workflow_generation_deterministic() -> TestResult:
+    """generate_workflow() produces byte-identical XAML across consecutive runs.
+
+    Locks in the UUID5 seeding for ScopeGuid (NApplicationCard root + child
+    scopes) and TargetAnchorable Guid (selector-derived). A regression here
+    means a future change reintroduced a uuid.uuid4() / random source that
+    breaks diff stability for users regenerating projects.
+    """
+    t = TestResult("Workflow generation is deterministic across runs")
+
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    try:
+        import generate_workflow
+    except ImportError as e:
+        t.fail(f"Cannot import generate_workflow: {e}")
+        return t
+
+    cases = [
+        (
+            "minimal log-only spec (root_scope path)",
+            {
+                "class_name": "Det_Minimal",
+                "arguments": [],
+                "variables": [],
+                "activities": [
+                    {"gen": "log_message", "args": {"message_expr": '"hi"', "level": "Info"}},
+                ],
+            },
+        ),
+        (
+            "NApplicationCard with selector (child_scope + TargetAnchorable Guid)",
+            {
+                "class_name": "Det_AppCard",
+                "arguments": [
+                    {"name": "in_strUrl", "direction": "In", "type": "String"},
+                    {"name": "out_uiApp", "direction": "Out", "type": "UiElement"},
+                ],
+                "variables": [],
+                "activities": [
+                    {
+                        "gen": "napplicationcard_open",
+                        "args": {
+                            "display_name": "App",
+                            "url_variable": "in_strUrl",
+                            "out_ui_element": "out_uiApp",
+                            "target_app_selector": "<html app='msedge.exe' title='X' />",
+                        },
+                        "children": [
+                            {"gen": "nclick", "args": {
+                                "display_name": "Click",
+                                "selector": "<webctrl id='go' tag='BUTTON' />",
+                            }},
+                        ],
+                    },
+                ],
+            },
+        ),
+    ]
+
+    for label, spec in cases:
+        try:
+            xaml1 = generate_workflow.generate_workflow(spec)
+            xaml2 = generate_workflow.generate_workflow(spec)
+        except Exception as e:
+            t.fail(f"{label}: generate_workflow raised — {e}")
+            continue
+        if xaml1 == xaml2:
+            t.ok(f"{label}: byte-identical across two runs ({len(xaml1)} bytes)")
+        else:
+            # Surface the first divergent line so the failure is debuggable.
+            for i, (a, b) in enumerate(zip(xaml1.splitlines(), xaml2.splitlines())):
+                if a != b:
+                    t.fail(
+                        f"{label}: differs at line {i+1}\n"
+                        f"      run1: {a[:120]}\n      run2: {b[:120]}"
+                    )
+                    break
+            else:
+                t.fail(f"{label}: lengths differ ({len(xaml1)} vs {len(xaml2)})")
+
+    return t
+
+
 def main():
     parser = argparse.ArgumentParser(description="UiPath skill regression test")
     parser.add_argument("--verbose", "-v", action="store_true", help="Show detailed output")
@@ -1325,6 +1408,7 @@ def main():
             test_dispatcher_test_file_transformation(tmpdir),
             test_add_variables_type_normalization(),
             test_validate_snippet_rejects_non_xaml(),
+            test_workflow_generation_deterministic(),
             test_annotations_validate(),
             test_routing_index_idempotent(),
             test_audit_coverage_baseline_matches(),

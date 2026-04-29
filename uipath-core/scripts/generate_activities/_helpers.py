@@ -82,6 +82,16 @@ def _uuid() -> str:
     return generate_uuid()
 
 
+def _selector_uuid(selector: str) -> str:
+    """Stable UUID derived from a selector string.
+
+    Used for `TargetAnchorable.Guid` when no Object Repository is wired,
+    so regenerating the same workflow produces the same Guid — eliminates
+    the run-to-run diff churn that random `_uuid()` would otherwise cause.
+    """
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"uipath-core:selguid:{selector}"))
+
+
 def _escape_xml_attr(s: str) -> str:
     """Escape for XML attribute values. Delegates to utils.escape_xml_attr()."""
     return escape_xml_attr(s)
