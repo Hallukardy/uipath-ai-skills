@@ -265,3 +265,53 @@ class TestNameAllowlist:
                 overwrite=True,
             )
         assert "--name must" in str(exc_info.value)
+
+
+# -----------------------------------------------------------------------------
+# M-4: --overwrite must not follow symlinks/junctions outside output_dir
+# -----------------------------------------------------------------------------
+
+
+class TestOverwriteSymlinkSafety:
+    """Pins M-4: when output_dir/<name> is a symlink, --overwrite must NOT
+    rmtree the symlink target. Either unlink the symlink in place, or refuse
+    when the target resolves outside output_dir.
+    """
+
+    def test_overwrite_symlink_does_not_delete_target_contents(self, tmp_path):
+        """A symlink at output_dir/<name> pointing to a sibling directory must
+        not be followed: the sibling's contents must survive --overwrite."""
+        out_dir = tmp_path / "out"
+        out_dir.mkdir()
+        # Sibling directory — outside out_dir — that an attacker wants to nuke.
+        sibling = tmp_path / "sibling_data"
+        sibling.mkdir()
+        marker = sibling / "important.txt"
+        marker.write_text("must_survive", encoding="utf-8")
+
+        # Place a symlink at out_dir/MyProject pointing at sibling.
+        link = out_dir / "MyProject"
+        try:
+            link.symlink_to(sibling, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            pytest.skip("symlink creation not permitted in this environment")
+
+        # Run scaffold with --overwrite. The validator accepts MyProject;
+        # the rmtree path must NOT traverse the symlink.
+        try:
+            scaffold_project(
+                name="MyProject",
+                description="Test",
+                output_dir=str(out_dir),
+                variant="sequence",
+                overwrite=True,
+            )
+        except (FileNotFoundError, PermissionError, OSError):
+            # Template asset missing or refusal — both are acceptable for this
+            # test; what matters is that the sibling marker survives.
+            pass
+
+        # The link itself may be gone (unlinked) or replaced by a real
+        # directory; either is fine. The sibling's contents must remain.
+        assert marker.exists(), "scaffold --overwrite traversed a symlink and deleted target contents"
+        assert marker.read_text(encoding="utf-8") == "must_survive"

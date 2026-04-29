@@ -13,16 +13,21 @@ Usage from core scripts:
     from plugin_loader import load_plugins, get_generators, get_lint_rules, ...
     load_plugins()  # call once at module level or in main()
 
-Plugin submodule rule (M-20)
-----------------------------
-Plugin submodules MUST NOT mutate state outside ``plugin_loader``'s
-registration API before ``__init__.py`` returns. Submodules are exec'd
-BEFORE ``pkg_module`` (so relative imports like ``from .generators import X``
-in ``__init__.py`` resolve), and their import-time side effects are NOT
-covered by ``_cleanup_failed_plugin``'s rollback. If a submodule registers
-a generator at import time and the plugin's ``__init__.py`` then raises,
-the partial registration leaks past the rollback. Confine all
-``register_*`` calls to ``__init__.py`` body so the rollback contract holds.
+Plugin submodule rule
+---------------------
+Submodules under ``extensions/`` are exec'd BEFORE ``__init__.py`` so that
+relative imports like ``from .generators import X`` resolve when
+``__init__.py`` runs. Any ``register_*`` calls made at submodule import
+time ARE covered by the pre-load registry snapshot taken in
+``load_plugins`` and will be rolled back if ``__init__.py`` then raises or
+fails the API-version check — the snapshot is captured before the submodule
+preload, so any registration mutations happen within the rollback window.
+
+What rollback CANNOT undo is side effects outside the registration API:
+monkey-patches of stdlib modules, file writes, env-var changes, listening
+sockets, threads spawned at import time. Confine those to lazy paths that
+run only after a successful load (e.g. inside a function called from core,
+not at module top level).
 """
 
 import copy
@@ -130,6 +135,16 @@ _registry_lock = threading.RLock()
 # Validation patterns for register_version_profile / register_band_profile_mapping
 _PROFILE_VERSION_RE = re.compile(r"^\d+(\.\d+){0,3}$")
 _BAND_RE = re.compile(r"^\d+$")
+
+
+def _invalidate_lint_caches():
+    # Lazy import: validate_xaml may not be loaded when plugin_loader runs.
+    # Import-error path is the bootstrap case (no lints to invalidate yet).
+    try:
+        from validate_xaml import lints_version_compat as _lvc
+    except ImportError:
+        return
+    _lvc._invalidate_cache()
 
 
 # ---------------------------------------------------------------------------
@@ -342,6 +357,7 @@ def register_version_profile(package, profile_version, profile):
         _version_profiles[(package, profile_version)] = profile
         global _version_profiles_snapshot
         _version_profiles_snapshot = None
+        _invalidate_lint_caches()
 
 
 def register_band_profile_mapping(band, package, profile_version):
@@ -395,6 +411,7 @@ def register_band_profile_mapping(band, package, profile_version):
         band_map[package] = profile_version
         global _band_profile_mappings_snapshot
         _band_profile_mappings_snapshot = None
+        _invalidate_lint_caches()
 
 
 def register_variable_prefix(xaml_type, prefix):

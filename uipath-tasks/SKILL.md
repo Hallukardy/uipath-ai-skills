@@ -18,6 +18,18 @@ Generate Tasks workflows for human-in-the-loop, system-in-the-loop, and task man
 
 > **Plugin architecture:** This skill's `extensions/` directory is auto-discovered by uipath-core's `plugin_loader.py`. Generators, lint rules, scaffold hooks, namespaces, and known activities are registered at import time — no manual wiring needed. Core's `generate_workflow.py`, `validate_xaml`, and `scaffold_project.py` query the plugin registries at runtime.
 
+## Plugin API contract (v2)
+
+This skill is the canonical example for out-of-tree plugin authors. The contract:
+
+- **`REQUIRED_API_VERSION = 2`** must be declared at the top of `extensions/__init__.py`. Plugins on v1 (or with no declaration) fail to load with a clear `API version mismatch` error and any partial registrations are rolled back.
+- **Registration entry points** added in v2: `register_version_profile(package, profile_version, profile_dict)` and `register_band_profile_mapping(band, package, profile_version)` — used by lint 122 (version-band drift). Call `register_band_profile_mapping` once per `(band, package)` pair. Registering after the lint module is already imported automatically invalidates the lint caches, so the new entries take effect on the next lint pass without any reload.
+- **Atomic commit:** every `register_*` call made during a plugin's load (including from submodules imported from `__init__.py`) is captured in the registry snapshot. If `__init__.py` raises before completing, all registrations from that plugin are reverted. The registry is never observed in a partially-loaded state by other plugins or by core.
+- **Out of scope for rollback:** non-registry side effects (file writes, env vars, threads spawned at import time, monkey-patches). Confine those to lazy paths invoked after a successful load.
+- **Test that load succeeded:** `assert plugin_loader.get_load_failures() == []` after `load_plugins()`. A plugin that raised during load surfaces in that list with its filename and exception.
+
+Worked example: see `uipath-tasks/extensions/__init__.py:34` (the `REQUIRED_API_VERSION = 2` declaration) and `:310-312` (the Persistence/1.4 profile + band-25/26 mapping calls).
+
 ## Extensions (Plugin System)
 
 ```

@@ -220,17 +220,16 @@ _BAND_EXPECTED_CACHE: dict[str, dict[str, str]] = {}
 def _invalidate_cache() -> None:
     """Reset module-level caches so the next lint call rebuilds them.
 
-    Intended for callers (e.g. ``plugin_loader.load_plugins`` post-reload) that
-    register new version profiles or band mappings after this module was first
-    imported. Without invalidation, ``_VERSION_SENSITIVE_ACTIVITIES`` and
-    ``_BAND_EXPECTED_CACHE`` would carry stale entries from the initial scan.
+    Called by ``plugin_loader.register_version_profile`` and
+    ``register_band_profile_mapping`` so that profiles registered after
+    this module was first imported take effect on the next lint pass.
+    Without invalidation, ``_VERSION_SENSITIVE_ACTIVITIES``,
+    ``_V25_ONLY_ATTRIBUTES``, and ``_BAND_EXPECTED_CACHE`` would carry
+    only the entries detected during initial import (core profiles only).
 
-    The plugin loader does NOT currently call this — wiring is up to F3 — but
-    exposing the helper unblocks that work and is safe to call at any time.
-
-    M-2: ``_V25_ONLY_ATTRIBUTES`` is also rebuilt — it is computed once at
-    import time from ``attrs_introduced_in`` markers across every profile,
-    and a plugin that registers a new profile carrying additional 25-only
+    ``_V25_ONLY_ATTRIBUTES`` is rebuilt — it is computed once at import
+    time from ``attrs_introduced_in`` markers across every profile, and a
+    plugin that registers a new profile carrying additional 25-only
     markers must see those reflected when the cache is invalidated.
     """
     global _VERSION_SENSITIVE_ACTIVITIES, _V25_ONLY_ATTRIBUTES

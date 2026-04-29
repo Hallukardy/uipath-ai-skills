@@ -136,6 +136,32 @@ class TestDynamicRegistration:
         expected = _build_band_expected_versions("25")
         assert expected.get("_PluginTag") == "V7"
 
+    def test_register_invalidates_lint_caches_automatically(self, isolated_registries):
+        # B-1 regression: registering after validate_xaml.lints_version_compat
+        # is imported must invalidate _BAND_EXPECTED_CACHE and the version-
+        # sensitive sets, so the new entry reaches lint 120/121/122 without
+        # any manual reload or cache pop.
+        from validate_xaml import lints_version_compat as lvc
+
+        # Prime the cache for band 25 with the pre-registration view.
+        lvc._BAND_EXPECTED_CACHE.pop("25", None)
+        lvc._build_band_expected_versions("25")
+        assert "25" in lvc._BAND_EXPECTED_CACHE
+
+        # Register a new (band, package, profile) — should auto-invalidate.
+        profile = {"activities": {"_AutoInvAct": {"version_attrs": {"_AutoInvTag": "V8"}}}}
+        register_version_profile("Test.AutoInv", "1.0", profile)
+        register_band_profile_mapping("25", "Test.AutoInv", "1.0")
+
+        # Cache must have been cleared by the registration calls.
+        assert "25" not in lvc._BAND_EXPECTED_CACHE, (
+            "register_band_profile_mapping did not invalidate _BAND_EXPECTED_CACHE"
+        )
+
+        # And a fresh lookup picks up the plugin entry without manual help.
+        expected = lvc._build_band_expected_versions("25")
+        assert expected.get("_AutoInvTag") == "V8"
+
 
 # ---------------------------------------------------------------------------
 # HIGH-7 — get_* returns a read-only view; mutating it does not leak

@@ -444,13 +444,37 @@ def scaffold_project(name: str, description: str, output_dir: str,
             f"  Available asset dirs: {[d.name for d in (skill_dir / 'assets').iterdir() if d.is_dir()] if (skill_dir / 'assets').exists() else '(assets/ not found)'}"
         )
 
-    if project_dir.exists():
+    if project_dir.exists() or project_dir.is_symlink():
         if not overwrite:
             raise FileExistsError(
                 f"Output directory already exists: {project_dir}. "
                 f"Pass --overwrite to replace it."
             )
-        shutil.rmtree(project_dir)
+        # Refuse to follow symlinks/junctions: rmtree would traverse to the
+        # link target and delete contents outside output_dir. Unlink the link
+        # itself instead so we don't leak deletions across the symlink.
+        if project_dir.is_symlink():
+            project_dir.unlink()
+        else:
+            # Containment check: project_dir must resolve under output_dir
+            # so that intermediate symlinks in the path don't redirect us.
+            try:
+                resolved_project = project_dir.resolve(strict=True)
+                resolved_output = Path(output_dir).resolve(strict=True)
+            except OSError as e:
+                raise OSError(
+                    f"Cannot resolve {project_dir} for overwrite safety check: {e}"
+                ) from e
+            try:
+                resolved_project.relative_to(resolved_output)
+            except ValueError:
+                raise PermissionError(
+                    f"Refusing to overwrite {project_dir}: it resolves to "
+                    f"{resolved_project}, which is outside --output "
+                    f"{resolved_output}. A symlink or junction may be redirecting "
+                    f"the target."
+                )
+            shutil.rmtree(project_dir)
 
     try:
         shutil.copytree(template_dir, project_dir)
