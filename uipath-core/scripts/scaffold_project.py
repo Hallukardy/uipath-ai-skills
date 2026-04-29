@@ -343,6 +343,20 @@ def scaffold_project(name: str, description: str, output_dir: str,
                      target: str = "both",
                      version_band: str = None):
     """Scaffold a new UiPath project from real templates."""
+    # Reject path-traversal in --name before any filesystem op. The skill is
+    # invoked programmatically by Claude Code agents with user-controlled
+    # project names, and `--name` is joined to `output_dir` then `rmtree`-d
+    # under `--overwrite`. A `--name` containing path separators or `..` would
+    # let the caller delete arbitrary directories.
+    if (
+        os.sep in name
+        or (os.altsep and os.altsep in name)
+        or ".." in name.split(os.sep)
+    ):
+        raise ValueError(
+            f"--name must not contain path separators or '..': {name!r}"
+        )
+
     skill_dir = get_skill_dir()
 
     # Dispatcher and performer share the same REFramework base

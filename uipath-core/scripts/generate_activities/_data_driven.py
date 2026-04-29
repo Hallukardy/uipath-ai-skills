@@ -409,7 +409,12 @@ def gen_from_annotation(
         elif bracket_wrap:
             value_str = f"[{_escape_vb_expr(str(value))}]"
         else:
-            value_str = str(value)
+            # Default branch: still going into an XML attribute, so XML-escape
+            # special chars to prevent attribute corruption. Without this, an
+            # annotation entry with `escape: null, bracket_wrap: false` would
+            # emit raw `&`/`<`/`>`/`"` from spec_args into the output XAML
+            # (Studio degrades the activity to DynamicActivity at load).
+            value_str = _escape_xml_attr(str(value))
 
         attrs_parts.append(f'{attr_name}="{value_str}"')
 
