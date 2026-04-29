@@ -45,6 +45,13 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 PROFILES_DIR = REPO_ROOT / "uipath-core" / "references" / "version-profiles"
 GROUND_TRUTH_DIR = REPO_ROOT / "uipath-core" / "references" / "studio-ground-truth"
 
+# Determinism scrubbers — keep harvested XAML reproducible across machines.
+# Both helpers live in sibling scripts; the lazy import here matches the
+# import pattern used by battle_test_studio for _run_uip_json.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from backfill_profile_templates import scrub_scope_guids  # noqa: E402
+from import_wizard_xaml import scrub_dynamic_assembly_xmlns  # noqa: E402
+
 # Resolve the npm-installed `uip` shim once. On Windows it's `uip.cmd`, which
 # Python's subprocess won't find without PATHEXT lookup unless we resolve it.
 UIP = shutil.which("uip") or shutil.which("uip.cmd") or "uip"
@@ -53,7 +60,23 @@ UIP = shutil.which("uip") or shutil.which("uip.cmd") or "uip"
 def _run_uip_json(args: list[str], *, timeout: int = 120) -> dict | list | str:
     """Invoke `uip --output json ...` and return the parsed Data field."""
     cmd = [UIP, "--output", "json", *args]
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, encoding="utf-8")
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout, encoding="utf-8"
+        )
+    except subprocess.TimeoutExpired as e:
+        # M-16: surface partial stderr so timeout diagnostics aren't a black box.
+        # subprocess captures stderr up to the timeout point on the exception.
+        partial_stderr = ""
+        if e.stderr is not None:
+            partial_stderr = (
+                e.stderr.decode("utf-8", errors="replace") if isinstance(e.stderr, bytes)
+                else str(e.stderr)
+            ).strip()
+        raise RuntimeError(
+            f"`uip {' '.join(args)}` timed out after {timeout}s; "
+            f"stderr={partial_stderr!r}"
+        ) from e
     stdout = (proc.stdout or "").strip()
     stderr = (proc.stderr or "").strip()
     if proc.returncode != 0 and not stdout:
@@ -363,9 +386,18 @@ def main() -> int:
                         help="Apply WF4-builtin scrub to the existing on-disk index.json "
                              "for --package/--version and exit. Skips Studio entirely.")
     parser.add_argument("--deterministic", action="store_true",
-                        help="Suppress non-deterministic fields (e.g. harvested_at "
-                             "timestamps) from emitted JSON. Also enabled when the "
-                             "CI=1 environment variable is set.")
+                        help="DEPRECATED no-op: deterministic output (no harvested_at "
+                             "timestamp) is now the default. Retained for backward "
+                             "compatibility with older invocations / scripts.")
+    parser.add_argument("--include-timestamp", action="store_true",
+                        help="Include a `harvested_at` ISO-8601 UTC timestamp in the "
+                             "emitted index.json. Off by default so committed indexes "
+                             "stay diff-stable across re-harvests.")
+    parser.add_argument("--keep-temp", action="store_true",
+                        help="Don't delete the scaffolded temp project directory after "
+                             "harvest. Useful when debugging Studio IPC failures. "
+                             "Without this flag, projects scaffolded under "
+                             "%%TEMP%% / $TMPDIR are removed once the harvest exits.")
     parser.add_argument("--include-prerelease", action="store_true",
                         help="VIOLATES stable-only harvest policy. Allow prerelease "
                              "(beta/rc/preview) NuGet versions to satisfy the band "
@@ -383,9 +415,12 @@ def main() -> int:
             file=sys.stderr,
         )
 
-    # CI=1 acts as an alias for --deterministic so harvests run from CI
-    # don't churn timestamps on every re-run.
-    deterministic = bool(args.deterministic or os.environ.get("CI") == "1")
+    # Deterministic output is the default since H-6. The `--deterministic`
+    # flag and CI=1 env var are retained as no-ops for backward compatibility
+    # — they cannot re-enable timestamps. To opt back into a `harvested_at`
+    # timestamp, pass --include-timestamp explicitly.
+    _ = bool(args.deterministic or os.environ.get("CI") == "1")
+    include_timestamp = bool(args.include_timestamp)
 
     if not _PKG_RE.fullmatch(args.package):
         parser.error(f"--package must match {_PKG_RE.pattern}, got {args.package!r}")
@@ -479,11 +514,41 @@ def main() -> int:
             print(f"ERROR: no project.json at {project_dir}", file=sys.stderr)
             return 2
         print(f"Reusing project: {project_dir}")
+        scaffolded_here = False
     else:
         print(f"Scaffolding temp project for {args.package}@{args.version}...")
         project_dir = _scaffold_temp_project(args.package, args.version)
         print(f"  -> {project_dir}")
+        scaffolded_here = True
 
+    # Track whether project_dir is under the OS temp root so we know whether
+    # we're allowed to rmtree it on exit (H-11). Never delete user-supplied
+    # dirs even if they happen to be under tempfile.gettempdir().
+    _resolved_project = Path(project_dir).resolve()
+    _tmp_root = Path(tempfile.gettempdir()).resolve()
+    try:
+        _in_tmp = _resolved_project.is_relative_to(_tmp_root)
+    except AttributeError:
+        _in_tmp = str(_resolved_project).startswith(str(_tmp_root))
+    cleanup_temp = scaffolded_here and _in_tmp and not args.keep_temp
+
+    rc = 0
+    try:
+        rc = _main_harvest_body(args, project_dir, profile_activities, keys,
+                                include_timestamp=include_timestamp)
+    finally:
+        if cleanup_temp:
+            shutil.rmtree(project_dir, ignore_errors=True)
+            print(f"\nCleaned up temp project: {project_dir}")
+        elif _in_tmp and scaffolded_here and args.keep_temp:
+            print(f"\nTemp project kept at: {project_dir} (--keep-temp)")
+            print(f"To clean up: python -c \"import shutil; shutil.rmtree(r'{project_dir}')\"")
+    return rc
+
+
+def _main_harvest_body(args, project_dir, profile_activities, keys, *, include_timestamp):
+    """Body of the harvest run, factored so the caller can wrap it in a
+    try/finally for temp-project cleanup (H-11)."""
     if not args.no_start_studio:
         print("Ensuring Studio is running (this may open a Studio window)...")
         try:
@@ -572,7 +637,7 @@ def main() -> int:
         "concrete_version": concrete,
         "activities": dict(existing_activities),
     }
-    if not deterministic:
+    if include_timestamp:
         # Insert before `activities` to preserve the historical ordering.
         index = {
             "package": index["package"],
@@ -618,21 +683,17 @@ def main() -> int:
             continue
         if not re.fullmatch(r"[A-Za-z0-9_]+", key):
             continue  # skip keys that would traverse or be weird filenames
+        # Scrub non-deterministic Studio-minted bits before writing to disk
+        # so the committed ground-truth corpus is bit-identical across
+        # machines and re-harvests. See test_harvest_determinism.py.
+        xaml = scrub_scope_guids(xaml)
+        xaml = scrub_dynamic_assembly_xmlns(xaml)
         (out_dir / f"{key}.xaml").write_text(xaml, encoding="utf-8")
         index["activities"][key] = {"status": "ok", "class_name": fqn, "size": len(xaml)}
         print(f"  ok {key} ({fqn}) -> {key}.xaml ({len(xaml):,} chars)")
 
     (out_dir / "index.json").write_text(json.dumps(index, indent=2), encoding="utf-8")
     print(f"\nWrote {out_dir}\\index.json")
-    _resolved = Path(project_dir).resolve()
-    _tmp_root = Path(tempfile.gettempdir()).resolve()
-    try:
-        _in_tmp = _resolved.is_relative_to(_tmp_root)
-    except AttributeError:
-        _in_tmp = str(_resolved).startswith(str(_tmp_root))
-    if _in_tmp:
-        print(f"\nTemp project kept at: {project_dir}")
-        print(f"To clean up: python -c \"import shutil; shutil.rmtree(r'{project_dir}')\"")
     return 0
 
 

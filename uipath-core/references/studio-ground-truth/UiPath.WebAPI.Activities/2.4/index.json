@@ -2,7 +2,6 @@
   "package": "UiPath.WebAPI.Activities",
   "version": "2.4",
   "concrete_version": "2.4.0",
-  "harvested_at": "2026-04-22T07:21:13+00:00",
   "activities": {
     "DeserializeJsonArray": {
       "status": "ok",

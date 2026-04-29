@@ -113,11 +113,16 @@ def _validate_activity(
             print("  [retry] Studio not running — starting Studio and retrying once…", file=sys.stderr)
             _ensure_studio_running()
             return _validate_activity(proj_dir, activity_name, xaml_template, studio_retry_done=True)
+        # M-16: timeouts come through here (RuntimeError("... timed out after Ns;
+        # stderr=...")). Classify them separately and keep more of the stderr
+        # context (400 chars) so the report shows the actual failure mode rather
+        # than the truncated prefix.
+        is_timeout = "timed out after" in err_str
         return {
             "errors": -1,
             "warnings": -1,
-            "top": f"ipc-error: {str(e)[:120]}",
-            "classification": "ipc-error",
+            "top": f"{'timeout' if is_timeout else 'ipc-error'}: {str(e)[:400]}",
+            "classification": "timeout" if is_timeout else "ipc-error",
         }
 
     diagnostics: list = []

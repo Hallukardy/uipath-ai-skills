@@ -155,7 +155,8 @@ def _kill_studio_editor() -> int:
 
 
 def _harvest_one(
-    pkg: str, ver: str, *, no_start_studio: bool, deterministic: bool
+    pkg: str, ver: str, *, no_start_studio: bool, deterministic: bool,
+    keep_temp: bool = False,
 ) -> tuple[int, str]:
     argv = [
         sys.executable,
@@ -168,6 +169,8 @@ def _harvest_one(
         argv.append("--no-start-studio")
     if deterministic:
         argv.append("--deterministic")
+    if keep_temp:
+        argv.append("--keep-temp")
     try:
         proc = subprocess.run(
             argv,
@@ -211,6 +214,10 @@ def main() -> int:
                              "finished_at timestamps) from the bulk summary, and "
                              "propagate --deterministic to each worker invocation. "
                              "Also enabled when the CI=1 environment variable is set.")
+    parser.add_argument("--keep-temp", action="store_true",
+                        help="Propagate --keep-temp to each worker so the scaffolded "
+                             "temp project is preserved for debugging. Without this, "
+                             "the worker rmtree's its temp project after each run.")
     args = parser.parse_args()
 
     # CI=1 acts as an alias for --deterministic so harvests run from CI
@@ -275,6 +282,7 @@ def main() -> int:
                 pkg, ver,
                 no_start_studio=args.no_start_studio,
                 deterministic=deterministic,
+                keep_temp=args.keep_temp,
             )
             if rc == 0:
                 idx = _read_index(pkg, ver) or {}

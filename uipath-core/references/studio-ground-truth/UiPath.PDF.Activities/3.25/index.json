@@ -2,7 +2,6 @@
   "package": "UiPath.PDF.Activities",
   "version": "3.25",
   "concrete_version": "3.25.2",
-  "harvested_at": "2026-04-22T07:20:08+00:00",
   "activities": {
     "ExportPDFPageAsImage": {
       "status": "ok",

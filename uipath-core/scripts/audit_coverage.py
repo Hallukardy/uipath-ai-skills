@@ -434,6 +434,11 @@ def main() -> int:
                 bv = baseline.get("per_package", {}).get(k)
                 if bv != v:
                     print(f"  per_package[{k}]: baseline={bv} current={v}", file=sys.stderr)
+            print(
+                "\nIf this change is intentional, re-run with --baseline to "
+                "update coverage-baseline.json.",
+                file=sys.stderr,
+            )
             return 1
         print("--check: matches baseline")
     return 0

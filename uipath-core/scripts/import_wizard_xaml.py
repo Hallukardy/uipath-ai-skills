@@ -517,11 +517,23 @@ def main() -> int:
           f"demote={not args.no_demote}")
     print()
 
-    # Scan all .xaml files (skip Studio lock files starting with ~)
-    xaml_files = sorted(
-        p for p in project_dir.rglob("*.xaml")
-        if not p.name.startswith("~")
-    )
+    # Scan all .xaml files (skip Studio lock files starting with ~).
+    # M-17: symlink-jail — drop any .xaml whose realpath escapes project_dir
+    # (e.g. a symlink in the wizard project pointing to ../../etc/...). The
+    # rglob match itself doesn't enforce containment.
+    project_dir_resolved = project_dir.resolve()
+    xaml_files = []
+    for p in project_dir.rglob("*.xaml"):
+        if p.name.startswith("~"):
+            continue
+        try:
+            if not p.resolve().is_relative_to(project_dir_resolved):
+                print(f"  [skip] symlink escapes project dir: {p}", file=sys.stderr)
+                continue
+        except (OSError, ValueError):
+            continue
+        xaml_files.append(p)
+    xaml_files = sorted(xaml_files)
     print(f"Scanning {len(xaml_files)} XAML file(s):")
 
     all_captures: dict[tuple[str, str], list[dict]] = {}  # (pkg,ver) -> list of match rows

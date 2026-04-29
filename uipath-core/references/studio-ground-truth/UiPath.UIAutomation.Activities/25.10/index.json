@@ -2,7 +2,6 @@
   "package": "UiPath.UIAutomation.Activities",
   "version": "25.10",
   "concrete_version": "25.10.30",
-  "harvested_at": "2026-04-25T08:49:56+00:00",
   "activities": {
     "NApplicationCard": {
       "status": "ok",

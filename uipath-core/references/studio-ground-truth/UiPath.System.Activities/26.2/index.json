@@ -2,7 +2,6 @@
   "package": "UiPath.System.Activities",
   "version": "26.2",
   "concrete_version": "26.2.4",
-  "harvested_at": "2026-04-25T08:45:45+00:00",
   "activities": {
     "Assign": {
       "status": "benign_skip",

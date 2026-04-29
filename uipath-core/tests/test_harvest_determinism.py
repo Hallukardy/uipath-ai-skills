@@ -55,6 +55,75 @@ class TestScrubScopeGuids:
         assert self._f()(None) is None
 
 
+class TestHarvestWritePathScrubs:
+    """C-2 + H-8 contract test: a freshly-harvested XAML must pass through
+    BOTH ``scrub_scope_guids`` AND ``scrub_dynamic_assembly_xmlns`` before
+    landing on disk under ``studio-ground-truth/``.
+
+    This test deliberately exercises the scrub helpers as a pair the way the
+    harvest write path uses them. A future refactor that removes either call
+    from ``harvest_studio_xaml.py`` (around the ``write_text`` of
+    ``out_dir / f"{key}.xaml"``) will break this test, because the imported
+    ``harvest_studio_xaml`` module-level binding is what we assert against.
+    """
+
+    def _harvest_module(self):
+        # Importing the worker pulls in both scrubbers as module-level names.
+        # If a refactor drops either import, this test fails at import time.
+        import harvest_studio_xaml
+        return harvest_studio_xaml
+
+    def test_module_binds_both_scrubbers(self):
+        """The harvest module MUST expose both scrubbers as module attributes
+        so the write-path callsite can reach them. Removing either import
+        breaks this test."""
+        m = self._harvest_module()
+        assert hasattr(m, "scrub_scope_guids"), \
+            "harvest_studio_xaml must import scrub_scope_guids"
+        assert hasattr(m, "scrub_dynamic_assembly_xmlns"), \
+            "harvest_studio_xaml must import scrub_dynamic_assembly_xmlns"
+        # Smoke-check both are callable str -> str.
+        assert m.scrub_scope_guids("") == ""
+        assert m.scrub_dynamic_assembly_xmlns("") == ""
+
+    def test_write_path_call_sequence_scrubs_real_uuid(self):
+        """Simulate the harvest write path: feed XAML carrying a real UUID
+        and a dynamic-assembly xmlns through both scrubbers in the same
+        order the harvest code uses, and assert both sentinels appear in
+        what *would* be written to disk."""
+        m = self._harvest_module()
+        synthetic = (
+            '<Activity x:Class="X" xmlns:x="x" '
+            'xmlns:dyn="clr-namespace:Dyn;assembly=fd1135674040.qPNHG3TSMPM1ZMTPy3t2VOM1">'
+            '<NScope ScopeGuid="e7935895-731f-4ccc-af43-bcaf97460019" />'
+            '</Activity>'
+        )
+        scrubbed = m.scrub_scope_guids(synthetic)
+        scrubbed = m.scrub_dynamic_assembly_xmlns(scrubbed)
+        # Real UUID gone, sentinel in.
+        assert "e7935895" not in scrubbed
+        assert 'ScopeGuid="00000000-0000-0000-0000-000000000000"' in scrubbed
+        # Dynamic-assembly xmlns gone.
+        assert "fd1135674040" not in scrubbed
+        assert "xmlns:dyn=" not in scrubbed
+
+    def test_write_path_source_calls_both_scrubbers(self):
+        """Belt-and-braces: the harvest worker's source MUST contain both
+        scrub calls in the write-path region. This guards against a refactor
+        that imports the helpers but stops calling them."""
+        from pathlib import Path
+        src = (Path(__file__).parent.parent / "scripts" /
+               "harvest_studio_xaml.py").read_text(encoding="utf-8")
+        # The write-path block currently looks like:
+        #   xaml = scrub_scope_guids(xaml)
+        #   xaml = scrub_dynamic_assembly_xmlns(xaml)
+        #   (out_dir / f"{key}.xaml").write_text(xaml, encoding="utf-8")
+        assert "scrub_scope_guids(xaml)" in src, \
+            "harvest_studio_xaml must call scrub_scope_guids on harvested XAML"
+        assert "scrub_dynamic_assembly_xmlns(xaml)" in src, \
+            "harvest_studio_xaml must call scrub_dynamic_assembly_xmlns on harvested XAML"
+
+
 class TestScrubDynamicAssemblyXmlns:
     """``import_wizard_xaml.scrub_dynamic_assembly_xmlns`` strips
     ``xmlns:NAME="…assembly=fdNNNN.HASH"`` declarations leaked from
