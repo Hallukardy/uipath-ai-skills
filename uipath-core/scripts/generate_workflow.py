@@ -908,6 +908,11 @@ def generate_workflow(spec: dict) -> str:
     # Generators that require uwah: (UiPath.Web.Activities.Http) namespace
     http_gens = {"net_http_request"}
 
+    # Generators that require the mail namespace block (usau/umame/umae/p/snm):
+    # send_mail + get_imap_mail emit Integration-Service BackupSlot subtrees;
+    # save_mail_attachments flows carry snm:MailMessage variables.
+    mail_gens = {"send_mail", "get_imap_mail", "save_mail_attachments"}
+
     all_gen_names = {a.get("gen") for a in _walk_all_activities(activities)}
     has_ui = bool(all_gen_names & ui_gens)
     has_datatable = (
@@ -918,6 +923,10 @@ def generate_workflow(spec: dict) -> str:
         a.get("type") == "SecureString" for a in arguments + variables
     )
     has_http = bool(all_gen_names & http_gens)
+    has_mail = (
+        bool(all_gen_names & mail_gens)
+        or any("MailMessage" in str(a.get("type", "")) for a in arguments + variables)
+    )
     type_map = _type_map()
     type_map.update(get_type_mappings())  # Merge plugin type mappings
 
@@ -969,7 +978,7 @@ def generate_workflow(spec: dict) -> str:
         extra_ns = used_plugin_ns or None
 
     namespaces = _build_namespaces(has_ui, has_datatable, has_securestring, has_http,
-                                    extra_namespaces=extra_ns)
+                                    has_mail, extra_namespaces=extra_ns)
 
     # ViewState for root sequence
     seq_idref = counter.next("Sequence")
@@ -1008,6 +1017,8 @@ def generate_workflow(spec: dict) -> str:
         xml += '      <x:String>System.Data</x:String>\n'
     if has_http:
         xml += '      <x:String>UiPath.Web.Activities.Http</x:String>\n'
+    if has_mail:
+        xml += '      <x:String>System.Net.Mail</x:String>\n'
     # Plugin CLR namespaces for VB.NET expression compilation
     if extra_ns:
         _seen_ns = set()
@@ -1037,6 +1048,9 @@ def generate_workflow(spec: dict) -> str:
         xml += '      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>\n'
     if has_http:
         xml += '      <AssemblyReference>UiPath.Web.Activities</AssemblyReference>\n'
+    if has_mail:
+        xml += '      <AssemblyReference>System.Net.Mail</AssemblyReference>\n'
+        xml += '      <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>\n'
     # Plugin assembly references
     if extra_ns:
         for asm in sorted(_seen_asm):
