@@ -12,7 +12,7 @@ from _wf_types import DIRECTION_MAP, _normalize_argument_type
 # ---------------------------------------------------------------------------
 
 def _build_namespaces(has_ui: bool, has_datatable: bool, has_securestring: bool = False,
-                      has_http: bool = False,
+                      has_http: bool = False, has_mail: bool = False,
                       extra_namespaces: dict[str, str] | None = None) -> str:
     """Build xmlns block with Option B namespace strategy.
 
@@ -47,6 +47,22 @@ def _build_namespaces(has_ui: bool, has_datatable: bool, has_securestring: bool 
         uwah = ('  xmlns:uwah="clr-namespace:UiPath.Web.Activities.Http;assembly=UiPath.Web.Activities"\n'
                 '  xmlns:uwahm="clr-namespace:UiPath.Web.Activities.Http.Models;assembly=UiPath.Web.Activities"\n')
 
+    # Mail activities: SendMail/GetIMAPMailMessages emit Integration-Service
+    # BackupSlot subtrees using usau:/umame:/umae:/p:, and MailMessage variables
+    # map to snm: (TYPE_MAP) — all five must be declared at the root or the
+    # document is not well-formed XML. URIs are transcribed from the Studio
+    # exports the recipes were authored against (see gen_send_mail /
+    # gen_get_imap_mail "Requires namespaces" docstrings in integrations.py).
+    mail = ''
+    if has_mail:
+        mail = (
+            '  xmlns:p="http://schemas.microsoft.com/netfx/2009/xaml/activities"\n'
+            '  xmlns:snm="clr-namespace:System.Net.Mail;assembly=System.Net.Mail"\n'
+            '  xmlns:umae="clr-namespace:UiPath.Mail.Activities.Enums;assembly=UiPath.Mail.Activities"\n'
+            '  xmlns:umame="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Enums;assembly=UiPath.Mail.Activities"\n'
+            '  xmlns:usau="clr-namespace:UiPath.Shared.Activities.Utils;assembly=UiPath.Mail.Activities"\n'
+        )
+
     # Plugin-registered namespaces (Tasks, SAP, etc.)
     extra = ''
     if extra_namespaces:
@@ -63,7 +79,7 @@ def _build_namespaces(has_ui: bool, has_datatable: bool, has_securestring: bool 
         '  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"\n'
         + sd + ss +
         '  xmlns:ui="http://schemas.uipath.com/workflow/activities"\n'
-        + uix + uwah + extra +
+        + uix + uwah + mail + extra +
         '  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">\n'
     )
 
